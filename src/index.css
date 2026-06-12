@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, rgba(70, 199, 224, 0.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(232, 163, 61, 0.06), transparent 55%);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+}
+
+@layer components {
+  /* Reusable scan-line overlay (ported from the prototype's header treatment). */
+  .scan-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(70, 199, 224, 0.05) 0 1px,
+      transparent 1px 3px
+    );
+    opacity: 0.5;
+    animation: scan 8s linear infinite;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-[10px] font-display font-semibold text-sm px-4 py-[11px] transition active:translate-y-px;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary {
+    @apply bg-holo text-[#04222B] hover:bg-[#5bd4ec];
+  }
+  .btn-ghost {
+    @apply border border-line-alt text-ink bg-panel hover:border-holo-dim;
+  }
+  .btn-sm {
+    @apply text-xs px-3 py-[9px];
+  }
+  .btn-block {
+    @apply w-full;
+  }
+  .card {
+    @apply rounded-2xl border border-line overflow-hidden;
+    background: linear-gradient(180deg, #141c28, #0d131c);
+  }
+  .card-ready {
+    @apply border-ok/40;
+  }
+  .panel-bg {
+    background: linear-gradient(180deg, #141c28, #0d131c);
+  }
+  .tier-pill {
+    @apply inline-flex items-center font-mono font-bold text-[9px] uppercase tracking-wider px-[7px] py-[3px] rounded-md border border-current;
+  }
+  .tier-pill[data-t="RAINBOW"] {
+    border: 0;
+    color: #fff;
+    background: linear-gradient(90deg, #ff5d5d, #ffb84d, #5be37a, #46c7e0, #9b7bff);
+  }
+  .class-pill {
+    @apply inline-flex items-center font-mono font-bold text-[9px] uppercase tracking-wide px-[7px] py-[3px] rounded-md border border-line-alt text-muted;
+  }
+  .status-tag {
+    @apply inline-flex items-center font-mono font-bold text-[9px] uppercase tracking-wide gap-1 px-2 py-1 rounded-md;
+  }
+  .status-tag.ok {
+    @apply text-ok bg-ok/10;
+  }
+  .status-tag.miss {
+    @apply text-warn bg-warn/10;
+  }
+  .input,
+  .select,
+  .textarea {
+    @apply w-full text-[14.5px] text-ink rounded-[9px] px-3 py-[10px] outline-none border border-line-alt bg-bg-alt focus:border-holo transition-colors;
+  }
+  .textarea {
+    @apply font-mono text-[12.5px] leading-relaxed min-h-[50px] resize-y;
+  }
+  .field-label {
+    @apply block font-mono text-[10px] uppercase tracking-wider text-muted-alt mb-1.5;
+  }
+  .section-label {
+    @apply font-mono text-[10px] uppercase tracking-wider text-muted-alt;
+  }
+}
