@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SCHEMA_VERSION } from "../data/version";
-import { emptyState, migrate } from "./migrate";
+import { defaultProfile, emptyState, migrate } from "./migrate";
 
 describe("migrate", () => {
   it("returns an empty state for unknown / nullish input", () => {
@@ -30,14 +30,15 @@ describe("migrate", () => {
     const rank = grp.ranks[0]!;
     expect(rank.rank).toBe("1");
     expect(rank.credits).toBe("10K");
+    // Names resolve via the dict, tiers uppercase.
     expect(rank.droids).toEqual([
-      { name: "Mouse", tier: "DEFAULT" },
-      { name: "Pit", tier: "GOLD" },
+      { name: "MOUSE", tier: "DEFAULT" },
+      { name: "PIT", tier: "GOLD" },
     ]);
     expect(rank.notes).toBe("from prototype");
   });
 
-  it("upgrades a v1-shaped payload (brief §4) into v2", () => {
+  it("upgrades a v1-shaped payload (brief §4) into v3", () => {
     const v1 = {
       superRebirths: [
         {
@@ -67,16 +68,53 @@ describe("migrate", () => {
     };
     const state = migrate(v1);
     expect(state.schemaVersion).toBe(SCHEMA_VERSION);
-    expect(state.superRebirths[0]?.ranks[0]?.droids[0]?.tier).toBe("DEFAULT");
+    // Droid req tiers uppercased + names resolved to canonical.
+    expect(state.superRebirths[0]?.ranks[0]?.droids[0]).toEqual({ name: "MOUSE", tier: "DEFAULT" });
     expect(state.superRebirths[0]?.ranks[0]?.gain).toEqual({
       credits: "2K",
       multiplier: "+45%",
       slot: "Worker",
       force: "Push",
     });
-    expect(state.roster).toHaveLength(2);
-    expect(state.roster[0]).toMatchObject({ droidId: "Mouse", tier: "GOLD", active: true, owned: true });
-    expect(state.roster[1]).toMatchObject({ droidId: "Pit", tier: "DEFAULT", active: true, owned: true });
+    // Roster collapsed into cards with canonical names + active=true.
+    expect(state.cards).toHaveLength(2);
+    expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", active: true, owned: true });
+    expect(state.cards[1]).toMatchObject({ name: "PIT", tier: "DEFAULT", active: true, owned: true });
+    // Profile bootstrapped to defaults.
+    expect(state.profile).toEqual(defaultProfile());
+  });
+
+  it("upgrades Pass-1 (v2) export into v3 cards", () => {
+    const v2 = {
+      schemaVersion: 2,
+      roster: [
+        { droidId: "Mouse", tier: "GOLD", owned: true, active: true },
+        { droidId: "Pit", tier: "DEFAULT", owned: true, active: false },
+      ],
+      customDroids: [],
+      superRebirths: [],
+      standardOverrides: [],
+      ui: { activeTab: "collection", creditsCurrent: "1K" },
+    };
+    const state = migrate(v2);
+    expect(state.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(state.cards).toEqual([
+      { name: "MOUSE", tier: "GOLD", owned: true, active: true, notes: undefined },
+      { name: "PIT", tier: "DEFAULT", owned: true, active: false, notes: undefined },
+    ]);
+    expect(state.ui.creditsCurrent).toBe("1K");
+  });
+
+  it("dedupes cards with the same (name, tier)", () => {
+    const dup = {
+      cards: [
+        { name: "MOUSE", tier: "GOLD", owned: true, active: false },
+        { name: "MOUSE", tier: "GOLD", owned: false, active: true },
+      ],
+    };
+    const state = migrate(dup);
+    expect(state.cards).toHaveLength(1);
+    expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", owned: true, active: true });
   });
 
   it("unwraps a current ExportEnvelope", () => {
@@ -86,17 +124,19 @@ describe("migrate", () => {
       exportedAt: "2026-06-12T00:00:00Z",
       payload: {
         schemaVersion: SCHEMA_VERSION,
-        roster: [{ droidId: "Gonk", owned: true, active: true, tier: "GOLD" }],
+        cards: [{ name: "GONK", tier: "GOLD", owned: true, active: true }],
+        profile: { standardRebirth: 5, superRebirth: { level: "2", rank: "1" } },
         customDroids: [],
         superRebirths: [],
         standardOverrides: [],
-        ui: { activeTab: "collection", creditsCurrent: "0" },
+        ui: { activeTab: "droidex", creditsCurrent: "0" },
       },
     };
     const state = migrate(envelope);
-    expect(state.roster).toHaveLength(1);
-    expect(state.roster[0]?.droidId).toBe("Gonk");
-    expect(state.roster[0]?.tier).toBe("GOLD");
+    expect(state.cards).toHaveLength(1);
+    expect(state.cards[0]?.name).toBe("GONK");
+    expect(state.profile.standardRebirth).toBe(5);
+    expect(state.profile.superRebirth).toEqual({ level: "2", rank: "1" });
   });
 
   it("re-normalises a v1 'Basic' tier label into DEFAULT", () => {

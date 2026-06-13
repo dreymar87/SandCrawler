@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { DroidDef } from "../types";
 import { buildDroidIndex } from "./autocomplete";
 
+const ALL_TIERS = ["DEFAULT", "GOLD", "DIAMOND", "RAINBOW", "BESKAR"] as const;
 const dict: DroidDef[] = [
-  { canonical: "Mouse", class: "WORKER" },
-  { canonical: "MONO-WLKR", class: "WORKER", aliases: ["Mono Walker", "Mono-Walker"] },
-  { canonical: "Pit", class: "WORKER", aliases: ["Pit Droid"] },
-  { canonical: "DRK-1", class: "BATTLE", aliases: ["Probe", "DRK-1 Probe"] },
+  { canonical: "Mouse", class: "WORKER", rarity: "COMMON", tiers: [...ALL_TIERS] },
+  { canonical: "MONO-WLKR", class: "WORKER", rarity: "LEGENDARY", tiers: [...ALL_TIERS], aliases: ["Mono Walker", "Mono-Walker"] },
+  { canonical: "Pit", class: "WORKER", rarity: "COMMON", tiers: [...ALL_TIERS], aliases: ["Pit Droid"] },
+  { canonical: "DRK-1", class: "BATTLE", rarity: "COMMON", tiers: [...ALL_TIERS], aliases: ["Probe", "DRK-1 Probe"] },
 ];
 
 describe("buildDroidIndex", () => {

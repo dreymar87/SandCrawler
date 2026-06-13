@@ -7,7 +7,7 @@ import { SuperRebirthEditor } from "./SuperRebirthEditor";
 
 export function SuperRebirthList() {
   const supers = useAppStore((s) => s.superRebirths);
-  const roster = useAppStore((s) => s.roster);
+  const cards = useAppStore((s) => s.cards);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<{ groupId: string; level: string; rank: Rank } | null>(null);
@@ -46,7 +46,7 @@ export function SuperRebirthList() {
             group={g}
             collapsed={!!collapsed[g.id]}
             onToggle={() => setCollapsed((c) => ({ ...c, [g.id]: !c[g.id] }))}
-            roster={roster}
+            cards={cards}
             onEdit={(rank) => {
               setEditing({ groupId: g.id, level: g.level, rank });
               setAdding(false);
@@ -62,15 +62,15 @@ interface GroupProps {
   group: SuperRebirth;
   collapsed: boolean;
   onToggle: () => void;
-  roster: ReturnType<typeof useAppStore.getState>["roster"];
+  cards: ReturnType<typeof useAppStore.getState>["cards"];
   onEdit: (rank: Rank) => void;
 }
 
-function GroupBlock({ group, collapsed, onToggle, roster, onEdit }: GroupProps) {
+function GroupBlock({ group, collapsed, onToggle, cards, onEdit }: GroupProps) {
   const ranks = [...group.ranks].sort(
     (a, b) => (parseFloat(a.rank) || 0) - (parseFloat(b.rank) || 0),
   );
-  const ready = ranks.filter((r) => rankReady(r, roster)).length;
+  const ready = ranks.filter((r) => rankReady(r, cards)).length;
 
   return (
     <div className="mb-5">

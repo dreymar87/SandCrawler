@@ -61,3 +61,33 @@ export function formatCredits(n: bigint): string {
 export function creditsCover(required: string, current: string): boolean {
   return parseCredits(current) >= parseCredits(required);
 }
+
+/**
+ * Parses an income value like "16/s", "1.92k/s", or "5%/s" into credits per
+ * second. Returns null for percentage incomes (MYTHIC boosters multiply
+ * base income rather than adding a flat amount); UI shows the raw string
+ * instead of summing them.
+ */
+export function parseIncome(raw: string | undefined | null): bigint | null {
+  if (!raw) return 0n;
+  const cleaned = String(raw).trim().replace(/\s+/g, "");
+  if (!cleaned) return 0n;
+  // Percentage boosters can't be added linearly with flat values.
+  if (cleaned.includes("%")) return null;
+  // Strip the "/s" suffix; rest parses via parseCredits.
+  const stripped = cleaned.replace(/\/s$/i, "");
+  return parseCredits(stripped);
+}
+
+/**
+ * Computes how much of `required` is covered by `current`. Returned as a
+ * 0–100 percentage (rounded down) suitable for progress bars.
+ */
+export function progressPercent(required: string, current: string): number {
+  const req = parseCredits(required);
+  if (req === 0n) return 100;
+  const have = parseCredits(current);
+  if (have >= req) return 100;
+  // Scale by 1000 to keep a digit of resolution under bigint math.
+  return Number((have * 1000n) / req) / 10;
+}

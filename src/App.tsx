@@ -1,7 +1,8 @@
 import { useAppStore } from "./store/useAppStore";
 import { AppShell } from "./components/Layout/AppShell";
 import { TabBar } from "./components/Layout/TabBar";
-import { CollectionPanel } from "./components/Collection/CollectionPanel";
+import { DroidexGrid } from "./components/Droidex/DroidexGrid";
+import { ProfilePanel } from "./components/Profile/ProfilePanel";
 import { StandardRebirthList } from "./components/Rebirth/StandardRebirthList";
 import { SuperRebirthList } from "./components/Rebirth/SuperRebirthList";
 import { NextUnlockPanel } from "./components/NextUnlock/NextUnlockPanel";
@@ -12,7 +13,8 @@ export function App() {
   return (
     <AppShell>
       <TabBar />
-      {tab === "collection" ? <CollectionPanel /> : null}
+      {tab === "droidex" ? <DroidexGrid /> : null}
+      {tab === "profile" ? <ProfilePanel /> : null}
       {tab === "standard" ? <StandardRebirthList /> : null}
       {tab === "super" ? <SuperRebirthList /> : null}
       {tab === "next-unlock" ? <NextUnlockPanel /> : null}

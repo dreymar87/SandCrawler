@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
-import { useReadyCounts } from "../../store/selectors";
+import { useDroidexCompletion, useReadyCounts } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const counts = useReadyCounts();
-  const rosterCount = useAppStore((s) => s.roster.length);
-  const activeCount = useAppStore((s) => s.roster.filter((d) => d.active).length);
+  const completion = useDroidexCompletion();
   const tab = useAppStore((s) => s.ui.activeTab);
+  const currentRebirth = useAppStore((s) => s.profile.standardRebirth);
+
+  const droidexPct = Math.round((completion.ownedCards / Math.max(1, completion.totalCards)) * 100);
 
   return (
     <div className="max-w-[760px] mx-auto px-4 pt-5 pb-16">
@@ -22,23 +24,29 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
         </h1>
         <p className="text-muted text-[13.5px] mt-3 max-w-[54ch]">
-          Track your droid collection against the requirements of every rebirth — Standard and
-          Super. Tier substitution and active-droid status are handled automatically.
+          Your Droidex, current rebirth, and the requirements of every rebirth — all in one place.
+          Tier substitution and active-droid status are handled for you.
         </p>
       </header>
 
       <section className="grid grid-cols-3 gap-2.5 my-4">
-        {tab === "collection" ? (
+        {tab === "droidex" ? (
           <>
-            <Stat n={rosterCount} k="Droids Logged" />
-            <Stat n={activeCount} k="Active" />
-            <Stat n={rosterCount - activeCount} k="Stored" />
+            <Stat n={completion.ownedCards} k="Cards" sub={`/ ${completion.totalCards}`} />
+            <Stat n={completion.activeCards} k="Active" />
+            <Stat n={droidexPct} k="Complete" sub="%" />
+          </>
+        ) : tab === "profile" ? (
+          <>
+            <Stat n={currentRebirth} k="Standard Rebirth" />
+            <Stat n={completion.activeCards} k="Active Droids" />
+            <Stat n={completion.ownedDroids} k="Droids Owned" sub={`/ ${completion.totalDroids}`} />
           </>
         ) : (
           <>
-            <Stat n={counts.superReady} k="Super Ready" sub={`of ${counts.superTotal}`} />
-            <Stat n={counts.standardReady} k="Standard Ready" sub={`of ${counts.standardTotal}`} />
-            <Stat n={activeCount} k="Active Droids" />
+            <Stat n={counts.standardReady} k="Standard Ready" sub={`/ ${counts.standardTotal}`} />
+            <Stat n={counts.superReady} k="Super Ready" sub={`/ ${counts.superTotal}`} />
+            <Stat n={completion.activeCards} k="Active Droids" />
           </>
         )}
       </section>

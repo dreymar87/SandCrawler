@@ -2,7 +2,7 @@ import { useState } from "react";
 import { TIERS } from "../../constants";
 import { useAppStore } from "../../store/useAppStore";
 import type { Rank, RebirthReq, Tier } from "../../types";
-import { Autocomplete } from "../Collection/Autocomplete";
+import { Autocomplete } from "../common/Autocomplete";
 
 interface Props {
   initial?: { groupId: string; level: string; rank: Rank };

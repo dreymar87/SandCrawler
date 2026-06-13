@@ -3,22 +3,22 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { SCHEMA_VERSION } from "../data/version";
 import { SUPER_REBIRTHS_SEED } from "../data/superRebirths.seed";
 import { idbStorage } from "../lib/idbStorage";
-import { migrate, emptyState } from "../lib/migrate";
+import { defaultProfile, emptyState, migrate } from "../lib/migrate";
 import { normalizeTier } from "../lib/tiers";
 import type {
+  CollectionCard,
   DroidDef,
   PersistedState,
   Rank,
   RebirthGain,
   RebirthReq,
-  RosterEntry,
   StandardRebirth,
   SuperRebirth,
   TabKey,
   Tier,
 } from "../types";
 
-const STORAGE_KEY = "sandcrawler:v2";
+const STORAGE_KEY = "sandcrawler:v3";
 
 const uid = (): string => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
@@ -30,15 +30,25 @@ function bootstrapState(): PersistedState {
   };
 }
 
+/** Bumps cards through the three-state cycle used by the Droidex grid. */
+function cycleCardState(c: CollectionCard | undefined): { owned: boolean; active: boolean } | "remove" {
+  // missing → owned (inactive) → active → missing
+  if (!c) return { owned: true, active: false };
+  if (c.owned && !c.active) return { owned: true, active: true };
+  return "remove";
+}
+
 interface Actions {
-  // ── Collection ─────────────────────────────────────────────────────────
-  addOrUpdateDroid(entry: Omit<RosterEntry, "owned"> & Partial<Pick<RosterEntry, "owned">>): void;
-  removeDroid(droidId: string): void;
-  toggleActive(droidId: string): void;
-  setTier(droidId: string, tier: Tier): void;
+  // ── Droidex collection ────────────────────────────────────────────────
+  setCardState(name: string, tier: Tier, patch: Partial<Pick<CollectionCard, "owned" | "active" | "notes">>): void;
+  cycleCard(name: string, tier: Tier): void;
   addCustomDroid(def: DroidDef): void;
 
-  // ── Super Rebirth ──────────────────────────────────────────────────────
+  // ── Profile ───────────────────────────────────────────────────────────
+  setStandardRebirth(level: number): void;
+  setSuperRebirthMarker(level: string, rank: string): void;
+
+  // ── Super Rebirth ─────────────────────────────────────────────────────
   upsertSuperRank(input: {
     existingGroupId?: string;
     existingRankId?: string;
@@ -53,15 +63,16 @@ interface Actions {
   deleteSuperRank(groupId: string, rankId: string): void;
   toggleRankCredits(groupId: string, rankId: string): void;
 
-  // ── Standard Rebirth (user overrides on top of the seed table) ────────
+  // ── Standard Rebirth (user overrides on top of the seed table) ───────
   upsertStandardOverride(rb: StandardRebirth): void;
   removeStandardOverride(level: number): void;
 
-  // ── UI ─────────────────────────────────────────────────────────────────
+  // ── UI ────────────────────────────────────────────────────────────────
   setActiveTab(tab: TabKey): void;
   setCreditsCurrent(value: string): void;
+  setUiPref<K extends keyof PersistedState["ui"]>(key: K, value: PersistedState["ui"][K]): void;
 
-  // ── Bulk ──────────────────────────────────────────────────────────────
+  // ── Bulk ─────────────────────────────────────────────────────────────
   replaceAll(state: PersistedState): void;
   resetAll(): void;
 }
@@ -73,52 +84,52 @@ export const useAppStore = create<AppStore>()(
     (set) => ({
       ...bootstrapState(),
 
-      addOrUpdateDroid(entry) {
+      setCardState(name, tier, patch) {
         set((s) => {
-          const idx = s.roster.findIndex(
-            (d) => d.droidId.trim().toLowerCase() === entry.droidId.trim().toLowerCase(),
+          const idx = s.cards.findIndex(
+            (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase() && c.tier === tier,
           );
-          const next = [...s.roster];
-          const owned = entry.owned ?? true;
+          const next = [...s.cards];
           if (idx < 0) {
+            // Don't create empty cards — only persist when something is true.
+            if (!patch.owned && !patch.active) return {};
             next.push({
-              droidId: entry.droidId.trim(),
-              owned,
-              active: entry.active,
-              tier: normalizeTier(entry.tier),
-              notes: entry.notes,
+              name: name.trim(),
+              tier: normalizeTier(tier),
+              owned: patch.owned ?? true,
+              active: patch.active ?? false,
+              notes: patch.notes,
             });
           } else {
-            next[idx] = {
-              ...next[idx]!,
-              owned,
-              active: entry.active,
-              tier: normalizeTier(entry.tier),
-              notes: entry.notes ?? next[idx]!.notes,
-            };
+            const merged: CollectionCard = { ...next[idx]!, ...patch };
+            // If both flags are off, drop the entry to keep storage sparse.
+            if (!merged.owned && !merged.active) {
+              next.splice(idx, 1);
+            } else {
+              next[idx] = merged;
+            }
           }
-          return { roster: next };
+          return { cards: next };
         });
       },
 
-      removeDroid(droidId) {
-        set((s) => ({ roster: s.roster.filter((d) => d.droidId !== droidId) }));
-      },
-
-      toggleActive(droidId) {
-        set((s) => ({
-          roster: s.roster.map((d) =>
-            d.droidId === droidId ? { ...d, active: !d.active } : d,
-          ),
-        }));
-      },
-
-      setTier(droidId, tier) {
-        set((s) => ({
-          roster: s.roster.map((d) =>
-            d.droidId === droidId ? { ...d, tier: normalizeTier(tier) } : d,
-          ),
-        }));
+      cycleCard(name, tier) {
+        set((s) => {
+          const idx = s.cards.findIndex(
+            (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase() && c.tier === tier,
+          );
+          const current = idx >= 0 ? s.cards[idx] : undefined;
+          const next = cycleCardState(current);
+          const list = [...s.cards];
+          if (next === "remove") {
+            if (idx >= 0) list.splice(idx, 1);
+          } else if (idx < 0) {
+            list.push({ name: name.trim(), tier: normalizeTier(tier), owned: next.owned, active: next.active });
+          } else {
+            list[idx] = { ...current!, ...next };
+          }
+          return { cards: list };
+        });
       },
 
       addCustomDroid(def) {
@@ -131,11 +142,22 @@ export const useAppStore = create<AppStore>()(
         });
       },
 
+      setStandardRebirth(level) {
+        set((s) => ({
+          profile: { ...s.profile, standardRebirth: Math.max(0, Math.floor(level)) },
+        }));
+      },
+
+      setSuperRebirthMarker(level, rank) {
+        set((s) => ({
+          profile: { ...s.profile, superRebirth: { level, rank } },
+        }));
+      },
+
       upsertSuperRank(input) {
         set((s) => {
           const groups = s.superRebirths.map((g) => ({ ...g, ranks: [...g.ranks] }));
 
-          // Strip any existing rank from its old group (and prune empty groups).
           if (input.existingGroupId && input.existingRankId) {
             for (const g of groups) {
               if (g.id === input.existingGroupId) {
@@ -212,6 +234,10 @@ export const useAppStore = create<AppStore>()(
         set((s) => ({ ui: { ...s.ui, creditsCurrent: value } }));
       },
 
+      setUiPref(key, value) {
+        set((s) => ({ ui: { ...s.ui, [key]: value } }));
+      },
+
       replaceAll(state) {
         set(() => state);
       },
@@ -224,13 +250,11 @@ export const useAppStore = create<AppStore>()(
       name: STORAGE_KEY,
       storage: createJSONStorage(() => idbStorage),
       version: SCHEMA_VERSION,
-      // The persist middleware calls this with whatever shape was in storage.
-      // We hand it to `migrate` which knows every legacy format.
       migrate: (persisted) => migrate(persisted) as Partial<AppStore>,
-      // Don't persist function references; persist only the data slice.
       partialize: (state): PersistedState => ({
         schemaVersion: SCHEMA_VERSION,
-        roster: state.roster,
+        cards: state.cards,
+        profile: state.profile ?? defaultProfile(),
         customDroids: state.customDroids,
         superRebirths: state.superRebirths,
         standardOverrides: state.standardOverrides,
@@ -239,3 +263,5 @@ export const useAppStore = create<AppStore>()(
     },
   ),
 );
+
+export { defaultProfile };

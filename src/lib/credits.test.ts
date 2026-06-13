@@ -58,6 +58,42 @@ describe("formatCredits", () => {
   });
 });
 
+describe("parseIncome", () => {
+  it("strips /s suffix and parses flat values", async () => {
+    const { parseIncome } = await import("./credits");
+    expect(parseIncome("16/s")).toBe(16n);
+    expect(parseIncome("1.92k/s")).toBe(1_920n);
+    expect(parseIncome("4.08k/s")).toBe(4_080n);
+    expect(parseIncome("23.33k/s")).toBe(23_330n);
+  });
+
+  it("returns null for percentage incomes", async () => {
+    const { parseIncome } = await import("./credits");
+    expect(parseIncome("5%/s")).toBe(null);
+  });
+
+  it("returns 0n for empty/nullish", async () => {
+    const { parseIncome } = await import("./credits");
+    expect(parseIncome("")).toBe(0n);
+    expect(parseIncome(undefined)).toBe(0n);
+  });
+});
+
+describe("progressPercent", () => {
+  it("returns 100 when required is 0 or already covered", async () => {
+    const { progressPercent } = await import("./credits");
+    expect(progressPercent("", "0")).toBe(100);
+    expect(progressPercent("10K", "10K")).toBe(100);
+    expect(progressPercent("10K", "1M")).toBe(100);
+  });
+
+  it("scales linearly between 0 and 100", async () => {
+    const { progressPercent } = await import("./credits");
+    expect(progressPercent("10K", "5K")).toBeCloseTo(50, 0);
+    expect(progressPercent("100M", "25M")).toBeCloseTo(25, 0);
+  });
+});
+
 describe("creditsCover", () => {
   it("returns true when current >= required", () => {
     expect(creditsCover("10K", "10K")).toBe(true);

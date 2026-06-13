@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDroidDict } from "../../hooks/useDroidDict";
 import type { DroidDef } from "../../types";
-import { ClassPill } from "../common/ClassPill";
+import { ClassPill } from "./ClassPill";
 
 interface Props {
   value: string;

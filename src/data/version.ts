@@ -1,5 +1,5 @@
 /** Bumped when the seed dictionary or Standard Rebirth seed changes. */
-export const SEED_VERSION = 1;
+export const SEED_VERSION = 2;
 
 /**
  * Bumped when PersistedState's shape changes incompatibly. `migrate.ts`
@@ -7,7 +7,8 @@ export const SEED_VERSION = 1;
  *
  * v0 — prototype's `Array.isArray(raw)` flat-array shape (the original HTML).
  * v1 — `{ superRebirths, roster }` from the migration brief (§4).
- * v2 — Adds `owned`/`active` split, `customDroids`, `standardOverrides`,
- *      `ui` prefs. Tier strings uppercased.
+ * v2 — `owned`/`active` split, `customDroids`, `standardOverrides`, `ui`.
+ * v3 — Card-based collection (`cards` replaces `roster`), `profile` slice,
+ *      droid names uppercased + alias-resolved.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;

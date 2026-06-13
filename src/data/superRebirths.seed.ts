@@ -18,9 +18,9 @@ export const SUPER_REBIRTHS_SEED: readonly SuperRebirth[] = [
         credits: "10.00K",
         creditsReady: false,
         droids: [
-          { name: "Mouse", tier: "DEFAULT" },
-          { name: "Pit", tier: "DEFAULT" },
-          { name: "Gonk", tier: "DEFAULT" },
+          { name: "MOUSE", tier: "DEFAULT" },
+          { name: "PIT", tier: "DEFAULT" },
+          { name: "GONK", tier: "DEFAULT" },
         ],
         gain: {
           credits: "2K",

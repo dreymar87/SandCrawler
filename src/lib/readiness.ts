@@ -1,38 +1,39 @@
-import type { Rank, RebirthReq, RosterEntry, StandardRebirth, Tier } from "../types";
+import type { CollectionCard, Rank, RebirthReq, StandardRebirth, Tier } from "../types";
 import { satisfies, tierGap, tierRank } from "./tiers";
 import { parseCredits } from "./credits";
 import { normalizeName } from "./normalize";
 
-/** Roster entries that count toward rebirth requirements (active = Working or Lounge). */
-export function activeRoster(roster: readonly RosterEntry[]): RosterEntry[] {
-  return roster.filter((d) => d.active);
+/** Cards that count toward rebirth requirements (active = Working or Lounge). */
+export function activeCards(cards: readonly CollectionCard[]): CollectionCard[] {
+  return cards.filter((c) => c.active);
 }
 
 /**
- * Does any active droid in the roster cover this single requirement? Match by
- * normalized name AND tier substitution (owned tier >= required tier).
+ * Does any active card in the collection cover this single requirement?
+ * Match by normalized name AND tier substitution (owned tier ≥ required).
  *
- * This is the prototype's `rosterCovers` (§5 of the brief), now with proper
- * name normalisation so "Mono-Walker" matches "MONO-WLKR".
+ * This is the prototype's `rosterCovers` (§5 of the brief), retargeted at
+ * the card-based collection. Tier substitution means an active MOUSE@GOLD
+ * card satisfies a MOUSE@DEFAULT requirement.
  */
-export function rosterCovers(req: RebirthReq, roster: readonly RosterEntry[]): boolean {
+export function rosterCovers(req: RebirthReq, cards: readonly CollectionCard[]): boolean {
   const reqKey = normalizeName(req.name);
-  return roster.some(
-    (d) =>
-      d.active &&
-      normalizeName(d.droidId) === reqKey &&
-      satisfies(req.tier, d.tier),
+  return cards.some(
+    (c) =>
+      c.active &&
+      normalizeName(c.name) === reqKey &&
+      satisfies(req.tier, c.tier),
   );
 }
 
-/** Best owned tier for `name` across the active roster, or `null` if none active. */
-export function bestOwnedTier(name: string, roster: readonly RosterEntry[]): Tier | null {
+/** Best owned tier for `name` across active cards, or `null` if none active. */
+export function bestOwnedTier(name: string, cards: readonly CollectionCard[]): Tier | null {
   const key = normalizeName(name);
   let best: Tier | null = null;
-  for (const d of roster) {
-    if (!d.active) continue;
-    if (normalizeName(d.droidId) !== key) continue;
-    if (best === null || tierRank(d.tier) > tierRank(best)) best = d.tier;
+  for (const c of cards) {
+    if (!c.active) continue;
+    if (normalizeName(c.name) !== key) continue;
+    if (best === null || tierRank(c.tier) > tierRank(best)) best = c.tier;
   }
   return best;
 }
@@ -41,10 +42,10 @@ export function bestOwnedTier(name: string, roster: readonly RosterEntry[]): Tie
  * Ported from the prototype (§5). A Super Rebirth rank is "ready" when every
  * droid is covered AND the user has flagged the credits as ready.
  */
-export function rankReady(rank: Rank, roster: readonly RosterEntry[]): boolean {
+export function rankReady(rank: Rank, cards: readonly CollectionCard[]): boolean {
   return (
     rank.droids.length > 0 &&
-    rank.droids.every((req) => rosterCovers(req, roster)) &&
+    rank.droids.every((req) => rosterCovers(req, cards)) &&
     rank.creditsReady
   );
 }
@@ -56,11 +57,11 @@ export function rankReady(rank: Rank, roster: readonly RosterEntry[]): boolean {
  */
 export function standardRebirthReady(
   rb: StandardRebirth,
-  roster: readonly RosterEntry[],
+  cards: readonly CollectionCard[],
   currentCredits: string,
 ): boolean {
   if (rb.needs.length === 0) return false;
-  if (!rb.needs.every((req) => rosterCovers(req, roster))) return false;
+  if (!rb.needs.every((req) => rosterCovers(req, cards))) return false;
   return parseCredits(currentCredits) >= parseCredits(rb.credits);
 }
 
@@ -94,12 +95,12 @@ export interface ScoredRank {
 export function scoreRequirements(
   needs: readonly RebirthReq[],
   requiredCredits: string,
-  roster: readonly RosterEntry[],
+  cards: readonly CollectionCard[],
   currentCredits: string,
 ): ScoredRank {
   const gaps: Gap[] = [];
   for (const req of needs) {
-    const owned = bestOwnedTier(req.name, roster);
+    const owned = bestOwnedTier(req.name, cards);
     const gap = tierGap(req.tier, owned);
     if (gap > 0 || owned === null) {
       gaps.push({ name: req.name, requiredTier: req.tier, ownedTier: owned, tierGap: gap });

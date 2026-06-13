@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { Rank, RosterEntry, StandardRebirth } from "../types";
+import type { CollectionCard, Rank, StandardRebirth } from "../types";
 import {
-  activeRoster,
+  activeCards,
   bestOwnedTier,
   rankReady,
   rosterCovers,
@@ -9,26 +9,26 @@ import {
   standardRebirthReady,
 } from "./readiness";
 
-const mouseDefault: RosterEntry = { droidId: "Mouse", owned: true, active: true, tier: "DEFAULT" };
-const mouseGold: RosterEntry = { droidId: "Mouse", owned: true, active: true, tier: "GOLD" };
-const mouseInactive: RosterEntry = { droidId: "Mouse", owned: true, active: false, tier: "BESKAR" };
-const pitDefault: RosterEntry = { droidId: "Pit", owned: true, active: true, tier: "DEFAULT" };
-const gonkDefault: RosterEntry = { droidId: "Gonk", owned: true, active: true, tier: "DEFAULT" };
+const mouseDefault: CollectionCard = { name: "MOUSE", tier: "DEFAULT", owned: true, active: true };
+const mouseGold: CollectionCard = { name: "MOUSE", tier: "GOLD", owned: true, active: true };
+const mouseInactive: CollectionCard = { name: "MOUSE", tier: "BESKAR", owned: true, active: false };
+const pitDefault: CollectionCard = { name: "PIT", tier: "DEFAULT", owned: true, active: true };
+const gonkDefault: CollectionCard = { name: "GONK", tier: "DEFAULT", owned: true, active: true };
 
-describe("activeRoster", () => {
-  it("filters to active droids only", () => {
-    expect(activeRoster([mouseDefault, mouseInactive])).toEqual([mouseDefault]);
+describe("activeCards", () => {
+  it("filters to active cards only", () => {
+    expect(activeCards([mouseDefault, mouseInactive])).toEqual([mouseDefault]);
   });
 });
 
 describe("rosterCovers", () => {
   it("matches by normalized name and tier substitution", () => {
-    expect(rosterCovers({ name: "Mouse", tier: "DEFAULT" }, [mouseGold])).toBe(true);
+    expect(rosterCovers({ name: "MOUSE", tier: "DEFAULT" }, [mouseGold])).toBe(true);
     expect(rosterCovers({ name: "mouse", tier: "DEFAULT" }, [mouseDefault])).toBe(true);
     // Punctuation differences alone don't break the match (alias logic for
     // WLKR<->Walker lives in the droid dictionary, not here).
     expect(rosterCovers({ name: "MONO-WLKR", tier: "DEFAULT" }, [
-      { droidId: "Mono Wlkr", owned: true, active: true, tier: "DEFAULT" },
+      { name: "Mono Wlkr", tier: "DEFAULT", owned: true, active: true },
     ])).toBe(true);
   });
 
@@ -87,21 +87,21 @@ describe("standardRebirthReady", () => {
     level: 1,
     credits: "10K",
     needs: [
-      { name: "C8", tier: "DEFAULT" },
-      { name: "Pit", tier: "DEFAULT" },
-      { name: "DRK-1", tier: "DEFAULT" },
+      { name: "CB", tier: "DEFAULT" },
+      { name: "PIT", tier: "DEFAULT" },
+      { name: "DRK-1 PROBE", tier: "DEFAULT" },
     ],
     source: "seed",
   };
 
   it("requires droids covered AND credits >= threshold", () => {
-    const roster: RosterEntry[] = [
-      { droidId: "C8", owned: true, active: true, tier: "DEFAULT" },
-      { droidId: "Pit", owned: true, active: true, tier: "DEFAULT" },
-      { droidId: "DRK-1", owned: true, active: true, tier: "DEFAULT" },
+    const cards: CollectionCard[] = [
+      { name: "CB", tier: "DEFAULT", owned: true, active: true },
+      { name: "PIT", tier: "DEFAULT", owned: true, active: true },
+      { name: "DRK-1 PROBE", tier: "DEFAULT", owned: true, active: true },
     ];
-    expect(standardRebirthReady(rb, roster, "10K")).toBe(true);
-    expect(standardRebirthReady(rb, roster, "9K")).toBe(false);
+    expect(standardRebirthReady(rb, cards, "10K")).toBe(true);
+    expect(standardRebirthReady(rb, cards, "9K")).toBe(false);
   });
 });
 

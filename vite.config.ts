@@ -4,9 +4,8 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 
-// PWA registration is scaffolded but disabled by default in this first pass.
-// Flip VITE_PWA=1 to enable in a later milestone.
-const pwaEnabled = process.env.VITE_PWA === "1";
+// PWA install / offline support. Set VITE_PWA=0 to disable.
+const pwaEnabled = process.env.VITE_PWA !== "0";
 
 export default defineConfig({
   resolve: {
@@ -18,8 +17,9 @@ export default defineConfig({
     react(),
     VitePWA({
       disable: !pwaEnabled,
-      registerType: "prompt",
-      injectRegister: false,
+      registerType: "autoUpdate",
+      injectRegister: "auto",
+      includeAssets: ["favicon.svg"],
       manifest: {
         name: "SandCrawler",
         short_name: "SandCrawler",
@@ -28,9 +28,15 @@ export default defineConfig({
         theme_color: "#0A0E15",
         background_color: "#0A0E15",
         display: "standalone",
+        start_url: "/",
         icons: [
-          { src: "/favicon.svg", sizes: "any", type: "image/svg+xml" },
+          { src: "/favicon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
+          { src: "/favicon.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
         ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,woff,woff2}"],
+        navigateFallback: "/index.html",
       },
     }),
   ],

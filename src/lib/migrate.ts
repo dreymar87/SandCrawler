@@ -1,5 +1,14 @@
+import { DROID_DICT } from "../data/droids.seed";
 import { SCHEMA_VERSION } from "../data/version";
-import type { PersistedState, RebirthGain, RosterEntry, SuperRebirth, Tier } from "../types";
+import type {
+  CollectionCard,
+  PersistedState,
+  Profile,
+  RebirthGain,
+  SuperRebirth,
+  TabKey,
+} from "../types";
+import { buildDroidIndex } from "./autocomplete";
 import { normalizeTier } from "./tiers";
 
 /**
@@ -7,13 +16,15 @@ import { normalizeTier } from "./tiers";
  *
  * v0 — prototype's flat-array export (an array of rank-like records).
  * v1 — `{ superRebirths, roster }` shape from the migration brief (§4).
- * v2 — current shape: `owned`/`active` split, `customDroids`, `ui` prefs,
- *      uppercase tiers, schemaVersion field on the payload.
+ * v2 — `owned`/`active` split, `customDroids`, `standardOverrides`, `ui`.
+ *      (Pass-1 SandCrawler exports look like this.)
+ * v3 — Card-based collection (`cards` replaces `roster`), `profile` slice,
+ *      droid names uppercased + alias-resolved against the seed dict.
  */
 export function migrate(raw: unknown): PersistedState {
   // v0: an array at the root is the prototype's oldest export format.
   if (Array.isArray(raw)) {
-    return v2FromV1(v1FromV0(raw));
+    return v3FromIntermediate(v1FromV0(raw));
   }
 
   if (raw && typeof raw === "object") {
@@ -22,12 +33,9 @@ export function migrate(raw: unknown): PersistedState {
     if (obj.app === "sandcrawler" && obj.payload && typeof obj.payload === "object") {
       return migrate(obj.payload);
     }
-    const declaredVersion = typeof obj.schemaVersion === "number" ? obj.schemaVersion : null;
-    if (declaredVersion === SCHEMA_VERSION) {
-      return coerceV2(obj);
-    }
-    // Treat any object without a current version as v1-shaped (or close to it).
-    return v2FromV1(obj);
+    // Everything below feeds through the same upgrade path; the function
+    // accepts both v1 and v2 shapes and is idempotent on v3.
+    return v3FromIntermediate(obj);
   }
 
   return emptyState();
@@ -36,16 +44,21 @@ export function migrate(raw: unknown): PersistedState {
 export function emptyState(): PersistedState {
   return {
     schemaVersion: SCHEMA_VERSION,
-    roster: [],
+    cards: [],
+    profile: defaultProfile(),
     customDroids: [],
     superRebirths: [],
     standardOverrides: [],
-    ui: { activeTab: "collection", creditsCurrent: "" },
+    ui: { activeTab: "droidex", creditsCurrent: "" },
   };
 }
 
+export function defaultProfile(): Profile {
+  return { standardRebirth: 0, superRebirth: { level: "", rank: "" } };
+}
+
+// ── v0 → v1 lift ─────────────────────────────────────────────────────────
 function v1FromV0(arr: unknown[]): Record<string, unknown> {
-  // Lift a flat array of rank-like records into a single Super Rebirth group.
   return {
     superRebirths: [
       {
@@ -75,7 +88,21 @@ function v1FromV0(arr: unknown[]): Record<string, unknown> {
   };
 }
 
-function v2FromV1(obj: Record<string, unknown>): PersistedState {
+/**
+ * Accepts any v1/v2/v3-shaped object and returns a v3 PersistedState. Idempotent.
+ *
+ * Key transformations:
+ *  - v1's `{name,tier,status}` roster entries → v2's `{droidId,tier,owned,active}` → v3's cards
+ *  - v2's `{droidId,tier,owned,active}` roster → v3's `{name,tier,owned,active}` cards
+ *  - Droid names canonicalised against the seed dict (handles "Mouse" → "MOUSE", aliases)
+ *  - Tier strings re-uppercased
+ *  - `profile` populated with defaults if missing
+ *  - `activeTab` defaults to "droidex"
+ */
+function v3FromIntermediate(obj: Record<string, unknown>): PersistedState {
+  const idx = buildDroidIndex(DROID_DICT);
+  const resolveName = (raw: string): string => idx.resolve(raw)?.canonical ?? raw.trim();
+
   const superRebirths: SuperRebirth[] = Array.isArray(obj.superRebirths)
     ? (obj.superRebirths as Record<string, unknown>[]).map((g) => ({
         id: (g.id as string) || makeId(),
@@ -88,7 +115,7 @@ function v2FromV1(obj: Record<string, unknown>): PersistedState {
               creditsReady: !!r.creditsReady,
               droids: Array.isArray(r.droids)
                 ? (r.droids as Record<string, unknown>[]).map((d) => ({
-                    name: (d.name as string) ?? "",
+                    name: resolveName(((d.name as string) ?? "")),
                     tier: normalizeTier(d.tier as string | undefined),
                   }))
                 : [],
@@ -99,45 +126,89 @@ function v2FromV1(obj: Record<string, unknown>): PersistedState {
       }))
     : [];
 
-  // The v1 roster lacked an `owned`/`active` split. Map "Working"/"Lounge"
-  // statuses to active=true; everything else to active=false (still owned).
-  const roster: RosterEntry[] = Array.isArray(obj.roster)
-    ? (obj.roster as Record<string, unknown>[]).map((d) => {
-        const status = String(d.status ?? "Working");
-        const explicitActive = typeof d.active === "boolean" ? (d.active as boolean) : null;
-        const active = explicitActive ?? (status === "Working" || status === "Lounge");
-        return {
-          droidId: (d.name as string) ?? (d.droidId as string) ?? "",
-          owned: typeof d.owned === "boolean" ? (d.owned as boolean) : true,
-          active,
-          tier: normalizeTier(d.tier as string | undefined) as Tier,
-          notes: (d.notes as string) ?? undefined,
-        };
-      })
-    : [];
+  // Cards can arrive in three shapes:
+  //   v3:  obj.cards: [{name,tier,owned,active,notes}]
+  //   v2:  obj.roster: [{droidId,tier,owned,active}]
+  //   v1:  obj.roster: [{name,tier,status: "Working"|"Lounge"}]
+  let cards: CollectionCard[] = [];
+  if (Array.isArray(obj.cards)) {
+    cards = (obj.cards as Record<string, unknown>[]).map((c) => ({
+      name: resolveName(((c.name as string) ?? "")),
+      tier: normalizeTier(c.tier as string | undefined),
+      owned: c.owned !== false,
+      active: !!c.active,
+      notes: (c.notes as string) ?? undefined,
+    }));
+  } else if (Array.isArray(obj.roster)) {
+    cards = (obj.roster as Record<string, unknown>[]).map((d) => {
+      const rawName = ((d.droidId as string) ?? (d.name as string) ?? "").toString();
+      const status = String(d.status ?? "");
+      const explicitActive = typeof d.active === "boolean" ? (d.active as boolean) : null;
+      const active = explicitActive ?? (status === "Working" || status === "Lounge");
+      const owned = typeof d.owned === "boolean" ? (d.owned as boolean) : true;
+      return {
+        name: resolveName(rawName),
+        tier: normalizeTier(d.tier as string | undefined),
+        owned,
+        active,
+        notes: (d.notes as string) ?? undefined,
+      };
+    });
+  }
+  // Dedupe by (name, tier) — old data could conceivably have duplicates.
+  const cardKey = (c: CollectionCard) => `${c.name}::${c.tier}`;
+  const cardMap = new Map<string, CollectionCard>();
+  for (const c of cards) {
+    if (!c.name) continue;
+    const k = cardKey(c);
+    const prev = cardMap.get(k);
+    cardMap.set(k, prev ? mergeCards(prev, c) : c);
+  }
+
+  const profile: Profile =
+    obj.profile && typeof obj.profile === "object"
+      ? coerceProfile(obj.profile as Record<string, unknown>)
+      : defaultProfile();
+
+  const uiRaw = (obj.ui && typeof obj.ui === "object" ? (obj.ui as Record<string, unknown>) : {}) as Record<string, unknown>;
 
   return {
     schemaVersion: SCHEMA_VERSION,
-    roster,
+    cards: Array.from(cardMap.values()),
+    profile,
     customDroids: Array.isArray(obj.customDroids) ? (obj.customDroids as PersistedState["customDroids"]) : [],
     superRebirths,
     standardOverrides: Array.isArray(obj.standardOverrides)
       ? (obj.standardOverrides as PersistedState["standardOverrides"])
       : [],
-    ui:
-      obj.ui && typeof obj.ui === "object"
-        ? {
-            ...(obj.ui as PersistedState["ui"]),
-            activeTab: ((obj.ui as Record<string, unknown>).activeTab as PersistedState["ui"]["activeTab"]) ?? "collection",
-            creditsCurrent: ((obj.ui as Record<string, unknown>).creditsCurrent as string) ?? "",
-          }
-        : { activeTab: "collection", creditsCurrent: "" },
+    ui: {
+      ...uiRaw,
+      activeTab: (uiRaw.activeTab as TabKey) || "droidex",
+      creditsCurrent: (uiRaw.creditsCurrent as string) ?? "",
+    } as PersistedState["ui"],
   };
 }
 
-/** Re-run the v1→v2 path even on already-v2 data so any tier strings get re-normalised. */
-function coerceV2(obj: Record<string, unknown>): PersistedState {
-  return v2FromV1(obj);
+function mergeCards(a: CollectionCard, b: CollectionCard): CollectionCard {
+  return {
+    name: a.name,
+    tier: a.tier,
+    owned: a.owned || b.owned,
+    active: a.active || b.active,
+    notes: a.notes ?? b.notes,
+  };
+}
+
+function coerceProfile(p: Record<string, unknown>): Profile {
+  const std = typeof p.standardRebirth === "number" ? p.standardRebirth : 0;
+  const sr = (p.superRebirth as Record<string, unknown>) ?? {};
+  return {
+    standardRebirth: Math.max(0, Math.floor(std)),
+    superRebirth: {
+      level: String(sr.level ?? ""),
+      rank: String(sr.rank ?? ""),
+    },
+  };
 }
 
 function makeId(): string {

@@ -10,11 +10,11 @@ interface Props {
 }
 
 export function RankCard({ groupId, rank, onEdit }: Props) {
-  const roster = useAppStore((s) => s.roster);
+  const cards = useAppStore((s) => s.cards);
   const toggleCredits = useAppStore((s) => s.toggleRankCredits);
   const deleteRank = useAppStore((s) => s.deleteSuperRank);
 
-  const ready = rankReady(rank, roster);
+  const ready = rankReady(rank, cards);
   const gain = rank.gain ?? {};
 
   return (
@@ -107,7 +107,7 @@ export function RankCard({ groupId, rank, onEdit }: Props) {
           <div className="text-muted text-sm">No droids recorded</div>
         ) : (
           rank.droids.map((req, i) => {
-            const cov = rosterCovers(req, roster);
+            const cov = rosterCovers(req, cards);
             return (
               <div
                 key={`${req.name}-${i}`}

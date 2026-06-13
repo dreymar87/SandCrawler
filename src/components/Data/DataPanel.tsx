@@ -20,7 +20,8 @@ export function DataPanel() {
     const s = useAppStore.getState();
     return {
       schemaVersion: SCHEMA_VERSION,
-      roster: s.roster,
+      cards: s.cards,
+      profile: s.profile,
       customDroids: s.customDroids,
       superRebirths: s.superRebirths,
       standardOverrides: s.standardOverrides,

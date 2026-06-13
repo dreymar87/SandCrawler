@@ -1,12 +1,13 @@
 import { useStandardRebirths, useStandardReadiness } from "../../store/selectors";
 import { rosterCovers } from "../../lib/readiness";
 import { useAppStore } from "../../store/useAppStore";
+import { ProgressBar } from "../common/ProgressBar";
 import { TierPill } from "../common/TierPill";
 
 export function StandardRebirthList() {
   const list = useStandardRebirths();
   const ready = useStandardReadiness();
-  const roster = useAppStore((s) => s.roster);
+  const cards = useAppStore((s) => s.cards);
   const credits = useAppStore((s) => s.ui.creditsCurrent);
   const setCredits = useAppStore((s) => s.setCreditsCurrent);
 
@@ -58,12 +59,15 @@ export function StandardRebirthList() {
                 </span>
               </header>
               <div className="px-4 py-3">
+                <div className="mb-3">
+                  <ProgressBar required={rb.credits || "0"} current={credits} />
+                </div>
                 <div className="section-label mb-2">Droids needed</div>
                 {rb.needs.length === 0 ? (
                   <div className="text-muted text-sm">No droids logged for this rebirth yet.</div>
                 ) : (
                   rb.needs.map((req, i) => {
-                    const cov = rosterCovers(req, roster);
+                    const cov = rosterCovers(req, cards);
                     return (
                       <div
                         key={`${req.name}-${i}`}
