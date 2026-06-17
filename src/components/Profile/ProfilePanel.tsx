@@ -1,24 +1,38 @@
 import { MAX_STANDARD_REBIRTH } from "../../constants";
 import { SQUAD_DEFS } from "../../data/squads.seed";
+import { crystalsEarnedThrough } from "../../lib/novaCrystals";
 import { formatPerSecond } from "../../lib/production";
-import { useProduction, useSquadCapacity } from "../../store/selectors";
+import { ALL_CYCLES, cycleLabel } from "../../lib/rebirthCycles";
+import {
+  useActiveCycle,
+  useNovaBalance,
+  useProduction,
+  useSquadCapacity,
+} from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
+import type { RebirthCycle } from "../../types";
 
 /**
- * The Profile tab: where the player tells the app where they currently
- * are, and the app shows what that unlocks (squad capacity) and how much
- * they're earning (production).
+ * The Profile tab: tell the app where you currently are, and the app
+ * answers with squad capacity, production, and Nova balance.
  */
 export function ProfilePanel() {
   const standardRebirth = useAppStore((s) => s.profile.standardRebirth);
-  const superMarker = useAppStore((s) => s.profile.superRebirth);
+  const superRebirthCount = useAppStore((s) => s.profile.superRebirthCount);
+  const cycleOverride = useAppStore((s) => s.profile.cycleOverride);
+  const novaEarned = useAppStore((s) => s.profile.novaEarned);
   const setStd = useAppStore((s) => s.setStandardRebirth);
-  const setSuperMarker = useAppStore((s) => s.setSuperRebirthMarker);
+  const setSrbCount = useAppStore((s) => s.setSuperRebirthCount);
+  const setCycleOverride = useAppStore((s) => s.setCycleOverride);
+  const setNovaEarned = useAppStore((s) => s.setNovaEarned);
   const credits = useAppStore((s) => s.ui.creditsCurrent);
   const setCredits = useAppStore((s) => s.setCreditsCurrent);
 
   const capacity = useSquadCapacity();
   const production = useProduction();
+  const activeCycle = useActiveCycle();
+  const nova = useNovaBalance();
+  const autoEarned = crystalsEarnedThrough(standardRebirth);
 
   return (
     <div className="space-y-4">
@@ -45,49 +59,51 @@ export function ProfilePanel() {
               aria-label="Standard Rebirth level"
             />
             <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
-              0 → {MAX_STANDARD_REBIRTH}. Next Unlock will hide rebirths at or below this level.
+              0 → {MAX_STANDARD_REBIRTH}. Next Unlock skips rebirths at or below this level.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Current Super Rebirth */}
+      {/* Super Rebirth + active cycle */}
       <section className="card p-4">
-        <h2 className="font-display font-bold text-base mb-3">Super Rebirth</h2>
-        <div className="grid grid-cols-2 gap-3">
+        <h2 className="font-display font-bold text-base mb-3">Super Rebirth &amp; cycle</h2>
+        <div className="grid grid-cols-[1fr_2fr] gap-3 items-end">
           <div>
-            <label className="field-label" htmlFor="p-sr-level">
-              Level
+            <label className="field-label" htmlFor="p-srb">
+              Super Rebirths completed
             </label>
             <input
-              id="p-sr-level"
-              type="text"
-              inputMode="numeric"
-              className="input"
-              placeholder="e.g. 2"
-              value={superMarker.level}
-              onChange={(e) => setSuperMarker(e.target.value, superMarker.rank)}
+              id="p-srb"
+              type="number"
+              min={0}
+              className="input text-center font-display font-bold text-xl"
+              value={superRebirthCount}
+              onChange={(e) => setSrbCount(Number(e.target.value) || 0)}
             />
           </div>
           <div>
-            <label className="field-label" htmlFor="p-sr-rank">
-              Rank
-            </label>
-            <input
-              id="p-sr-rank"
-              type="text"
-              inputMode="numeric"
-              className="input"
-              placeholder="e.g. 1"
-              value={superMarker.rank}
-              onChange={(e) => setSuperMarker(superMarker.level, e.target.value)}
-            />
+            <span className="field-label">Active cycle</span>
+            <div className="grid grid-cols-5 gap-1.5">
+              <CyclePill
+                label="Auto"
+                active={cycleOverride === null}
+                onClick={() => setCycleOverride(null)}
+              />
+              {ALL_CYCLES.map((c) => (
+                <CyclePill
+                  key={c}
+                  label={`RBC${c}`}
+                  active={cycleOverride === c}
+                  onClick={() => setCycleOverride(c as RebirthCycle)}
+                />
+              ))}
+            </div>
+            <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
+              {cycleLabel(activeCycle)} → cycles loop every 4 Super Rebirths.
+            </p>
           </div>
         </div>
-        <p className="font-mono text-[10.5px] text-muted-alt mt-2">
-          Super Rebirth requirements aren't publicly documented — log them as you encounter them on
-          the Super tab.
-        </p>
       </section>
 
       {/* Current credits */}
@@ -104,7 +120,41 @@ export function ProfilePanel() {
           spellCheck={false}
         />
         <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
-          Used by Standard Rebirth progress bars and Next Unlock scoring.
+          Used by rebirth progress bars and Next Unlock scoring.
+        </p>
+      </section>
+
+      {/* Nova Crystals balance */}
+      <section className="card p-4">
+        <h2 className="font-display font-bold text-base mb-3">Nova Crystals</h2>
+        <div className="grid grid-cols-3 gap-2.5 mb-3">
+          <StatBlock n={nova.earned} k="Earned" />
+          <StatBlock n={nova.spent} k="Spent" />
+          <StatBlock n={nova.balance} k="Balance" highlight />
+        </div>
+        <label className="field-label" htmlFor="p-nova">
+          Total earned (manual)
+        </label>
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <input
+            id="p-nova"
+            type="number"
+            min={0}
+            className="input"
+            value={novaEarned}
+            onChange={(e) => setNovaEarned(Number(e.target.value) || 0)}
+          />
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm whitespace-nowrap"
+            onClick={() => setNovaEarned(autoEarned)}
+            title={`Sum crystals from Standard Rebirths 12..${standardRebirth}`}
+          >
+            Set from RB ({autoEarned})
+          </button>
+        </div>
+        <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
+          "Spent" is derived from your Nova Shop upgrade levels.
         </p>
       </section>
 
@@ -127,12 +177,12 @@ export function ProfilePanel() {
         ) : null}
         {production.contributors === 0 ? (
           <p className="text-muted text-[13px]">
-            Mark some cards Active on the Droidex tab to start tracking your base's output.
+            Mark some cards Active on the Droidex tab to track your base's output.
           </p>
         ) : null}
       </section>
 
-      {/* Squad slot capacity */}
+      {/* Squad capacity */}
       <section className="card p-4">
         <h2 className="font-display font-bold text-base mb-3">Squads &amp; slots</h2>
         <div className="space-y-2.5">
@@ -166,6 +216,31 @@ export function ProfilePanel() {
           })}
         </div>
       </section>
+    </div>
+  );
+}
+
+function CyclePill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`font-mono text-[10.5px] uppercase tracking-wider px-2 py-2 rounded-md border ${
+        active ? "border-holo text-holo bg-holo/10" : "border-line-alt text-muted hover:text-ink"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function StatBlock({ n, k, highlight }: { n: number; k: string; highlight?: boolean }) {
+  return (
+    <div className="rounded-[10px] border border-line bg-panel-alt p-2.5 text-center">
+      <div className={`font-display font-bold text-xl ${highlight ? "text-holo" : "text-ink"}`}>
+        {n.toLocaleString()}
+      </div>
+      <div className="font-mono text-[9px] uppercase tracking-wider text-muted-alt mt-1">{k}</div>
     </div>
   );
 }

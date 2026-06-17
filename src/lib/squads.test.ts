@@ -21,10 +21,11 @@ describe("getMaxSlots", () => {
     expect(getMaxSlots("COMPANION", 23)).toBe(1);
   });
 
-  it("Lounge unlocks late (17–20)", () => {
-    expect(getMaxSlots("LOUNGE", 16)).toBe(5);
-    expect(getMaxSlots("LOUNGE", 17)).toBe(6);
-    expect(getMaxSlots("LOUNGE", 20)).toBe(9);
+  it("Lounge unlocks at RB16–20 (corrected per Cait/Omega's sheet)", () => {
+    expect(getMaxSlots("LOUNGE", 15)).toBe(5);
+    expect(getMaxSlots("LOUNGE", 16)).toBe(6);
+    expect(getMaxSlots("LOUNGE", 17)).toBe(7);
+    expect(getMaxSlots("LOUNGE", 20)).toBe(10);
   });
 });
 

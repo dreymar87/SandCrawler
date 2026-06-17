@@ -1,11 +1,25 @@
 import type { DroidClass, Rarity, TabKey, Tier } from "./types";
 
-/** Ordered low → high. Index doubles as the tier rank. */
-export const TIERS = ["DEFAULT", "GOLD", "DIAMOND", "RAINBOW", "BESKAR"] as const satisfies readonly Tier[];
+/**
+ * Tier ordering: upgrade path (DEFAULT → BESKAR) plus FLAWLESS as a
+ * 6th slot. FLAWLESS isn't reached by upgrading — it's a 1/1000 spawn
+ * variant — but a FLAWLESS card outranks BESKAR for tier substitution.
+ */
+export const TIERS = [
+  "DEFAULT",
+  "GOLD",
+  "DIAMOND",
+  "RAINBOW",
+  "BESKAR",
+  "FLAWLESS",
+] as const satisfies readonly Tier[];
+
+/** Upgrade-progression tiers (FLAWLESS excluded). Used by stat tables and chip costs. */
+export const UPGRADE_TIERS = ["DEFAULT", "GOLD", "DIAMOND", "RAINBOW", "BESKAR"] as const satisfies readonly Tier[];
 
 export const CLASSES = ["WORKER", "ASTROMECH", "BATTLE", "UNKNOWN"] as const satisfies readonly DroidClass[];
 
-export const RARITIES = ["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"] as const satisfies readonly Rarity[];
+export const RARITIES = ["COMMON", "RARE", "EPIC", "LEGENDARY", "ICONIC"] as const satisfies readonly Rarity[];
 
 /** The highest Standard Rebirth level we have data for. */
 export const MAX_STANDARD_REBIRTH = 23;
@@ -26,10 +40,19 @@ export const CREDIT_SUFFIXES: Record<string, bigint> = {
 export const TAB_LABELS: Record<TabKey, string> = {
   droidex: "Droidex",
   profile: "Profile",
-  standard: "Standard",
-  super: "Super",
+  rebirths: "Rebirths",
+  cosmetics: "Cosmetics",
+  nova: "Nova Shop",
   "next-unlock": "Next Unlock",
   data: "Data",
 };
 
-export const TAB_ORDER: TabKey[] = ["droidex", "profile", "standard", "super", "next-unlock", "data"];
+export const TAB_ORDER: TabKey[] = [
+  "droidex",
+  "profile",
+  "rebirths",
+  "cosmetics",
+  "nova",
+  "next-unlock",
+  "data",
+];

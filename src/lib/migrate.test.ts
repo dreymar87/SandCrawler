@@ -9,7 +9,9 @@ describe("migrate", () => {
     expect(migrate("nonsense")).toEqual(emptyState());
   });
 
-  it("lifts a v0 prototype flat-array into Super Rebirth 1", () => {
+  it("lifts a v0 prototype flat-array (the manual SR slice is discarded in v4)", () => {
+    // v0 rebirth-rank shape is no longer rendered, but the migration must still
+    // succeed without throwing. Cards / cosmetics / nova remain empty.
     const v0 = [
       {
         credits: "10K",
@@ -23,43 +25,16 @@ describe("migrate", () => {
     ];
     const state = migrate(v0);
     expect(state.schemaVersion).toBe(SCHEMA_VERSION);
-    expect(state.superRebirths).toHaveLength(1);
-    const grp = state.superRebirths[0]!;
-    expect(grp.level).toBe("1");
-    expect(grp.ranks).toHaveLength(1);
-    const rank = grp.ranks[0]!;
-    expect(rank.rank).toBe("1");
-    expect(rank.credits).toBe("10K");
-    // Names resolve via the dict, tiers uppercase.
-    expect(rank.droids).toEqual([
-      { name: "MOUSE", tier: "DEFAULT" },
-      { name: "PIT", tier: "GOLD" },
-    ]);
-    expect(rank.notes).toBe("from prototype");
+    expect(state.cards).toEqual([]);
+    expect(state.cosmetics).toEqual([]);
+    expect(state.novaUpgrades).toEqual([]);
+    expect(state.profile).toEqual(defaultProfile());
   });
 
-  it("upgrades a v1-shaped payload (brief §4) into v3", () => {
+  it("upgrades a v1-shaped payload into v4 cards (drops the SR slice)", () => {
     const v1 = {
       superRebirths: [
-        {
-          id: "g1",
-          level: "2",
-          ranks: [
-            {
-              id: "r1",
-              rank: "1",
-              credits: "10.00K",
-              creditsReady: false,
-              droids: [
-                { name: "Mouse", tier: "Default" },
-                { name: "Pit", tier: "Default" },
-                { name: "Gonk", tier: "Default" },
-              ],
-              gain: { credits: "2K", multiplier: "+45%", slot: "Worker", force: "Push" },
-              notes: "",
-            },
-          ],
-        },
+        { id: "g1", level: "2", ranks: [{ rank: "1", droids: [{ name: "Mouse", tier: "Default" }] }] },
       ],
       roster: [
         { id: "d1", name: "Mouse", tier: "Gold", status: "Working" },
@@ -68,23 +43,13 @@ describe("migrate", () => {
     };
     const state = migrate(v1);
     expect(state.schemaVersion).toBe(SCHEMA_VERSION);
-    // Droid req tiers uppercased + names resolved to canonical.
-    expect(state.superRebirths[0]?.ranks[0]?.droids[0]).toEqual({ name: "MOUSE", tier: "DEFAULT" });
-    expect(state.superRebirths[0]?.ranks[0]?.gain).toEqual({
-      credits: "2K",
-      multiplier: "+45%",
-      slot: "Worker",
-      force: "Push",
-    });
-    // Roster collapsed into cards with canonical names + active=true.
     expect(state.cards).toHaveLength(2);
-    expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", active: true, owned: true });
-    expect(state.cards[1]).toMatchObject({ name: "PIT", tier: "DEFAULT", active: true, owned: true });
-    // Profile bootstrapped to defaults.
+    expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", active: true });
+    expect(state.cards[1]).toMatchObject({ name: "PIT", tier: "DEFAULT", active: true });
     expect(state.profile).toEqual(defaultProfile());
   });
 
-  it("upgrades Pass-1 (v2) export into v3 cards", () => {
+  it("upgrades Pass-1 (v2) export into v4 cards", () => {
     const v2 = {
       schemaVersion: 2,
       roster: [
@@ -98,11 +63,31 @@ describe("migrate", () => {
     };
     const state = migrate(v2);
     expect(state.schemaVersion).toBe(SCHEMA_VERSION);
-    expect(state.cards).toEqual([
-      { name: "MOUSE", tier: "GOLD", owned: true, active: true, notes: undefined },
-      { name: "PIT", tier: "DEFAULT", owned: true, active: false, notes: undefined },
-    ]);
+    expect(state.cards).toHaveLength(2);
+    expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", owned: true, active: true });
     expect(state.ui.creditsCurrent).toBe("1K");
+    // Old "collection" tab key remaps to "droidex" — it doesn't exist in v4.
+    expect(state.ui.activeTab).toBe("droidex");
+  });
+
+  it("upgrades v3 cards into v4 (handles legacy superRebirth.level → count)", () => {
+    const v3 = {
+      schemaVersion: 3,
+      cards: [{ name: "GONK", tier: "GOLD", owned: true, active: true }],
+      profile: { standardRebirth: 5, superRebirth: { level: "2", rank: "1" } },
+      customDroids: [{ canonical: "FAKE", class: "WORKER", rarity: "MYTHIC", tiers: ["DEFAULT"] }],
+      superRebirths: [],
+      standardOverrides: [],
+      ui: { activeTab: "super", creditsCurrent: "0" },
+    };
+    const state = migrate(v3);
+    expect(state.profile.standardRebirth).toBe(5);
+    expect(state.profile.superRebirthCount).toBe(2);
+    expect(state.profile.cycleOverride).toBe(null);
+    // MYTHIC → ICONIC rename in customDroids.
+    expect(state.customDroids[0]!.rarity).toBe("ICONIC");
+    // Old "super" tab remaps to "rebirths".
+    expect(state.ui.activeTab).toBe("rebirths");
   });
 
   it("dedupes cards with the same (name, tier)", () => {
@@ -117,34 +102,34 @@ describe("migrate", () => {
     expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", owned: true, active: true });
   });
 
-  it("unwraps a current ExportEnvelope", () => {
+  it("unwraps a current ExportEnvelope and preserves cosmetics + nova upgrades", () => {
     const envelope = {
       app: "sandcrawler",
       schemaVersion: SCHEMA_VERSION,
-      exportedAt: "2026-06-12T00:00:00Z",
+      exportedAt: "2026-06-17T00:00:00Z",
       payload: {
         schemaVersion: SCHEMA_VERSION,
         cards: [{ name: "GONK", tier: "GOLD", owned: true, active: true }],
-        profile: { standardRebirth: 5, superRebirth: { level: "2", rank: "1" } },
+        profile: {
+          standardRebirth: 5,
+          superRebirthCount: 3,
+          cycleOverride: 2,
+          novaEarned: 100,
+          novaSpent: 30,
+        },
         customDroids: [],
-        superRebirths: [],
         standardOverrides: [],
+        cosmetics: [{ id: "paint-blue-paint", owned: true }],
+        novaUpgrades: [{ id: "core.credits", level: 2 }],
         ui: { activeTab: "droidex", creditsCurrent: "0" },
       },
     };
     const state = migrate(envelope);
     expect(state.cards).toHaveLength(1);
-    expect(state.cards[0]?.name).toBe("GONK");
-    expect(state.profile.standardRebirth).toBe(5);
-    expect(state.profile.superRebirth).toEqual({ level: "2", rank: "1" });
-  });
-
-  it("re-normalises a v1 'Basic' tier label into DEFAULT", () => {
-    const state = migrate({
-      superRebirths: [
-        { level: "1", ranks: [{ rank: "1", droids: [{ name: "X", tier: "Basic" }] }] },
-      ],
-    });
-    expect(state.superRebirths[0]?.ranks[0]?.droids[0]?.tier).toBe("DEFAULT");
+    expect(state.profile.superRebirthCount).toBe(3);
+    expect(state.profile.cycleOverride).toBe(2);
+    expect(state.profile.novaEarned).toBe(100);
+    expect(state.cosmetics).toEqual([{ id: "paint-blue-paint", owned: true }]);
+    expect(state.novaUpgrades).toEqual([{ id: "core.credits", level: 2 }]);
   });
 });

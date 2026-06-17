@@ -23,8 +23,9 @@ export function DataPanel() {
       cards: s.cards,
       profile: s.profile,
       customDroids: s.customDroids,
-      superRebirths: s.superRebirths,
       standardOverrides: s.standardOverrides,
+      cosmetics: s.cosmetics,
+      novaUpgrades: s.novaUpgrades,
       ui: s.ui,
     };
   };

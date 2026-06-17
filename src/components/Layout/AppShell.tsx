@@ -44,9 +44,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </>
         ) : (
           <>
-            <Stat n={counts.standardReady} k="Standard Ready" sub={`/ ${counts.standardTotal}`} />
-            <Stat n={counts.superReady} k="Super Ready" sub={`/ ${counts.superTotal}`} />
+            <Stat n={counts.standardReady} k="Rebirths Ready" sub={`/ ${counts.standardTotal}`} />
             <Stat n={completion.activeCards} k="Active Droids" />
+            <Stat n={completion.ownedDroids} k="Droids Owned" sub={`/ ${completion.totalDroids}`} />
           </>
         )}
       </section>

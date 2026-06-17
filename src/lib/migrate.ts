@@ -2,10 +2,11 @@ import { DROID_DICT } from "../data/droids.seed";
 import { SCHEMA_VERSION } from "../data/version";
 import type {
   CollectionCard,
+  CosmeticState,
+  NovaUpgradeState,
   PersistedState,
   Profile,
-  RebirthGain,
-  SuperRebirth,
+  RebirthCycle,
   TabKey,
 } from "../types";
 import { buildDroidIndex } from "./autocomplete";
@@ -17,25 +18,22 @@ import { normalizeTier } from "./tiers";
  * v0 — prototype's flat-array export (an array of rank-like records).
  * v1 — `{ superRebirths, roster }` shape from the migration brief (§4).
  * v2 — `owned`/`active` split, `customDroids`, `standardOverrides`, `ui`.
- *      (Pass-1 SandCrawler exports look like this.)
- * v3 — Card-based collection (`cards` replaces `roster`), `profile` slice,
- *      droid names uppercased + alias-resolved against the seed dict.
+ * v3 — Card-based collection, `profile` slice, droid names uppercased.
+ * v4 — Rebirth cycles, FLAWLESS tier, ICONIC rarity, cosmetics, Nova Shop.
+ *      Drops the manual `superRebirths` slice; Profile gains
+ *      `superRebirthCount`, `cycleOverride`, `novaEarned/Spent`.
  */
 export function migrate(raw: unknown): PersistedState {
-  // v0: an array at the root is the prototype's oldest export format.
   if (Array.isArray(raw)) {
-    return v3FromIntermediate(v1FromV0(raw));
+    return v4FromIntermediate(v1FromV0(raw));
   }
 
   if (raw && typeof raw === "object") {
     const obj = raw as Record<string, unknown>;
-    // ExportEnvelope unwrap.
     if (obj.app === "sandcrawler" && obj.payload && typeof obj.payload === "object") {
       return migrate(obj.payload);
     }
-    // Everything below feeds through the same upgrade path; the function
-    // accepts both v1 and v2 shapes and is idempotent on v3.
-    return v3FromIntermediate(obj);
+    return v4FromIntermediate(obj);
   }
 
   return emptyState();
@@ -47,17 +45,24 @@ export function emptyState(): PersistedState {
     cards: [],
     profile: defaultProfile(),
     customDroids: [],
-    superRebirths: [],
     standardOverrides: [],
+    cosmetics: [],
+    novaUpgrades: [],
     ui: { activeTab: "droidex", creditsCurrent: "" },
   };
 }
 
 export function defaultProfile(): Profile {
-  return { standardRebirth: 0, superRebirth: { level: "", rank: "" } };
+  return {
+    standardRebirth: 0,
+    superRebirthCount: 0,
+    cycleOverride: null,
+    novaEarned: 0,
+    novaSpent: 0,
+  };
 }
 
-// ── v0 → v1 lift ─────────────────────────────────────────────────────────
+// ── v0 → v1 lift (unchanged from v3) ─────────────────────────────────────
 function v1FromV0(arr: unknown[]): Record<string, unknown> {
   return {
     superRebirths: [
@@ -89,47 +94,24 @@ function v1FromV0(arr: unknown[]): Record<string, unknown> {
 }
 
 /**
- * Accepts any v1/v2/v3-shaped object and returns a v3 PersistedState. Idempotent.
+ * Accepts any v1/v2/v3/v4-shaped object and returns a v4 PersistedState.
  *
- * Key transformations:
- *  - v1's `{name,tier,status}` roster entries → v2's `{droidId,tier,owned,active}` → v3's cards
- *  - v2's `{droidId,tier,owned,active}` roster → v3's `{name,tier,owned,active}` cards
- *  - Droid names canonicalised against the seed dict (handles "Mouse" → "MOUSE", aliases)
- *  - Tier strings re-uppercased
- *  - `profile` populated with defaults if missing
- *  - `activeTab` defaults to "droidex"
+ * Key v4 changes:
+ *  - `superRebirths` is dropped (no longer rendered; cycle-aware data
+ *    replaces it). Anything the user logged there is intentionally
+ *    discarded — the cycle data is authoritative now.
+ *  - `cards` keep their Tier strings, but `MYTHIC` rarity on custom
+ *    droids → `ICONIC`.
+ *  - Profile gains `superRebirthCount`, `cycleOverride`, `novaEarned`,
+ *    `novaSpent`. Old `profile.superRebirth.level` (a string) is best-
+ *    effort parsed into `superRebirthCount`.
+ *  - Cosmetics and Nova upgrades default to empty arrays.
  */
-function v3FromIntermediate(obj: Record<string, unknown>): PersistedState {
+function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
   const idx = buildDroidIndex(DROID_DICT);
   const resolveName = (raw: string): string => idx.resolve(raw)?.canonical ?? raw.trim();
 
-  const superRebirths: SuperRebirth[] = Array.isArray(obj.superRebirths)
-    ? (obj.superRebirths as Record<string, unknown>[]).map((g) => ({
-        id: (g.id as string) || makeId(),
-        level: String(g.level ?? ""),
-        ranks: Array.isArray(g.ranks)
-          ? (g.ranks as Record<string, unknown>[]).map((r) => ({
-              id: (r.id as string) || makeId(),
-              rank: String(r.rank ?? ""),
-              credits: (r.credits as string) ?? "",
-              creditsReady: !!r.creditsReady,
-              droids: Array.isArray(r.droids)
-                ? (r.droids as Record<string, unknown>[]).map((d) => ({
-                    name: resolveName(((d.name as string) ?? "")),
-                    tier: normalizeTier(d.tier as string | undefined),
-                  }))
-                : [],
-              gain: ((r.gain ?? {}) as RebirthGain) || {},
-              notes: (r.notes as string) ?? "",
-            }))
-          : [],
-      }))
-    : [];
-
-  // Cards can arrive in three shapes:
-  //   v3:  obj.cards: [{name,tier,owned,active,notes}]
-  //   v2:  obj.roster: [{droidId,tier,owned,active}]
-  //   v1:  obj.roster: [{name,tier,status: "Working"|"Lounge"}]
+  // Cards: same paths as v3, but tier values now include FLAWLESS.
   let cards: CollectionCard[] = [];
   if (Array.isArray(obj.cards)) {
     cards = (obj.cards as Record<string, unknown>[]).map((c) => ({
@@ -155,7 +137,7 @@ function v3FromIntermediate(obj: Record<string, unknown>): PersistedState {
       };
     });
   }
-  // Dedupe by (name, tier) — old data could conceivably have duplicates.
+  // Dedupe by (name, tier)
   const cardKey = (c: CollectionCard) => `${c.name}::${c.tier}`;
   const cardMap = new Map<string, CollectionCard>();
   for (const c of cards) {
@@ -170,20 +152,55 @@ function v3FromIntermediate(obj: Record<string, unknown>): PersistedState {
       ? coerceProfile(obj.profile as Record<string, unknown>)
       : defaultProfile();
 
+  const cosmetics: CosmeticState[] = Array.isArray(obj.cosmetics)
+    ? (obj.cosmetics as Record<string, unknown>[])
+        .filter((c) => typeof c.id === "string")
+        .map((c) => ({ id: c.id as string, owned: !!c.owned }))
+    : [];
+
+  const novaUpgrades: NovaUpgradeState[] = Array.isArray(obj.novaUpgrades)
+    ? (obj.novaUpgrades as Record<string, unknown>[])
+        .filter((u) => typeof u.id === "string")
+        .map((u) => ({ id: u.id as string, level: Math.max(0, Math.floor(Number(u.level) || 0)) }))
+    : [];
+
+  // customDroids: rename MYTHIC → ICONIC
+  const customDroids = Array.isArray(obj.customDroids)
+    ? (obj.customDroids as Record<string, unknown>[]).map((d) => {
+        const rarity = String(d.rarity ?? "COMMON").toUpperCase();
+        return { ...d, rarity: rarity === "MYTHIC" ? "ICONIC" : rarity } as PersistedState["customDroids"][number];
+      })
+    : [];
+
   const uiRaw = (obj.ui && typeof obj.ui === "object" ? (obj.ui as Record<string, unknown>) : {}) as Record<string, unknown>;
+  // Remap old tab keys that no longer exist.
+  const oldTab = String(uiRaw.activeTab ?? "droidex");
+  const tabMap: Record<string, TabKey> = {
+    droidex: "droidex",
+    profile: "profile",
+    rebirths: "rebirths",
+    standard: "rebirths",
+    super: "rebirths",
+    cosmetics: "cosmetics",
+    nova: "nova",
+    "next-unlock": "next-unlock",
+    data: "data",
+  };
+  const activeTab = tabMap[oldTab] ?? "droidex";
 
   return {
     schemaVersion: SCHEMA_VERSION,
     cards: Array.from(cardMap.values()),
     profile,
-    customDroids: Array.isArray(obj.customDroids) ? (obj.customDroids as PersistedState["customDroids"]) : [],
-    superRebirths,
+    customDroids,
     standardOverrides: Array.isArray(obj.standardOverrides)
       ? (obj.standardOverrides as PersistedState["standardOverrides"])
       : [],
+    cosmetics,
+    novaUpgrades,
     ui: {
       ...uiRaw,
-      activeTab: (uiRaw.activeTab as TabKey) || "droidex",
+      activeTab,
       creditsCurrent: (uiRaw.creditsCurrent as string) ?? "",
     } as PersistedState["ui"],
   };
@@ -201,13 +218,25 @@ function mergeCards(a: CollectionCard, b: CollectionCard): CollectionCard {
 
 function coerceProfile(p: Record<string, unknown>): Profile {
   const std = typeof p.standardRebirth === "number" ? p.standardRebirth : 0;
-  const sr = (p.superRebirth as Record<string, unknown>) ?? {};
+  // v3 had profile.superRebirth = { level: string, rank: string }; treat level as the SRB count if numeric.
+  const srOld = (p.superRebirth as Record<string, unknown>) ?? {};
+  const inferredCount = Number(srOld.level);
+  const count =
+    typeof p.superRebirthCount === "number"
+      ? p.superRebirthCount
+      : Number.isFinite(inferredCount)
+        ? inferredCount
+        : 0;
+  const cycleOverride =
+    typeof p.cycleOverride === "number" && p.cycleOverride >= 1 && p.cycleOverride <= 4
+      ? (p.cycleOverride as RebirthCycle)
+      : null;
   return {
     standardRebirth: Math.max(0, Math.floor(std)),
-    superRebirth: {
-      level: String(sr.level ?? ""),
-      rank: String(sr.rank ?? ""),
-    },
+    superRebirthCount: Math.max(0, Math.floor(count)),
+    cycleOverride,
+    novaEarned: Math.max(0, Math.floor(Number(p.novaEarned) || 0)),
+    novaSpent: Math.max(0, Math.floor(Number(p.novaSpent) || 0)),
   };
 }
 

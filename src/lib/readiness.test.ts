@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { CollectionCard, Rank, StandardRebirth } from "../types";
+import type { CollectionCard, StandardRebirth } from "../types";
 import {
   activeCards,
   bestOwnedTier,
-  rankReady,
   rosterCovers,
   scoreRequirements,
   standardRebirthReady,
@@ -12,9 +11,6 @@ import {
 const mouseDefault: CollectionCard = { name: "MOUSE", tier: "DEFAULT", owned: true, active: true };
 const mouseGold: CollectionCard = { name: "MOUSE", tier: "GOLD", owned: true, active: true };
 const mouseInactive: CollectionCard = { name: "MOUSE", tier: "BESKAR", owned: true, active: false };
-const pitDefault: CollectionCard = { name: "PIT", tier: "DEFAULT", owned: true, active: true };
-const gonkDefault: CollectionCard = { name: "GONK", tier: "DEFAULT", owned: true, active: true };
-
 describe("activeCards", () => {
   it("filters to active cards only", () => {
     expect(activeCards([mouseDefault, mouseInactive])).toEqual([mouseDefault]);
@@ -52,45 +48,19 @@ describe("bestOwnedTier", () => {
   });
 });
 
-describe("rankReady", () => {
-  const baseRank: Rank = {
-    id: "r1",
-    rank: "1",
-    credits: "10K",
-    creditsReady: true,
-    droids: [
-      { name: "Mouse", tier: "DEFAULT" },
-      { name: "Pit", tier: "DEFAULT" },
-      { name: "Gonk", tier: "DEFAULT" },
-    ],
-  };
-
-  it("requires every droid covered AND credits flag set", () => {
-    expect(rankReady(baseRank, [mouseDefault, pitDefault, gonkDefault])).toBe(true);
-  });
-
-  it("is false when credits flag is off", () => {
-    expect(rankReady({ ...baseRank, creditsReady: false }, [mouseDefault, pitDefault, gonkDefault])).toBe(false);
-  });
-
-  it("is false when any droid is missing", () => {
-    expect(rankReady(baseRank, [mouseDefault, pitDefault])).toBe(false);
-  });
-
-  it("is false when the rank has no droid requirements", () => {
-    expect(rankReady({ ...baseRank, droids: [] }, [mouseDefault])).toBe(false);
-  });
-});
-
 describe("standardRebirthReady", () => {
+  const noRewards = { novaCrystals: 0, creditMult: 0, xpMult: 0, slotUnlock: null } as const;
   const rb: StandardRebirth = {
     level: 1,
+    cycle: 1,
     credits: "10K",
     needs: [
       { name: "CB", tier: "DEFAULT" },
       { name: "PIT", tier: "DEFAULT" },
       { name: "DRK-1 PROBE", tier: "DEFAULT" },
     ],
+    sellList: [],
+    rewards: noRewards,
     source: "seed",
   };
 

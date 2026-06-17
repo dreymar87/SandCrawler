@@ -1,4 +1,4 @@
-import type { CollectionCard, Rank, RebirthReq, StandardRebirth, Tier } from "../types";
+import type { CollectionCard, RebirthReq, StandardRebirth, Tier } from "../types";
 import { satisfies, tierGap, tierRank } from "./tiers";
 import { parseCredits } from "./credits";
 import { normalizeName } from "./normalize";
@@ -36,18 +36,6 @@ export function bestOwnedTier(name: string, cards: readonly CollectionCard[]): T
     if (best === null || tierRank(c.tier) > tierRank(best)) best = c.tier;
   }
   return best;
-}
-
-/**
- * Ported from the prototype (§5). A Super Rebirth rank is "ready" when every
- * droid is covered AND the user has flagged the credits as ready.
- */
-export function rankReady(rank: Rank, cards: readonly CollectionCard[]): boolean {
-  return (
-    rank.droids.length > 0 &&
-    rank.droids.every((req) => rosterCovers(req, cards)) &&
-    rank.creditsReady
-  );
 }
 
 /**

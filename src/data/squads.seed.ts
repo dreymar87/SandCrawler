@@ -7,10 +7,9 @@
  * slots unlocking at specific Standard Rebirth levels. COMPANION is a
  * single static slot. LOUNGE / WORKER / ASTROMECH / BATTLE expand.
  */
-import type { Tier } from "../types";
+import type { SquadType, Tier } from "../types";
 
-export type SquadType = "COMPANION" | "LOUNGE" | "WORKER" | "ASTROMECH" | "BATTLE";
-
+export type { SquadType };
 export const SQUAD_TYPES: readonly SquadType[] = ["COMPANION", "LOUNGE", "WORKER", "ASTROMECH", "BATTLE"];
 
 export interface SquadDef {
@@ -61,7 +60,7 @@ export const SQUAD_DEFS: Record<SquadType, SquadDef> = {
     type: "LOUNGE",
     label: "Lounge",
     baseSlots: 5,
-    unlocks: [17, 18, 19, 20],
+    unlocks: [16, 17, 18, 19, 20],
     description: "Park droids you're saving for upcoming rebirths.",
     accent: "text-sun",
   },

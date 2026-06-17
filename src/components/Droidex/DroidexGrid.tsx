@@ -215,6 +215,7 @@ const TIER_ACCENT: Record<Tier, string> = {
   DIAMOND: "text-tier-diamond",
   RAINBOW: "text-white",
   BESKAR: "text-tier-beskar",
+  FLAWLESS: "text-white",
 };
 
 const TIER_BG: Record<Tier, string> = {
@@ -223,6 +224,7 @@ const TIER_BG: Record<Tier, string> = {
   DIAMOND: "bg-tier-diamond/15",
   RAINBOW: "bg-gradient-to-r from-[#ff5d5d] via-[#ffb84d] to-[#9b7bff] bg-opacity-20",
   BESKAR: "bg-tier-beskar/15",
+  FLAWLESS: "bg-gradient-to-br from-fuchsia-400/30 to-cyan-300/30",
 };
 
 const TIER_LABEL: Record<Tier, string> = {
@@ -231,6 +233,7 @@ const TIER_LABEL: Record<Tier, string> = {
   DIAMOND: "DI",
   RAINBOW: "RB",
   BESKAR: "BK",
+  FLAWLESS: "FL",
 };
 
 function TierCell({ tier, owned, active, onClick }: TierCellProps) {

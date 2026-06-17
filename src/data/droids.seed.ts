@@ -14,8 +14,10 @@ import type { DroidDef, Tier } from "../types";
  * `tiers` array (5 normally, 1 for event-locked MYTHIC droids).
  */
 
-const ALL_TIERS: Tier[] = ["DEFAULT", "GOLD", "DIAMOND", "RAINBOW", "BESKAR"];
-const DEFAULT_ONLY: Tier[] = ["DEFAULT"];
+/** All six tiers, including the rare FLAWLESS variant. */
+const ALL_TIERS: Tier[] = ["DEFAULT", "GOLD", "DIAMOND", "RAINBOW", "BESKAR", "FLAWLESS"];
+/** ICONIC event droids: DEFAULT regular spawn + FLAWLESS 1/1000. */
+const ICONIC_TIERS: Tier[] = ["DEFAULT", "FLAWLESS"];
 
 export const DROID_DICT: readonly DroidDef[] = [
   // ── COMMON ───────────────────────────────────────────────────────────────
@@ -107,10 +109,12 @@ export const DROID_DICT: readonly DroidDef[] = [
     aliases: ["OPTI STRIKE", "OPTI-STRK", "OPTISTRIKE"],
   },
 
-  // ── MYTHIC (event-locked; DEFAULT-only, percentage income boosters) ─────
-  { canonical: "BB8", class: "ASTROMECH", rarity: "MYTHIC", tiers: DEFAULT_ONLY, eventLocked: true, aliases: ["BB-8"] },
-  { canonical: "MISTER BONES", class: "BATTLE", rarity: "MYTHIC", tiers: DEFAULT_ONLY, eventLocked: true, aliases: ["MR BONES", "MR. BONES"] },
-  { canonical: "IG-11 MARSHAL", class: "BATTLE", rarity: "MYTHIC", tiers: DEFAULT_ONLY, eventLocked: true, aliases: ["IG-11", "IG11", "IG11 MARSHAL"] },
+  // ── ICONIC (event droids; DEFAULT + FLAWLESS variant, percentage boosters) ──
+  { canonical: "BB8", class: "ASTROMECH", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["BB-8"] },
+  { canonical: "MISTER BONES", class: "BATTLE", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["MR BONES", "MR. BONES"] },
+  { canonical: "IG-11 MARSHAL", class: "BATTLE", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["IG-11", "IG11", "IG11 MARSHAL"] },
+  { canonical: "DJ-R3X", class: "WORKER", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["DJ R-3X", "DJ R3X", "DJ-R-3X"] },
+  { canonical: "CB-23", class: "ASTROMECH", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, comingSoon: true, aliases: ["CB23"] },
 ];
 
 /** Total Droidex card count = sum over droids of their tier-count. */

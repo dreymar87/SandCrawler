@@ -52,11 +52,8 @@ function SectionHeader({ title, count }: { title: string; count: number }) {
 
 function Row({ scored }: { scored: ScoredAny }) {
   const isReady = scored.ready;
-  const title =
-    scored.kind === "standard"
-      ? `Standard Rebirth ${scored.rb.level}`
-      : `Super Rebirth ${scored.group.level} · Rank ${scored.rank.rank || "?"}`;
-  const credits = scored.kind === "standard" ? scored.rb.credits : scored.rank.credits;
+  const title = `Rebirth ${scored.rb.level}`;
+  const credits = scored.rb.credits;
 
   return (
     <div className={`card ${isReady ? "card-ready" : ""} p-4 mb-3`}>

@@ -15,26 +15,28 @@ rights holders.
 
 ## Features
 
-- **Droidex** — every (droid × tier) card as a tappable cell. Tap to cycle
-  *missing → owned → active*. Filters by rarity, class, tier, and
-  collected/missing. Completion % and active count at the top.
-- **Profile** — set your current Standard Rebirth (0–23) and Super Rebirth
-  marker. The app shows squad slot capacity per type (Worker / Astromech /
-  Battle / Lounge / Companion), the rebirth level that unlocks the next
-  slot, and your production rate (credits/sec) from active cards.
-- **Standard Rebirth** — full 1–23 requirements pre-seeded from community
-  data. Each rebirth shows a credits progress bar ("short by 4.5B") and
-  flags as ready when both your credits and your active cards line up.
-- **Super Rebirth** — log Super Rebirth ranks as you encounter them. SR
-  requirements aren't officially documented, so this stays user-entered.
+- **Droidex** — every (droid × tier) card as a tappable cell, including
+  the rare **FLAWLESS** variant. Tap to cycle *missing → owned → active*.
+  Filters by rarity (COMMON…ICONIC), class, tier, and collected/missing.
+- **Profile** — set your current Standard Rebirth (0–23) and total Super
+  Rebirths completed. The app derives your active **rebirth cycle**
+  (RBC1–4), shows squad slot capacity per type with the next unlock
+  level, your production rate (credits/sec) from active cards, and your
+  Nova Crystals balance.
+- **Rebirths** — full 1–23 requirements for **all 4 rebirth cycles**.
+  Each row shows a credits progress bar ("short by 4.5B"), per-rebirth
+  rewards (Nova Crystals, credit & XP multipliers, slot unlock), and
+  safe-to-sell guidance.
+- **Cosmetics** — track Hats, Paints, and Droid Effects with their
+  in-game unlock conditions. Section completion bars.
+- **Nova Shop** — both upgrade trees (Core / Workshop) with per-level
+  crystal costs, an affordability indicator, and a balance summary.
 - **Next Unlock** — a ranked list of the rebirths you're closest to
-  completing, with "I have it" shortcuts for each missing card. Hides any
-  Standard rebirths you've already passed.
-- **Back up / Restore** — JSON export and import. Backups from any earlier
-  schema (the original prototype, the Pass-1 roster shape) are
-  auto-migrated forward.
-- **Installable PWA** — installs to the home screen on iOS / Android /
-  desktop and works offline.
+  completing within your current cycle, with "I have it" shortcuts for
+  each missing card.
+- **Back up / Restore** — JSON export and import. Backups from any
+  earlier schema (prototype, Pass-1 roster, Pass-2 cards) auto-migrate.
+- **Installable PWA** — installs to the home screen and works offline.
 
 ## Stack
 
@@ -87,10 +89,17 @@ DOMAIN.md                        # Game rules + data provenance + licensing
 
 ## Acknowledgments
 
-Game-fact data (droid names, rebirth requirements, per-tier income/cost,
-squad slot unlock schedules) was re-derived from community sources —
-primarily the open-source
-[erikpeik/droidex](https://github.com/erikpeik/droidex) tracker, which
-itself compiles a community Google Sheet. SandCrawler owns the schema and
-the curation; corrections belong in `DOMAIN.md` plus the relevant seed
-file. See `DOMAIN.md` for the full provenance + licensing stance.
+Game-fact data (droid names, rebirth requirements across all 4 cycles,
+per-tier income/cost, squad slot unlock schedules, cosmetics catalogue,
+Nova Shop upgrade costs) was re-derived from community sources:
+
+- **starscurse** — *DROID_TYCOON_REBIRTH_CYCLES.xlsx* (rebirth cycles +
+  per-level rewards + chip costs).
+- **Cait** and **Omega** — *Fortnite Star Wars Droid Tycoon Tracker
+  Template* (droid reference values, cosmetics, Nova Shop).
+- **erikpeik/droidex** ([github](https://github.com/erikpeik/droidex)) —
+  Pass-2 reference implementation.
+
+SandCrawler owns the schema and the curation; corrections belong in
+`DOMAIN.md` plus the relevant seed file. See `DOMAIN.md` for the full
+provenance + licensing stance.

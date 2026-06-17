@@ -12,79 +12,67 @@ anyone silently rewriting the wrong one.
 - Made by **FOAD** and **Blzn Studios** in collaboration with **Epic
   Games** and **Lucasfilm**.
 - Island code **`7865-8305-9184`** (by `epiclabs` on the Creator Portal).
-- Loop: tycoon. You buy droids, they generate credits, you spend credits
-  on upgrades and on the rebirth mechanic, which permanently boosts
-  production at the cost of resetting your run.
 - This app is unaffiliated with any rights holder. We describe it
-  functionally as a "Droid Tycoon rebirth companion" and avoid using the
-  game's full marketing title in product/store contexts.
+  functionally as a "Droid Tycoon companion".
 
-## Droid tiers
+## Tiers
 
-Five rarities — note: this is the **upgrade tier** dimension, separate
-from the collection **rarity** below. In-game labels are uppercase, low → high:
+Six tiers, in-game labels are uppercase. The first five form the **upgrade
+path** (DEFAULT → BESKAR). FLAWLESS is a sixth tier that's a **rare 1/1000
+spawn variant** rather than an upgrade target.
 
 ```
-DEFAULT → GOLD → DIAMOND → RAINBOW → BESKAR
+DEFAULT → GOLD → DIAMOND → RAINBOW → BESKAR ───── FLAWLESS
 ```
 
-- **DEFAULT** is the base tier. Some community guides call it "Basic" —
-  treat those as the same tier (we map `Basic` → `DEFAULT` on import).
-- **BESKAR** is the current top tier.
-- **Tier substitution** — the single most important rule: a higher-tier
-  card satisfies any lower-tier requirement. A GOLD MOUSE covers a
-  "MOUSE @ DEFAULT" requirement. SandCrawler's `satisfies()` implements
-  this.
+- A FLAWLESS card outranks BESKAR for tier-substitution purposes.
+- We map `Basic` → `DEFAULT` on import (community shorthand).
 
 ## Collection rarity
 
-Each droid also has a **rarity** (separate from its upgrade tier):
+Five rarities, low → high:
 
 ```
-COMMON → RARE → EPIC → LEGENDARY → MYTHIC
+COMMON → RARE → EPIC → LEGENDARY → ICONIC
 ```
 
-- **MYTHIC** droids are event-locked — they only exist at DEFAULT tier
-  and never upgrade. Their income is a **percentage boost** (e.g. `5%/s`)
-  rather than a flat credits/sec value, so they multiply your base income
-  rather than adding to it. SandCrawler treats their income label
-  separately in the production calculator.
-- Total Droidex: **54 base droids × their tier count = 258 cards**.
-  That's where the "all 258 droids" number from community guides comes
-  from — it counts every (droid × tier) combination, not 258 distinct
-  models.
+- **ICONIC** replaces what we previously called MYTHIC; the
+  authoritative community sheet uses ICONIC.
+- ICONIC droids are **event-locked**: they spawn at DEFAULT (and
+  optionally FLAWLESS) only — no Gold/Diamond/Rainbow/Beskar upgrades.
+- ICONIC droids generate **percentage income** (e.g. `15%/s`) instead
+  of a flat credits-per-second value — they multiply your base income.
 
-## Droid classes (types)
+## Droid classes
 
-Three classes for the production-droid slot system:
+Three production classes:
 
-- **WORKER** — production-focused (MOUSE, GONK, PIT, BU-4D, MONO-WALKER…).
-- **ASTROMECH** — tech / ship support (CB, R7, R9, BB, ARG…).
-- **BATTLE** — combat / security (DRK-1 PROBE, B1 SECURITY, B2-RP,
-  OPTI-STRIKE…).
+- **WORKER**, **ASTROMECH**, **BATTLE**.
 
-Stored on each `DroidDef` and shown on the autocomplete + Droidex grid.
-Readiness math doesn't depend on class, but squad capacity does (see
-below).
+54 + 2 = **56 base droids** as of Pass 3:
+- 54 upgradeable droids (each contributes 6 tier cards = 324 cards).
+- 5 ICONIC event droids (BB8, MISTER BONES, IG-11 MARSHAL, DJ-R3X, CB-23
+  coming soon — 2 cards each).
+- The community count "260" refers to the Droidex card total once
+  FLAWLESS and the new event droids are in.
 
 ## Active-droid rule
 
 To count toward a rebirth, a card must be **active** in your base —
-either Working or in the Lounge (rest area). Merely owning a card in your
-Droidex does NOT count.
+either Working or in the Lounge (rest area). Merely owning a card in
+your Droidex does NOT count.
 
-SandCrawler models this with two booleans per `CollectionCard`:
+Models per `CollectionCard`:
 - `owned` — collected in your Droidex.
 - `active` — deployed (Working OR Lounge).
 
-Only `active === true` cards contribute to `rosterCovers()` and to the
-production calculator. Cycling a Droidex cell goes
-*missing → owned → active → missing*.
+Only `active === true` cards contribute to readiness checks and to the
+production calculator.
 
 ## Squads & slot capacity
 
-Your base has five "squads", each with a base slot count that expands at
-specific rebirth thresholds:
+Five squads; per-rebirth slot unlocks (corrected from Pass 2 — Lounge
+starts at RB16, not RB17):
 
 | Squad      | Base | Unlock levels                        | Max |
 | ---------- | ---- | ------------------------------------ | --- |
@@ -92,117 +80,130 @@ specific rebirth thresholds:
 | WORKER     | 4    | 1, 4, 7, 10, 12, 14, 16              | 11  |
 | ASTROMECH  | 3    | 2, 5, 8, 11, 13, 15                  | 9   |
 | BATTLE     | 2    | 3, 6, 9                              | 5   |
-| LOUNGE     | 5    | 17, 18, 19, 20                       | 9   |
+| LOUNGE     | 5    | 16, 17, 18, 19, 20                   | 10  |
 
-This decodes the **"Slot"** field in Super Rebirth GAIN rewards — a
-rebirth's slot reward says *which* squad's next slot it unlocks. The
-Profile tab uses `getMaxSlots(squad, rebirthLevel)` to show current vs.
-maximum capacity per squad.
+## Rebirth cycles
 
-## Standard Rebirth
+Standard Rebirth runs through a **4-cycle loop**. Each cycle has its own
+23 droid+tier requirements; **credit costs and per-rebirth rewards are
+constant across cycles**.
 
-- Numbered 1 → 23 as of mid-2026 (the game continues to add levels). The
-  seed table is in `src/data/standardRebirths.seed.ts`.
-- Each level requires a specific credit threshold + three droids at
-  specific tiers.
-- Some droids recur across levels at escalating tiers — e.g. BU-4D
-  appears at RB3 (DEFAULT), RB5 (GOLD), RB7 (DIAMOND). This is the
-  payoff of the tier-substitution rule: keep upgrading rather than
-  collecting new.
+```
+Run #     | Cycle | Source
+─────────────────────────────
+First run | RBC1  | OG (pre-Super Rebirth)
+After SRB1| RBC2  | after first Super Rebirth
+After SRB2| RBC3  | after second Super Rebirth
+After SRB3| RBC4  | after third Super Rebirth
+After SRB4| RBC1  | loop
+```
 
-User overrides applied on top of the seed live in `standardOverrides`;
-the merged result powers the Standard tab.
+Derived: `cycleFor(superRebirthCount, override?)` = `(count % 4) + 1`,
+unless the user pinned a manual override.
 
-## Super Rebirth
+## Per-rebirth rewards
 
-A **meta-prestige** sitting on top of Standard Rebirth. Two-level
-structure:
+Every rebirth past RB11 grants Nova Crystals plus stacking multipliers:
 
-- A **Super Rebirth level** (e.g. Super Rebirth 2).
-- Within it, sequential **Ranks** (Rank 1, Rank 2, …).
-- Each Rank has its own **NEED** set: a credit cost + specific droids at
-  specific tiers.
-- Each Rank also has a **GAIN** (rewards): Credits, Multiplier, Slot,
-  Force ability. (These four fields are what the prototype modelled; if
-  the game introduces more, add them to `RebirthGain` in `src/types.ts`.)
+| Level | Crystals | Credit ×  | XP ×   |
+| ----- | -------- | --------- | ------ |
+| 12    | 11       | 1.22      | 2.1    |
+| 13    | 16       | 1.32      | 2.6    |
+| …     | …        | …         | …      |
+| 23    | 121      | 3.42      | 13.1   |
 
-**Super Rebirth requirements are not officially documented** anywhere as
-of mid-2026. SandCrawler treats this data as user-entered /
-crowd-sourced. The one seed example (SR2 R1 with the MOUSE/PIT/GONK
-DEFAULT requirement and the Force Push gain) exists only to demonstrate
-the shape; users edit or delete it freely.
+(Multipliers stored as `+N`-style deltas, e.g. RB12 stores `0.22` for
+`+22%`. The UI renders them as `×1.22`.)
 
-## Per-droid economy
+## Chip-upgrade costs
 
-Every (droid × tier) combination has:
+Per-rarity chip costs (and cantina-upgrade odds) — `chipCosts.seed.ts`:
 
-- **cost** — credits to purchase / upgrade to that tier.
-- **income** — credits per second the card generates when active.
-  MYTHIC droids show a percentage (e.g. `5%/s`) instead of a flat value.
-- **value** — the sell-back / refund value (≈ 70% of cost).
+| Rarity     | DEFAULT→G | G→D  | D→R  | R→B   | Total | Cantina |
+| ---------- | --------- | ---- | ---- | ----- | ----- | ------- |
+| COMMON     | 10        | 25   | 40   | 80    | 155   | 30%     |
+| RARE       | 30        | 60   | 100  | 250   | 440   | 16%     |
+| EPIC       | 120       | 180  | 240  | 5,000 | 5,540 | 8%      |
+| LEGENDARY  | 400       | 1,200| 4,000| 12,000| 17,600| 4%      |
 
-Stored in `src/data/droidStats.json` and consumed by the production
-calculator on the Profile tab. Values keep their in-game notation
-("3.8k", "112.50m", "8.80b") and parse lazily via `lib/credits.ts`.
+## Sell guidance
+
+Each rebirth row carries a `sellList`. Possible values:
+
+- `["DO_NOT_SELL"]` — the sheet explicitly warns against selling
+  anything at this rebirth.
+- `["B1 SECURITY", "BU-4D"]` — the named droids are safe to sell.
+- `[]` — no guidance one way or the other.
+
+The `sellHint()` helper combines that with a forward-scan of the cycle's
+remaining requirements to produce a yes/no recommendation per droid.
+
+## Cosmetics
+
+Three kinds: **HAT** (~16, mostly world-found), **PAINT** (~21, unlocked
+via rebirths / crafting / events / Nova Crystals), **EFFECT** (event
+rewards).
+
+Each item has a `requirementKind` (REBIRTH / CRAFT / FLAWLESS_CRAFT /
+BESKAR_COLLECT / RINGS / WORLD / EVENT / NOVA / NONE) so the UI can
+later link unlock conditions to the player's progress.
+
+## Nova Crystals Shop
+
+Two upgrade trees with per-level crystal costs (sparse arrays — `null`
+where the cost is not yet known publicly):
+
+- **Core**: Max Health, Damage, **Credits** (the main one),
+  Flawless Charm, Movement Speed, Double Daily Quests, Pickaxe Mastery,
+  Jawa Bartering, Super Crates.
+- **Workshop**: Lounge Slot, Upgrade Chip Scrap, Scrap Value,
+  Blueprint Scrap, Crafting Speed, Blueprint Storage, Collect All,
+  Rebirth Droid Alert.
+
+`crystalsSpent(upgrades, defs)` derives the spent total from the
+player's per-upgrade levels; balance = earned − spent.
 
 ## Credits notation
 
-The game displays credit values with short suffixes — `10K`, `1.36B`,
-`21B`, `6T`. K/M/B/T confirmed; Q (quadrillion) is supported as
-future-proofing.
+K / M / B / T (and Q for future-proofing). Parsed to `bigint` via
+`parseCredits()`; UI keeps strings so the player sees their own
+notation.
 
-We parse via `parseCredits()` to a `bigint` because Beskar-tier totals
-quickly exceed `Number.MAX_SAFE_INTEGER`. Storage and display stay as
-free-text strings; users see their own notation echoed back.
+## Data provenance
 
-## Naming conventions
+Two community workbooks supplied the authoritative Pass-3 data:
 
-Canonical droid names in the game are **ALL-CAPS** — `MOUSE`, `MONO-WALKER`,
-`B2-RP`, `DRK-1 PROBE`, `OPTI-STRIKE`. Hyphens, spaces, and numbers all
-appear.
+1. **DROID_TYCOON_REBIRTH_CYCLES.xlsx** by **starscurse** — the
+   4-cycle rebirth requirements, per-level rewards, chip costs.
+2. **Fortnite_Star_Wars_Droid_Tycoon_Tracker_TEMPLATE.xlsx** by
+   **Cait** with **Omega** — the Droid Reference (cost/income/value
+   per tier), DroidexRebirths (slot unlocks), Cosmetics, Nova Shop.
 
-Community guides use varied spellings (`MONO-WLKR`, `Mono-Walker`,
-`B2 RP`). SandCrawler:
+Cached references live under `/root/.claude/uploads/0649d0ae-…/`. Parsed
+dumps were stored at `/tmp/sandcrawler-research/wb*.txt` during
+development; a `gen_seeds.py` generator emits
+`src/data/rebirthCycles.seed.ts` from those dumps to avoid
+transcription errors.
 
-- Stores the canonical UPPERCASE form in the dict.
-- Lists known guide spellings under `DroidDef.aliases`, indexed by
-  `buildDroidIndex()` so any of them resolves to the canonical name.
-- Normalises punctuation+case in `normalizeName()` for matching, but
-  semantic aliases (`WLKR` → `WALKER`) only resolve through the dict.
+### Licensing posture
 
-## Data provenance — what's seeded vs. user-entered
-
-| Bucket | Source |
-|---|---|
-| Tier list | Constant in `src/constants.ts`. Confirmed in-game. |
-| Droid dictionary (54 entries × tiers = 258 cards) | `src/data/droids.seed.ts`. Re-derived from community sources. |
-| Droid stats (cost / income / value per card) | `src/data/droidStats.json`. Re-derived from a community Google Sheet. |
-| Standard Rebirth requirements (1–23) | `src/data/standardRebirths.seed.ts`. Re-derived. |
-| Squad slot mechanics | `src/data/squads.seed.ts`. Confirmed in-game; unlock thresholds from community guides. |
-| Super Rebirth requirements | One seed example. Everything else is user-entered (no public source). |
-| GAIN reward field set | Four columns: Credits / Multiplier / Slot / Force. From the prototype example. |
-
-### Licensing
-
-Reference copies of the source repo's data files live in
-`/tmp/sandcrawler-research/*.ref.*` for re-fetching; they're sourced from
-the open-source [erikpeik/droidex](https://github.com/erikpeik/droidex)
-tracker, which has no license file. **Game facts** (names, costs,
-requirements, income numbers) are not copyrightable, so we re-derive
-those facts into our own schema. We do **not** copy the source repo's
-code structure, type names, helper functions, or styling — only the raw
-in-game data the community has compiled there.
+Game facts (names, costs, requirements, rewards, income values) are not
+copyrightable. We re-derive only those facts into our own typed
+schema; we do not copy the workbooks' layouts, formulas, or chart
+ordering. Sources credited in `README.md` and the in-app footer (the
+Cosmetics/Nova tabs link community Discords where applicable in the
+future).
 
 ## Future-proofing
 
-When the game adds a new upgrade tier above BESKAR, the only safe edit
-is to **append** to `TIERS` in `src/constants.ts`. Everything keys off
-the array index via `tierRank()`, so insertions in the middle would break
-legacy data silently. Always append.
-
-When the game adds new droids, append to `DROID_DICT` and add their
-stats to `droidStats.json`. Bump `SEED_VERSION` in `data/version.ts`.
-
-When the game adds a new reward type (a sixth GAIN field, say), extend
-`RebirthGain` in `src/types.ts` and update `RankCard` and the editor —
-older exports without the new field still import fine.
+- A new upgrade tier above BESKAR (before FLAWLESS in our index) needs
+  to be **inserted** in `TIERS`, not appended — anything keying off
+  `tierRank()` will be correct, but anything storing a tier string in
+  user data is fine (`migrate.ts` re-normalises).
+- New droids: append to `DROID_DICT` + `droidStats.json`. Bump
+  `SEED_VERSION`.
+- New rebirth cycle (a 5th cycle, say): extend `RebirthCycle` and add
+  rows to `rebirthCycles.seed.ts`; `cycleFor()` already does modulo
+  arithmetic.
+- Schema breaks: bump `SCHEMA_VERSION`, add a `v{n}FromIntermediate`
+  branch in `migrate.ts`.
