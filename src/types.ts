@@ -87,17 +87,6 @@ export interface RebirthReq {
   tier: Tier;
 }
 
-export interface RebirthRewards {
-  /** Nova Crystals granted on this rebirth. 0 for early levels that grant none. */
-  novaCrystals: number;
-  /** Additive credit multiplier (e.g. 0.22 = +22%). */
-  creditMult: number;
-  /** Additive XP multiplier (e.g. 1.1 = +110%). */
-  xpMult: number;
-  /** Which squad gains a slot at this rebirth, or null. */
-  slotUnlock: SquadType | null;
-}
-
 export type SquadType = "COMPANION" | "LOUNGE" | "WORKER" | "ASTROMECH" | "BATTLE";
 
 export interface StandardRebirth {
@@ -113,11 +102,24 @@ export interface StandardRebirth {
    * or the special token "DO_NOT_SELL". Empty = nothing to sell at this step.
    */
   sellList: string[];
-  /** Per-level rewards (constant across cycles). */
-  rewards: RebirthRewards;
+  /** Which squad gains a slot at this rebirth, or null. */
+  slotUnlock: SquadType | null;
   /** "seed" = baked in from research; "user" = added/edited locally. */
   source?: "seed" | "user";
   notes?: string;
+}
+
+/**
+ * One-time Super Rebirth bonus keyed by the RB level you SR'd from.
+ * The workbook column reads "NOVA CRYSTALS/RB LEVEL". RB 12..23 only.
+ */
+export interface SuperRebirthBonus {
+  rbLevel: number;
+  crystals: number;
+  /** Additive credit multiplier (0.22 = +22%). */
+  creditMult: number;
+  /** Additive XP multiplier (1.1 = +110%). */
+  xpMult: number;
 }
 
 /**
@@ -161,6 +163,7 @@ export interface NovaUpgrade {
   id: string;
   tree: "CORE" | "WORKSHOP";
   name: string;
+  /** Length = max known level. `null` entries are levels whose cost is unknown. */
   costs: (number | null)[];
 }
 
@@ -168,6 +171,18 @@ export interface NovaUpgradeState {
   id: string;
   /** Current upgrade level (0 = not purchased). */
   level: number;
+}
+
+/**
+ * One-shot ICONIC droid purchase from the Nova Shop. Buying the droid
+ * makes it available in your Droidex (the in-game game grants the
+ * spawn rights), but SandCrawler tracks the *purchase* separately from
+ * collection ownership so the crystal-spent math is exact.
+ */
+export interface NovaIconicPurchase {
+  /** Canonical droid name; matches DroidDef.canonical. */
+  droid: string;
+  crystals: number;
 }
 
 /** Per-tier economy stats for a droid (from the community stats sheet). */
@@ -199,6 +214,8 @@ export interface PersistedState {
   cosmetics: CosmeticState[];
   /** Sparse: only purchased upgrades are stored (level > 0). */
   novaUpgrades: NovaUpgradeState[];
+  /** Canonical names of ICONIC droids the user has purchased via the Nova Shop. */
+  novaIconicOwned: string[];
   ui: UiPrefs;
 }
 

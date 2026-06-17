@@ -1,53 +1,55 @@
-import { REBIRTH_CYCLES } from "../data/rebirthCycles.seed";
-import type { NovaUpgrade, NovaUpgradeState } from "../types";
+import { NOVA_ICONIC_PURCHASES } from "../data/novaShop.seed";
+import { SUPER_REBIRTH_BONUSES } from "../data/superRebirthBonuses.seed";
+import type { NovaUpgrade, NovaUpgradeState, SuperRebirthBonus } from "../types";
 
 /**
- * Per-level Nova Crystals lookup, derived from cycle 1's rewards (the
- * reward table is constant across cycles).
+ * The Super Rebirth bonus you'd receive if you SR'd from `rbLevel`.
+ * Returns `null` below RB12 (no bonus given at lower levels).
  */
-const CRYSTALS_BY_LEVEL: ReadonlyMap<number, number> = (() => {
-  const m = new Map<number, number>();
-  for (const row of REBIRTH_CYCLES) {
-    if (row.cycle !== 1) continue;
-    m.set(row.level, row.rewards.novaCrystals);
-  }
-  return m;
-})();
-
-/**
- * Total Nova Crystals you'd have earned passing every Standard Rebirth
- * level up to and including `level`. Used as a sanity check / auto-derived
- * "earned" baseline on the Profile tab.
- */
-export function crystalsEarnedThrough(level: number): number {
-  let total = 0;
-  for (const [lvl, crystals] of CRYSTALS_BY_LEVEL) {
-    if (lvl <= level) total += crystals;
-  }
-  return total;
+export function srbBonusAt(rbLevel: number): SuperRebirthBonus | null {
+  return SUPER_REBIRTH_BONUSES.find((b) => b.rbLevel === rbLevel) ?? null;
 }
 
-/** Sum the crystals spent on the upgrade levels the player has reached. */
+/** Crystal cost of an ICONIC droid in the Nova Shop, or null if not purchasable. */
+export function iconicCostFor(droidName: string): number | null {
+  const key = droidName.trim().toUpperCase();
+  return NOVA_ICONIC_PURCHASES.find((p) => p.droid.toUpperCase() === key)?.crystals ?? null;
+}
+
+/**
+ * Total crystals spent across (a) Nova Shop upgrade levels reached and
+ * (b) ICONIC droid purchases. Unknown costs (`null` entries) contribute 0
+ * to the sum so the math doesn't lie when a player is past a known level.
+ */
 export function crystalsSpent(
-  states: readonly NovaUpgradeState[],
+  upgradeStates: readonly NovaUpgradeState[],
   upgrades: readonly NovaUpgrade[],
+  iconicOwned: readonly string[] = [],
 ): number {
   let total = 0;
   const byId = new Map(upgrades.map((u) => [u.id, u]));
-  for (const s of states) {
+  for (const s of upgradeStates) {
     const def = byId.get(s.id);
     if (!def) continue;
     for (let i = 0; i < Math.min(s.level, def.costs.length); i++) {
       total += def.costs[i] ?? 0;
     }
   }
+  for (const name of iconicOwned) {
+    total += iconicCostFor(name) ?? 0;
+  }
   return total;
 }
 
-/** Cost of going from current `level` to `level + 1`, or null if unknown / capped. */
-export function nextLevelCost(def: NovaUpgrade, currentLevel: number): number | null {
-  if (currentLevel >= def.costs.length) return null;
-  return def.costs[currentLevel] ?? null;
+/** Cost of going from current `level` to `level + 1`. */
+export function nextLevelCost(
+  def: NovaUpgrade,
+  currentLevel: number,
+): { kind: "known"; cost: number } | { kind: "unknown" } | { kind: "max" } {
+  if (currentLevel >= def.costs.length) return { kind: "max" };
+  const c = def.costs[currentLevel];
+  if (c === null || c === undefined) return { kind: "unknown" };
+  return { kind: "known", cost: c };
 }
 
 export interface NovaBalance {

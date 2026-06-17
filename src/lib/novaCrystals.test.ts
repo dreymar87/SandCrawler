@@ -2,66 +2,113 @@ import { describe, expect, it } from "vitest";
 import type { NovaUpgrade, NovaUpgradeState } from "../types";
 import {
   computeBalance,
-  crystalsEarnedThrough,
   crystalsSpent,
+  iconicCostFor,
   nextLevelCost,
+  srbBonusAt,
 } from "./novaCrystals";
 
-describe("crystalsEarnedThrough", () => {
-  it("returns 0 before crystal rewards start (RB12)", () => {
-    expect(crystalsEarnedThrough(0)).toBe(0);
-    expect(crystalsEarnedThrough(11)).toBe(0);
+describe("srbBonusAt", () => {
+  it("returns null below RB12 (no SRB bonus is granted)", () => {
+    expect(srbBonusAt(0)).toBe(null);
+    expect(srbBonusAt(11)).toBe(null);
   });
 
-  it("matches the workbook's per-level values", () => {
-    // RB12 = 11 crystals (first rebirth that grants any)
-    expect(crystalsEarnedThrough(12)).toBe(11);
-    // RB13 = 11 + 16 = 27
-    expect(crystalsEarnedThrough(13)).toBe(27);
+  it("returns the workbook's bonus row for RB12", () => {
+    expect(srbBonusAt(12)).toEqual({ rbLevel: 12, crystals: 11, creditMult: 0.22, xpMult: 1.1 });
   });
 
-  it("totals to 11+16+22+29+37+46+56+67+79+92+106+121 = 682 at RB23", () => {
-    expect(crystalsEarnedThrough(23)).toBe(682);
+  it("returns the workbook's bonus row for RB23", () => {
+    expect(srbBonusAt(23)).toEqual({ rbLevel: 23, crystals: 121, creditMult: 2.42, xpMult: 12.1 });
   });
 
-  it("caps above the max rebirth (no additional crystals)", () => {
-    expect(crystalsEarnedThrough(50)).toBe(682);
+  it("returns null above RB23 (no data)", () => {
+    expect(srbBonusAt(24)).toBe(null);
+  });
+});
+
+describe("iconicCostFor", () => {
+  it("returns 30 crystals for the standard ICONIC droids", () => {
+    expect(iconicCostFor("BB8")).toBe(30);
+    expect(iconicCostFor("MISTER BONES")).toBe(30);
+    expect(iconicCostFor("IG-11 MARSHAL")).toBe(30);
+    expect(iconicCostFor("DJ-R3X")).toBe(30);
+  });
+
+  it("returns 75 crystals for CB-23", () => {
+    expect(iconicCostFor("CB-23")).toBe(75);
+  });
+
+  it("is case-insensitive and whitespace-tolerant", () => {
+    expect(iconicCostFor("  bb8 ")).toBe(30);
+    expect(iconicCostFor("cb-23")).toBe(75);
+  });
+
+  it("returns null for non-ICONIC names", () => {
+    expect(iconicCostFor("MOUSE")).toBe(null);
+    expect(iconicCostFor("")).toBe(null);
   });
 });
 
 describe("crystalsSpent", () => {
   const upgrades: NovaUpgrade[] = [
     { id: "core.credits", tree: "CORE", name: "Credits", costs: [2, 6, 10, 14] },
-    { id: "core.movement-speed", tree: "CORE", name: "Speed", costs: [1, 2, 4] },
+    {
+      id: "core.pickaxe-mastery",
+      tree: "CORE",
+      name: "Pickaxe Mastery",
+      costs: [5, 10, 15, null, 20, 25, 30, null, null, null, null],
+    },
   ];
 
   it("sums the costs you paid to reach each upgrade's current level", () => {
     const states: NovaUpgradeState[] = [
       { id: "core.credits", level: 3 }, // 2 + 6 + 10 = 18
-      { id: "core.movement-speed", level: 1 }, // 1
     ];
-    expect(crystalsSpent(states, upgrades)).toBe(19);
+    expect(crystalsSpent(states, upgrades)).toBe(18);
   });
 
-  it("ignores states for unknown upgrade ids", () => {
-    expect(crystalsSpent([{ id: "ghost", level: 5 }], upgrades)).toBe(0);
+  it("treats unknown-cost levels as 0 contribution", () => {
+    // Pickaxe Mastery L4 has unknown cost (null) — skip without crashing.
+    expect(crystalsSpent([{ id: "core.pickaxe-mastery", level: 7 }], upgrades)).toBe(
+      5 + 10 + 15 + 0 + 20 + 25 + 30,
+    );
   });
 
-  it("caps at the upgrade's known cost length", () => {
-    expect(crystalsSpent([{ id: "core.credits", level: 10 }], upgrades)).toBe(2 + 6 + 10 + 14);
+  it("adds ICONIC purchase costs when provided", () => {
+    expect(
+      crystalsSpent(
+        [{ id: "core.credits", level: 1 }], // 2
+        upgrades,
+        ["BB8", "CB-23"], // 30 + 75
+      ),
+    ).toBe(2 + 30 + 75);
+  });
+
+  it("ignores unknown upgrade ids and unknown ICONIC names", () => {
+    expect(crystalsSpent([{ id: "ghost", level: 5 }], upgrades, ["GHOST DROID"])).toBe(0);
   });
 });
 
 describe("nextLevelCost", () => {
-  const def: NovaUpgrade = { id: "x", tree: "CORE", name: "X", costs: [2, 6, 10] };
+  const def: NovaUpgrade = {
+    id: "x",
+    tree: "CORE",
+    name: "X",
+    costs: [5, 10, null, 20],
+  };
 
-  it("returns the cost of going from current level to the next", () => {
-    expect(nextLevelCost(def, 0)).toBe(2);
-    expect(nextLevelCost(def, 2)).toBe(10);
+  it("returns a known cost when the next level's price is published", () => {
+    expect(nextLevelCost(def, 0)).toEqual({ kind: "known", cost: 5 });
+    expect(nextLevelCost(def, 3)).toEqual({ kind: "known", cost: 20 });
   });
 
-  it("returns null when there's no further known level", () => {
-    expect(nextLevelCost(def, 3)).toBe(null);
+  it("returns 'unknown' when the level exists but the cost isn't published", () => {
+    expect(nextLevelCost(def, 2)).toEqual({ kind: "unknown" });
+  });
+
+  it("returns 'max' once the player is past every known level", () => {
+    expect(nextLevelCost(def, 4)).toEqual({ kind: "max" });
   });
 });
 

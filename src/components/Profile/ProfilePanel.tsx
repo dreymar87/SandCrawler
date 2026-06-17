@@ -1,6 +1,5 @@
 import { MAX_STANDARD_REBIRTH } from "../../constants";
 import { SQUAD_DEFS } from "../../data/squads.seed";
-import { crystalsEarnedThrough } from "../../lib/novaCrystals";
 import { formatPerSecond } from "../../lib/production";
 import { ALL_CYCLES, cycleLabel } from "../../lib/rebirthCycles";
 import {
@@ -8,6 +7,7 @@ import {
   useNovaBalance,
   useProduction,
   useSquadCapacity,
+  useSrbBonusAtCurrentRB,
 } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
 import type { RebirthCycle } from "../../types";
@@ -32,7 +32,7 @@ export function ProfilePanel() {
   const production = useProduction();
   const activeCycle = useActiveCycle();
   const nova = useNovaBalance();
-  const autoEarned = crystalsEarnedThrough(standardRebirth);
+  const srbBonus = useSrbBonusAtCurrentRB();
 
   return (
     <div className="space-y-4">
@@ -135,27 +135,30 @@ export function ProfilePanel() {
         <label className="field-label" htmlFor="p-nova">
           Total earned (manual)
         </label>
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          <input
-            id="p-nova"
-            type="number"
-            min={0}
-            className="input"
-            value={novaEarned}
-            onChange={(e) => setNovaEarned(Number(e.target.value) || 0)}
-          />
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm whitespace-nowrap"
-            onClick={() => setNovaEarned(autoEarned)}
-            title={`Sum crystals from Standard Rebirths 12..${standardRebirth}`}
-          >
-            Set from RB ({autoEarned})
-          </button>
-        </div>
+        <input
+          id="p-nova"
+          type="number"
+          min={0}
+          className="input"
+          value={novaEarned}
+          onChange={(e) => setNovaEarned(Number(e.target.value) || 0)}
+        />
         <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
-          "Spent" is derived from your Nova Shop upgrade levels.
+          "Spent" is derived from your Nova Shop upgrade levels and ICONIC droid purchases.
         </p>
+        {srbBonus ? (
+          <div className="mt-3 pl-3 py-2 border-l-2 border-holo-dim bg-panel-alt rounded-r-md text-[12px] text-muted">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-alt">
+              SRB at RB{standardRebirth}:
+            </span>{" "}
+            +{srbBonus.crystals} crystals · ×{(1 + srbBonus.creditMult).toFixed(2)} credits · ×
+            {(1 + srbBonus.xpMult).toFixed(1)} XP
+          </div>
+        ) : (
+          <p className="font-mono text-[10.5px] text-muted-alt mt-2">
+            Super Rebirth bonuses start at RB12. Currently at RB{standardRebirth}.
+          </p>
+        )}
       </section>
 
       {/* Production calculator */}

@@ -13,5 +13,10 @@ export const SEED_VERSION = 3;
  * v4 — Rebirth cycles + 6th tier FLAWLESS + ICONIC (was MYTHIC) +
  *      cosmetics + Nova Shop. Drops the manual `superRebirths` slice.
  *      Profile gains `superRebirthCount`, `cycleOverride`, `novaEarned/Spent`.
+ * v5 — StandardRebirth.rewards split: `slotUnlock` stays per-RB; the
+ *      crystals + credit/XP multipliers move to a separate
+ *      SUPER_REBIRTH_BONUSES table (they're SRB rewards, not RB rewards).
+ *      Adds `novaIconicOwned` slice for ICONIC Nova Shop purchases.
+ *      Nova Shop level caps raised with null-padded unknown costs.
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;

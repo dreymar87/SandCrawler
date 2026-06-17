@@ -1,5 +1,6 @@
 import { useStandardRebirths, useStandardReadiness, useActiveCycle } from "../../store/selectors";
 import { rosterCovers } from "../../lib/readiness";
+import { srbBonusAt } from "../../lib/novaCrystals";
 import { cycleLabel } from "../../lib/rebirthCycles";
 import { useAppStore } from "../../store/useAppStore";
 import { ProgressBar } from "../common/ProgressBar";
@@ -81,7 +82,8 @@ function RebirthRow({
 }) {
   const sell = rb.sellList;
   const dnsell = sell.includes("DO_NOT_SELL");
-  const slot = rb.rewards.slotUnlock;
+  const slot = rb.slotUnlock;
+  const srb = srbBonusAt(rb.level);
   return (
     <div
       className={`card mb-3 ${isReady ? "card-ready" : ""} ${isPast && !isCurrent ? "opacity-60" : ""}`}
@@ -128,19 +130,23 @@ function RebirthRow({
           );
         })}
 
-        {/* Reward strip */}
-        <div className="flex flex-wrap gap-1.5 mt-3">
-          {rb.rewards.novaCrystals > 0 ? (
-            <RewardChip label="Crystals" value={`+${rb.rewards.novaCrystals}`} />
-          ) : null}
-          {rb.rewards.creditMult > 0 ? (
-            <RewardChip label="Credit" value={`×${(1 + rb.rewards.creditMult).toFixed(2)}`} />
-          ) : null}
-          {rb.rewards.xpMult > 0 ? (
-            <RewardChip label="XP" value={`×${(1 + rb.rewards.xpMult).toFixed(1)}`} />
-          ) : null}
-          {slot ? <RewardChip label="Slot" value={slot} /> : null}
-        </div>
+        {/* Per-rebirth reward: slot unlock */}
+        {slot ? (
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            <RewardChip label="Slot" value={slot} />
+          </div>
+        ) : null}
+
+        {/* Super Rebirth bonus hint — what you'd earn if you SR'd at this level */}
+        {srb ? (
+          <div className="mt-3 pl-3 py-2 border-l-2 border-sun/40 bg-sun/5 rounded-r-md text-[12px] text-muted">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-sun">
+              SRB bonus here:
+            </span>{" "}
+            +{srb.crystals} crystals · ×{(1 + srb.creditMult).toFixed(2)} credits · ×
+            {(1 + srb.xpMult).toFixed(1)} XP
+          </div>
+        ) : null}
 
         {/* Sell guidance */}
         {sell.length > 0 ? (

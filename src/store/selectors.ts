@@ -5,7 +5,7 @@ import { DROID_STATS } from "../data/droidStats.seed";
 import { NOVA_UPGRADES } from "../data/novaShop.seed";
 import { SQUAD_TYPES } from "../data/squads.seed";
 import { cycleFor } from "../lib/rebirthCycles";
-import { computeBalance, crystalsSpent, type NovaBalance } from "../lib/novaCrystals";
+import { computeBalance, crystalsSpent, srbBonusAt, type NovaBalance } from "../lib/novaCrystals";
 import { rebirthsForCycle } from "../lib/sellGuidance";
 import { computeProduction, type ProductionTotals } from "../lib/production";
 import { scoreRequirements, standardRebirthReady, type ScoredRank } from "../lib/readiness";
@@ -17,6 +17,7 @@ import type {
   RebirthCycle,
   StandardRebirth,
   SquadType,
+  SuperRebirthBonus,
 } from "../types";
 import { useAppStore } from "./useAppStore";
 
@@ -168,12 +169,36 @@ export function useDroidexCompletion(): {
   }, [cards]);
 }
 
-/** Nova Crystals balance (earned manually-recorded; spent derived from upgrade levels). */
+/**
+ * Nova Crystals balance.
+ *   earned = manual entry on the Profile tab.
+ *   spent  = derived from upgrade levels + ICONIC droid purchases.
+ */
 export function useNovaBalance(): NovaBalance {
   const earned = useAppStore((s) => s.profile.novaEarned);
   const upgrades = useAppStore((s) => s.novaUpgrades);
-  const derivedSpent = useMemo(() => crystalsSpent(upgrades, NOVA_UPGRADES), [upgrades]);
+  const iconicOwned = useAppStore((s) => s.novaIconicOwned);
+  const derivedSpent = useMemo(
+    () => crystalsSpent(upgrades, NOVA_UPGRADES, iconicOwned),
+    [upgrades, iconicOwned],
+  );
   return useMemo(() => computeBalance(earned, derivedSpent), [earned, derivedSpent]);
+}
+
+/** The Super Rebirth bonus you'd earn if you SR'd from your current RB. */
+export function useSrbBonusAtCurrentRB(): SuperRebirthBonus | null {
+  const rb = useAppStore((s) => s.profile.standardRebirth);
+  return useMemo(() => srbBonusAt(rb), [rb]);
+}
+
+/** ICONIC droids the user has purchased from the Nova Shop. */
+export function useIconicPurchases(): Map<string, boolean> {
+  const owned = useAppStore((s) => s.novaIconicOwned);
+  return useMemo(() => {
+    const m = new Map<string, boolean>();
+    for (const n of owned) m.set(n.trim().toUpperCase(), true);
+    return m;
+  }, [owned]);
 }
 
 export function useCosmeticsByKind(): Record<CosmeticKind, CosmeticItem[]> {

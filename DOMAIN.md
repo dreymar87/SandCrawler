@@ -101,19 +101,30 @@ After SRB4| RBC1  | loop
 Derived: `cycleFor(superRebirthCount, override?)` = `(count % 4) + 1`,
 unless the user pinned a manual override.
 
-## Per-rebirth rewards
+## Per-rebirth slot unlock
 
-Every rebirth past RB11 grants Nova Crystals plus stacking multipliers:
+Each Standard Rebirth grants exactly one in-game side-effect we model:
+a slot unlocks in one of the squads. Stored as
+`StandardRebirth.slotUnlock` (or `null` if the level grants no slot).
 
-| Level | Crystals | Credit ×  | XP ×   |
-| ----- | -------- | --------- | ------ |
-| 12    | 11       | 1.22      | 2.1    |
-| 13    | 16       | 1.32      | 2.6    |
-| …     | …        | …         | …      |
-| 23    | 121      | 3.42      | 13.1   |
+## Super Rebirth bonuses
 
-(Multipliers stored as `+N`-style deltas, e.g. RB12 stores `0.22` for
-`+22%`. The UI renders them as `×1.22`.)
+When you **Super Rebirth from RB level N** (12 ≤ N ≤ 23), you receive a
+one-time bonus: Nova Crystals + an additive credit multiplier + an
+additive XP multiplier. These are *not* per-rebirth rewards — they fire
+once at the moment of Super Rebirth.
+
+| RB at SRB | Crystals | Credit × | XP ×  |
+| --------- | -------- | -------- | ----- |
+| 12        | 11       | 1.22     | 2.1   |
+| 13        | 16       | 1.32     | 2.6   |
+| 14        | 22       | 1.44     | 3.2   |
+| …         | …        | …        | …     |
+| 23        | 121      | 3.42     | 13.1  |
+
+Stored in `src/data/superRebirthBonuses.seed.ts`, looked up via
+`srbBonusAt(rbLevel)`. Multipliers stored as `+N`-style deltas (RB12 →
+`0.22` for `+22%`); the UI renders as `×1.22`.
 
 ## Chip-upgrade costs
 
@@ -150,18 +161,25 @@ later link unlock conditions to the player's progress.
 
 ## Nova Crystals Shop
 
-Two upgrade trees with per-level crystal costs (sparse arrays — `null`
-where the cost is not yet known publicly):
+Two upgrade trees + a one-shot ICONIC droid section. `costs[i]` is the
+crystal cost to upgrade from level `i` to level `i+1`; `null` entries
+mean the level exists but its cost isn't yet publicly known. The UI
+shows `?` for unknown next-level costs and still allows progress past
+them.
 
-- **Core**: Max Health, Damage, **Credits** (the main one),
-  Flawless Charm, Movement Speed, Double Daily Quests, Pickaxe Mastery,
-  Jawa Bartering, Super Crates.
-- **Workshop**: Lounge Slot, Upgrade Chip Scrap, Scrap Value,
-  Blueprint Scrap, Crafting Speed, Blueprint Storage, Collect All,
-  Rebirth Droid Alert.
+- **Core**: Max Health (L8), Damage (L8), **Credits** (L11),
+  Flawless Charm (L1), Movement Speed (L8), Double Daily Quests (L1),
+  Pickaxe Mastery (L11), Jawa Bartering (L5), Super Crates (L3).
+- **Workshop**: Lounge Slot (L4), Upgrade Chip Scrap (L10),
+  Scrap Value (L8), Blueprint Scrap (L4), Crafting Speed (L5),
+  Blueprint Storage (L3), Collect All (L3), Rebirth Droid Alert (L1),
+  Blueprint Vendor (L1).
+- **ICONIC Droids**: BB8 / MISTER BONES / IG-11 MARSHAL / DJ-R3X at
+  **30 crystals each**, CB-23 at **75 crystals**. One-shot purchase.
 
-`crystalsSpent(upgrades, defs)` derives the spent total from the
-player's per-upgrade levels; balance = earned − spent.
+`crystalsSpent(upgrades, defs, iconicOwned)` sums the player's spent
+total across both. `balance = novaEarned − crystalsSpent`. Unknown
+costs contribute `0` to the sum.
 
 ## Credits notation
 

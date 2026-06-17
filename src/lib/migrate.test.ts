@@ -102,7 +102,7 @@ describe("migrate", () => {
     expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", owned: true, active: true });
   });
 
-  it("unwraps a current ExportEnvelope and preserves cosmetics + nova upgrades", () => {
+  it("unwraps a current ExportEnvelope and preserves cosmetics + nova upgrades + ICONIC purchases", () => {
     const envelope = {
       app: "sandcrawler",
       schemaVersion: SCHEMA_VERSION,
@@ -121,15 +121,43 @@ describe("migrate", () => {
         standardOverrides: [],
         cosmetics: [{ id: "paint-blue-paint", owned: true }],
         novaUpgrades: [{ id: "core.credits", level: 2 }],
+        novaIconicOwned: ["BB8", "CB-23"],
         ui: { activeTab: "droidex", creditsCurrent: "0" },
       },
     };
     const state = migrate(envelope);
     expect(state.cards).toHaveLength(1);
     expect(state.profile.superRebirthCount).toBe(3);
+    expect(state.novaIconicOwned).toEqual(["BB8", "CB-23"]);
     expect(state.profile.cycleOverride).toBe(2);
     expect(state.profile.novaEarned).toBe(100);
     expect(state.cosmetics).toEqual([{ id: "paint-blue-paint", owned: true }]);
     expect(state.novaUpgrades).toEqual([{ id: "core.credits", level: 2 }]);
+  });
+
+  it("v4 → v5: lifts standardOverrides[].rewards.slotUnlock to top level", () => {
+    const v4 = {
+      schemaVersion: 4,
+      standardOverrides: [
+        {
+          level: 5,
+          cycle: 1,
+          credits: "5.35M",
+          needs: [],
+          sellList: [],
+          // v4 shape: slotUnlock was nested under `rewards`.
+          rewards: { novaCrystals: 0, creditMult: 0, xpMult: 0, slotUnlock: "ASTROMECH" },
+        },
+      ],
+    };
+    const state = migrate(v4);
+    const row = state.standardOverrides[0]!;
+    expect(row.slotUnlock).toBe("ASTROMECH");
+    expect((row as unknown as { rewards?: unknown }).rewards).toBeUndefined();
+  });
+
+  it("bootstraps novaIconicOwned to [] for older payloads that lack it", () => {
+    const v4 = { schemaVersion: 4 };
+    expect(migrate(v4).novaIconicOwned).toEqual([]);
   });
 });

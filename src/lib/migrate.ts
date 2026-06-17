@@ -7,6 +7,7 @@ import type {
   PersistedState,
   Profile,
   RebirthCycle,
+  StandardRebirth,
   TabKey,
 } from "../types";
 import { buildDroidIndex } from "./autocomplete";
@@ -48,6 +49,7 @@ export function emptyState(): PersistedState {
     standardOverrides: [],
     cosmetics: [],
     novaUpgrades: [],
+    novaIconicOwned: [],
     ui: { activeTab: "droidex", creditsCurrent: "" },
   };
 }
@@ -188,22 +190,51 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
   };
   const activeTab = tabMap[oldTab] ?? "droidex";
 
+  // v5: novaIconicOwned slice (ICONIC droid Nova Shop purchases)
+  const novaIconicOwned: string[] = Array.isArray(obj.novaIconicOwned)
+    ? (obj.novaIconicOwned as unknown[])
+        .filter((n): n is string => typeof n === "string")
+        .map((n) => n.trim())
+        .filter((n) => n.length > 0)
+    : [];
+
+  // v5: lift StandardRebirth.rewards.slotUnlock to top-level, drop the rest.
+  // v4 stored slot/crystals/mults nested under `rewards`; v5 keeps only
+  // slotUnlock (the genuinely per-RB datum).
+  const standardOverrides = liftStandardRebirthRewards(obj.standardOverrides);
+
   return {
     schemaVersion: SCHEMA_VERSION,
     cards: Array.from(cardMap.values()),
     profile,
     customDroids,
-    standardOverrides: Array.isArray(obj.standardOverrides)
-      ? (obj.standardOverrides as PersistedState["standardOverrides"])
-      : [],
+    standardOverrides,
     cosmetics,
     novaUpgrades,
+    novaIconicOwned,
     ui: {
       ...uiRaw,
       activeTab,
       creditsCurrent: (uiRaw.creditsCurrent as string) ?? "",
     } as PersistedState["ui"],
   };
+}
+
+function liftStandardRebirthRewards(raw: unknown): StandardRebirth[] {
+  if (!Array.isArray(raw)) return [];
+  return (raw as Record<string, unknown>[]).map((row) => {
+    const r = row as Record<string, unknown>;
+    const rewards = (r.rewards ?? {}) as Record<string, unknown>;
+    // Prefer a top-level slotUnlock (v5 shape); fall back to nested (v4).
+    const slotUnlock = (r.slotUnlock as StandardRebirth["slotUnlock"]) ??
+      (rewards.slotUnlock as StandardRebirth["slotUnlock"]) ??
+      null;
+    const { rewards: _drop, ...rest } = r;
+    return {
+      ...(rest as unknown as StandardRebirth),
+      slotUnlock,
+    };
+  });
 }
 
 function mergeCards(a: CollectionCard, b: CollectionCard): CollectionCard {

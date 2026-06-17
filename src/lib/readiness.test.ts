@@ -49,7 +49,6 @@ describe("bestOwnedTier", () => {
 });
 
 describe("standardRebirthReady", () => {
-  const noRewards = { novaCrystals: 0, creditMult: 0, xpMult: 0, slotUnlock: null } as const;
   const rb: StandardRebirth = {
     level: 1,
     cycle: 1,
@@ -60,7 +59,7 @@ describe("standardRebirthReady", () => {
       { name: "DRK-1 PROBE", tier: "DEFAULT" },
     ],
     sellList: [],
-    rewards: noRewards,
+    slotUnlock: null,
     source: "seed",
   };
 

@@ -16,7 +16,7 @@ import type {
   Tier,
 } from "../types";
 
-const STORAGE_KEY = "sandcrawler:v4";
+const STORAGE_KEY = "sandcrawler:v5";
 
 function bootstrapState(): PersistedState {
   return emptyState();
@@ -50,6 +50,7 @@ interface Actions {
 
   // ── Nova Shop ─────────────────────────────────────────────────────────
   setNovaUpgradeLevel(id: string, level: number): void;
+  setIconicPurchased(droidName: string, purchased: boolean): void;
 
   // ── Standard Rebirth (user overrides on top of the seed table) ────────
   upsertStandardOverride(rb: StandardRebirth): void;
@@ -181,6 +182,22 @@ export const useAppStore = create<AppStore>()(
         });
       },
 
+      setIconicPurchased(droidName, purchased) {
+        set((s) => {
+          const key = droidName.trim().toUpperCase();
+          const existing = s.novaIconicOwned.some((n) => n.trim().toUpperCase() === key);
+          if (purchased && !existing) {
+            return { novaIconicOwned: [...s.novaIconicOwned, droidName.trim()] };
+          }
+          if (!purchased && existing) {
+            return {
+              novaIconicOwned: s.novaIconicOwned.filter((n) => n.trim().toUpperCase() !== key),
+            };
+          }
+          return {};
+        });
+      },
+
       setNovaUpgradeLevel(id, level) {
         set((s) => {
           const safe = Math.max(0, Math.floor(level));
@@ -248,6 +265,7 @@ export const useAppStore = create<AppStore>()(
         standardOverrides: state.standardOverrides,
         cosmetics: state.cosmetics,
         novaUpgrades: state.novaUpgrades,
+        novaIconicOwned: state.novaIconicOwned ?? [],
         ui: state.ui,
       }),
     },

@@ -26,6 +26,7 @@ export function DataPanel() {
       standardOverrides: s.standardOverrides,
       cosmetics: s.cosmetics,
       novaUpgrades: s.novaUpgrades,
+      novaIconicOwned: s.novaIconicOwned,
       ui: s.ui,
     };
   };
