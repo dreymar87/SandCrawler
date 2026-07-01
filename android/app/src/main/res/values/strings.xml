@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SandCrawler</string>
+    <string name="title_activity_main">SandCrawler</string>
+    <string name="package_name">com.sandcrawler.app</string>
+    <string name="custom_url_scheme">com.sandcrawler.app</string>
+</resources>

@@ -41,7 +41,11 @@ rights holders.
 ## Stack
 
 Vite + React 18 + TypeScript + Tailwind CSS + Zustand + idb-keyval +
-Fuse.js + vite-plugin-pwa.
+Fuse.js + vite-plugin-pwa. Packaged for Android with Capacitor.
+
+Navigation is a five-tab bottom bar — **Home · Droidex · Rebirths · Shop ·
+Profile** — with Home as an at-a-glance dashboard and Profile as the
+editable record of your base.
 
 ## Development
 
@@ -56,6 +60,59 @@ npm run preview    # preview the production build locally
 
 To build without the PWA service worker (useful for some hosting
 environments): `VITE_PWA=0 npm run build`.
+
+## Android app (Capacitor)
+
+SandCrawler wraps the same web build as a native Android app with
+[Capacitor](https://capacitorjs.com). The `android/` Gradle project is
+committed; the web assets are copied into it at build time (not
+committed). Building the actual APK requires the **Android SDK**, which
+isn't part of this repo's toolchain — do it on a machine with Android
+Studio (or CI with the SDK installed).
+
+### One-time setup
+
+1. Install **Android Studio** (bundles the SDK + platform tools + a JDK),
+   or the command-line SDK with an API 34+ platform.
+2. `npm install` (installs the Capacitor CLI + plugins).
+
+### Build a debug APK
+
+```bash
+npm run build:app          # VITE_PWA=0 vite build + cap copy → android/
+cd android
+./gradlew assembleDebug    # needs the Android SDK
+```
+
+The APK lands at
+`android/app/build/outputs/apk/debug/app-debug.apk` — sideload it with
+`adb install -r app-debug.apk` or copy it to a device.
+
+Or open the project in Android Studio and press Run:
+
+```bash
+npm run android:open       # opens android/ in Android Studio
+```
+
+### Signed release (Play Store)
+
+1. Create a keystore: `keytool -genkey -v -keystore sandcrawler.jks -alias sandcrawler -keyalg RSA -keysize 2048 -validity 10000`.
+2. Reference it from `android/app/build.gradle` (`signingConfigs`) or a
+   `keystore.properties` file (keep both out of git — already
+   `.gitignore`d).
+3. `cd android && ./gradlew bundleRelease` → an `.aab` for the Play
+   Console.
+4. Change `appId` in `capacitor.config.ts` from the placeholder
+   `com.sandcrawler.app` to a domain you control **before** first
+   publishing.
+
+### App icons & splash
+
+`npm run icons` regenerates the PWA PNGs; `npm run android:icons`
+regenerates the Android adaptive launcher icons + splash from the SVGs in
+`assets/`. The service worker is disabled for native builds (the WebView
+already bundles the assets), so `build:app` sets `VITE_PWA=0`
+automatically.
 
 ## Project layout
 

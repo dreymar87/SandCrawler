@@ -12,9 +12,19 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "icons": "node scripts/gen-pwa-icons.mjs"
+    "icons": "node scripts/gen-pwa-icons.mjs",
+    "android:icons": "node scripts/gen-android-icons.mjs",
+    "build:app": "node scripts/build-app.mjs",
+    "android:sync": "node scripts/build-app.mjs sync",
+    "android:open": "cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "fuse.js": "^7.0.0",
     "idb-keyval": "^6.2.1",
     "react": "^18.3.1",
@@ -22,6 +32,7 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
     "@types/node": "^22.19.21",

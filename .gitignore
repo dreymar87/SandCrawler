@@ -36,6 +36,19 @@ coverage
 # TypeScript build cache
 *.tsbuildinfo
 
+# Android / Capacitor build artifacts (the android/ project itself IS committed)
+android/.gradle
+android/app/build
+android/build
+android/captures
+android/local.properties
+android/.idea
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+*.keystore
+*.jks
+
 # Misc
 .env
 .env.local

@@ -1,42 +1,64 @@
 /**
- * Native-platform helpers. On the web these are no-ops; when running inside
- * the Capacitor Android shell they bridge to native plugins.
+ * Native-platform helpers. On the web these are no-ops (or use the plugins'
+ * web fallbacks); inside the Capacitor Android shell they bridge to native.
  *
- * This module intentionally avoids a static import of `@capacitor/*` so the
- * web build has zero native dependencies. The Capacitor runtime injects a
- * global `Capacitor` object into the WebView; we feature-detect it.
+ * The Capacitor plugins ship web implementations, so static imports are
+ * safe in the browser build — they simply no-op off-device.
  */
+import { Capacitor } from "@capacitor/core";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 type HapticStyle = "light" | "medium" | "heavy";
 
-interface CapacitorGlobal {
-  isNativePlatform?: () => boolean;
-  Plugins?: {
-    Haptics?: { impact?: (opts: { style: string }) => void };
-  };
-}
-
-function cap(): CapacitorGlobal | undefined {
-  return (globalThis as { Capacitor?: CapacitorGlobal }).Capacitor;
-}
-
 export function isNative(): boolean {
-  return !!cap()?.isNativePlatform?.();
+  return Capacitor.isNativePlatform();
 }
 
-const IMPACT_STYLE: Record<HapticStyle, string> = {
-  light: "LIGHT",
-  medium: "MEDIUM",
-  heavy: "HEAVY",
+const IMPACT: Record<HapticStyle, ImpactStyle> = {
+  light: ImpactStyle.Light,
+  medium: ImpactStyle.Medium,
+  heavy: ImpactStyle.Heavy,
 };
 
-/** Fire a light haptic tap on native; silently no-op on the web. */
+/** Fire a haptic tap on native; silently no-op on the web. */
 export function haptic(style: HapticStyle = "light"): void {
-  const c = cap();
-  if (!c?.isNativePlatform?.()) return;
-  try {
-    c.Plugins?.Haptics?.impact?.({ style: IMPACT_STYLE[style] });
-  } catch {
+  if (!Capacitor.isNativePlatform()) return;
+  void Haptics.impact({ style: IMPACT[style] }).catch(() => {
     /* haptics are best-effort */
+  });
+}
+
+/**
+ * One-time native setup: status-bar theming, hide the splash once the web
+ * app is interactive, and route the Android hardware back button through
+ * the app's tab navigation. Safe to call on the web (returns immediately).
+ */
+export async function initNative(opts: { onBack: () => boolean }): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+
+  try {
+    const { StatusBar, Style } = await import("@capacitor/status-bar");
+    await StatusBar.setStyle({ style: Style.Dark });
+    await StatusBar.setBackgroundColor({ color: "#0A0E15" });
+  } catch {
+    /* status bar unavailable on some devices */
+  }
+
+  try {
+    const { SplashScreen } = await import("@capacitor/splash-screen");
+    await SplashScreen.hide();
+  } catch {
+    /* splash already gone */
+  }
+
+  try {
+    const { App } = await import("@capacitor/app");
+    await App.addListener("backButton", ({ canGoBack }) => {
+      // onBack returns true if it consumed the press (navigated a tab).
+      const handled = opts.onBack();
+      if (!handled && !canGoBack) void App.exitApp();
+    });
+  } catch {
+    /* app plugin unavailable */
   }
 }
