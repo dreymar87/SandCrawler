@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+import { useAppStore } from "../../store/useAppStore";
+import { Toast } from "../common/Toast";
+import { OnboardingSheet } from "../Onboarding/OnboardingSheet";
 import { BottomNav } from "./BottomNav";
 
 /**
@@ -7,6 +10,8 @@ import { BottomNav } from "./BottomNav";
  * keep it clear of notches and gesture bars on native / installed PWA.
  */
 export function AppShell({ title, children }: { title: string; children: ReactNode }) {
+  // Re-key the content on tab change so it plays the entrance animation.
+  const tab = useAppStore((s) => s.ui.activeTab);
   return (
     <div className="min-h-full">
       <header
@@ -26,7 +31,9 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
         className="max-w-[760px] mx-auto px-4 pt-4"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 84px)" }}
       >
-        {children}
+        <div key={tab} className="view-enter">
+          {children}
+        </div>
 
         <footer className="mt-8 text-center font-mono text-[10px] tracking-wider text-muted-alt">
           // Fan-made companion · Unaffiliated with Lucasfilm, Epic Games, FOAD or Blzn Studios
@@ -34,6 +41,8 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
       </main>
 
       <BottomNav />
+      <Toast />
+      <OnboardingSheet />
     </div>
   );
 }

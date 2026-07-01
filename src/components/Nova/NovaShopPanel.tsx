@@ -1,4 +1,5 @@
 import { NOVA_ICONIC_PURCHASES } from "../../data/novaShop.seed";
+import { haptic } from "../../lib/native";
 import { nextLevelCost } from "../../lib/novaCrystals";
 import {
   useIconicPurchases,
@@ -36,8 +37,26 @@ export function NovaShopPanel() {
         </p>
       </section>
 
-      <Tree title="Core Upgrades" items={core} levels={levels} balance={balance.balance} onLevel={setLevel} />
-      <Tree title="Workshop Upgrades" items={workshop} levels={levels} balance={balance.balance} onLevel={setLevel} />
+      <Tree
+        title="Core Upgrades"
+        items={core}
+        levels={levels}
+        balance={balance.balance}
+        onLevel={(id, lvl) => {
+          haptic("light");
+          setLevel(id, lvl);
+        }}
+      />
+      <Tree
+        title="Workshop Upgrades"
+        items={workshop}
+        levels={levels}
+        balance={balance.balance}
+        onLevel={(id, lvl) => {
+          haptic("light");
+          setLevel(id, lvl);
+        }}
+      />
 
       <section className="card p-4">
         <h2 className="font-display font-bold text-base mb-3">ICONIC Droids</h2>
@@ -52,7 +71,10 @@ export function NovaShopPanel() {
               <button
                 key={p.droid}
                 type="button"
-                onClick={() => setIconicPurchased(p.droid, !owned)}
+                onClick={() => {
+                  haptic("light");
+                  setIconicPurchased(p.droid, !owned);
+                }}
                 className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-[10px] border transition ${
                   owned
                     ? "border-ok/40 bg-ok/5"

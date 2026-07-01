@@ -1,3 +1,4 @@
+import { haptic } from "../../lib/native";
 import { useCosmeticOwnership, useCosmeticsByKind } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
 import type { CosmeticItem, CosmeticKind } from "../../types";
@@ -43,7 +44,10 @@ export function CosmeticsPanel() {
                   key={item.id}
                   item={item}
                   owned={!!ownership.get(item.id)}
-                  onToggle={() => setOwned(item.id, !ownership.get(item.id))}
+                  onToggle={() => {
+                    haptic("light");
+                    setOwned(item.id, !ownership.get(item.id));
+                  }}
                 />
               ))}
             </div>

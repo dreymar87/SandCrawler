@@ -6,6 +6,8 @@ import {
   importFromString,
   ImportError,
 } from "../../lib/exportImport";
+import { haptic } from "../../lib/native";
+import { toast } from "../../lib/toast";
 import { useAppStore } from "../../store/useAppStore";
 import type { PersistedState } from "../../types";
 
@@ -33,6 +35,10 @@ export function DataPanel() {
 
   const showMessage = (kind: "ok" | "err", text: string) => {
     setMessage({ kind, text });
+    if (kind === "ok") {
+      haptic("light");
+      toast(text);
+    }
     window.setTimeout(() => setMessage(null), 4000);
   };
 

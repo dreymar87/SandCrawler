@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2732" height="2732" viewBox="0 0 2732 2732">
+  <defs>
+    <radialGradient id="sp" cx="0.5" cy="0.42" r="0.6">
+      <stop offset="0" stop-color="#0D131C"/>
+      <stop offset="1" stop-color="#080B11"/>
+    </radialGradient>
+  </defs>
+  <rect width="2732" height="2732" fill="url(#sp)"/>
+  <!-- centered logo (icon.svg art scaled ~900px, centered) -->
+  <g transform="translate(1366,1230) scale(0.9) translate(-512,-512)">
+    <path d="M300 640 L360 356 L664 356 L724 640 Z" fill="#141C28" stroke="#46C7E0" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M436 356 L452 300 L572 300 L588 356 Z" fill="#121B27" stroke="#46C7E0" stroke-width="10" stroke-linejoin="round"/>
+    <circle cx="430" cy="430" r="17" fill="#46C7E0"/>
+    <circle cx="512" cy="430" r="17" fill="#E8A33D"/>
+    <circle cx="594" cy="430" r="17" fill="#46C7E0"/>
+    <rect x="276" y="640" width="472" height="96" rx="30" fill="#0F1620" stroke="#46C7E0" stroke-width="12"/>
+    <g fill="#0A0E15" stroke="#46C7E0" stroke-width="9">
+      <circle cx="342" cy="688" r="26"/><circle cx="427" cy="688" r="26"/><circle cx="512" cy="688" r="26"/><circle cx="597" cy="688" r="26"/><circle cx="682" cy="688" r="26"/>
+    </g>
+  </g>
+  <text x="1366" y="1720" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-weight="700" font-size="120" letter-spacing="6" fill="#E7EDF4">SANDCRAWLER</text>
+  <text x="1366" y="1800" text-anchor="middle" font-family="monospace" font-size="46" letter-spacing="14" fill="#E8A33D">REBIRTH COMPANION</text>
+</svg>

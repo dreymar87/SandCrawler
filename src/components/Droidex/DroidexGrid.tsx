@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { TIERS, RARITIES, CLASSES } from "../../constants";
 import { DROID_DICT } from "../../data/droids.seed";
+import { haptic } from "../../lib/native";
 import { useAppStore } from "../../store/useAppStore";
 import { useDroidexCompletion } from "../../store/selectors";
 import type { CollectionCard, DroidClass, DroidDef, Rarity, Tier } from "../../types";
@@ -111,7 +112,10 @@ export function DroidexGrid() {
               key={d.canonical}
               droid={d}
               cardIndex={cardIndex}
-              onCycle={(tier) => cycleCard(d.canonical, tier)}
+              onCycle={(tier) => {
+                haptic("light");
+                cycleCard(d.canonical, tier);
+              }}
               tierFilter={tierFilter}
             />
           ))
