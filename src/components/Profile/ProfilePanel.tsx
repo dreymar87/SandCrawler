@@ -11,21 +11,27 @@ import {
 } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
 import type { RebirthCycle } from "../../types";
+import { DataPanel } from "../Data/DataPanel";
 
 /**
- * The Profile tab: tell the app where you currently are, and the app
- * answers with squad capacity, production, and Nova balance.
+ * The Profile tab: the editable record of the player's base — name,
+ * rebirth / super-rebirth levels, credits, chips, nova — plus the derived
+ * squad capacity, production, and a Data & backup section.
  */
 export function ProfilePanel() {
+  const baseName = useAppStore((s) => s.profile.baseName ?? "");
+  const upgradeChips = useAppStore((s) => s.profile.upgradeChips);
   const standardRebirth = useAppStore((s) => s.profile.standardRebirth);
   const superRebirthCount = useAppStore((s) => s.profile.superRebirthCount);
   const cycleOverride = useAppStore((s) => s.profile.cycleOverride);
   const novaEarned = useAppStore((s) => s.profile.novaEarned);
+  const setBaseName = useAppStore((s) => s.setBaseName);
+  const setUpgradeChips = useAppStore((s) => s.setUpgradeChips);
   const setStd = useAppStore((s) => s.setStandardRebirth);
   const setSrbCount = useAppStore((s) => s.setSuperRebirthCount);
   const setCycleOverride = useAppStore((s) => s.setCycleOverride);
   const setNovaEarned = useAppStore((s) => s.setNovaEarned);
-  const credits = useAppStore((s) => s.ui.creditsCurrent);
+  const credits = useAppStore((s) => s.profile.currentCredits);
   const setCredits = useAppStore((s) => s.setCreditsCurrent);
 
   const capacity = useSquadCapacity();
@@ -36,6 +42,41 @@ export function ProfilePanel() {
 
   return (
     <div className="space-y-4">
+      {/* Base identity */}
+      <section className="card p-4">
+        <h2 className="font-display font-bold text-base mb-3">My base</h2>
+        <label className="field-label" htmlFor="p-base-name">
+          Base name (optional)
+        </label>
+        <input
+          id="p-base-name"
+          type="text"
+          className="input mb-3"
+          placeholder="e.g. Mos Eisley Depot"
+          value={baseName}
+          onChange={(e) => setBaseName(e.target.value)}
+          maxLength={40}
+        />
+        <label className="field-label" htmlFor="p-chips">
+          Upgrade chips (optional)
+        </label>
+        <input
+          id="p-chips"
+          type="number"
+          min={0}
+          className="input"
+          placeholder="e.g. 4200"
+          value={upgradeChips ?? ""}
+          onChange={(e) => {
+            const v = e.target.value.trim();
+            setUpgradeChips(v === "" ? undefined : Number(v));
+          }}
+        />
+        <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
+          Track your chip stash to plan tier upgrades.
+        </p>
+      </section>
+
       {/* Current Standard Rebirth */}
       <section className="card p-4">
         <h2 className="font-display font-bold text-base mb-3">Standard Rebirth</h2>
@@ -218,6 +259,28 @@ export function ProfilePanel() {
             );
           })}
         </div>
+      </section>
+
+      {/* Data & backup */}
+      <section className="card p-4">
+        <details>
+          <summary className="font-display font-bold text-base cursor-pointer select-none">
+            Data &amp; backup
+          </summary>
+          <div className="mt-3">
+            <DataPanel />
+          </div>
+        </details>
+      </section>
+
+      {/* About */}
+      <section className="card p-4">
+        <h2 className="font-display font-bold text-base mb-2">About</h2>
+        <p className="text-[13px] text-muted leading-relaxed">
+          SandCrawler is a fan-made companion for <b className="text-ink">Star Wars: Droid Tycoon</b>.
+          It's unaffiliated with Lucasfilm, Epic Games, FOAD, or Blzn Studios. Rebirth, droid, and
+          shop data are community-sourced — corrections welcome.
+        </p>
       </section>
     </div>
   );

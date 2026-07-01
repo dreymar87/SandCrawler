@@ -50,7 +50,7 @@ export function emptyState(): PersistedState {
     cosmetics: [],
     novaUpgrades: [],
     novaIconicOwned: [],
-    ui: { activeTab: "droidex", creditsCurrent: "" },
+    ui: { activeTab: "home" },
   };
 }
 
@@ -59,6 +59,7 @@ export function defaultProfile(): Profile {
     standardRebirth: 0,
     superRebirthCount: 0,
     cycleOverride: null,
+    currentCredits: "",
     novaEarned: 0,
     novaSpent: 0,
   };
@@ -149,10 +150,13 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
     cardMap.set(k, prev ? mergeCards(prev, c) : c);
   }
 
+  const uiRaw = (obj.ui && typeof obj.ui === "object" ? (obj.ui as Record<string, unknown>) : {}) as Record<string, unknown>;
+
   const profile: Profile =
     obj.profile && typeof obj.profile === "object"
-      ? coerceProfile(obj.profile as Record<string, unknown>)
-      : defaultProfile();
+      ? // v6: lift old ui.creditsCurrent into the profile if it isn't already there.
+        coerceProfile(obj.profile as Record<string, unknown>, uiRaw.creditsCurrent as string | undefined)
+      : { ...defaultProfile(), currentCredits: (uiRaw.creditsCurrent as string) ?? "" };
 
   const cosmetics: CosmeticState[] = Array.isArray(obj.cosmetics)
     ? (obj.cosmetics as Record<string, unknown>[])
@@ -174,21 +178,23 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
       })
     : [];
 
-  const uiRaw = (obj.ui && typeof obj.ui === "object" ? (obj.ui as Record<string, unknown>) : {}) as Record<string, unknown>;
-  // Remap old tab keys that no longer exist.
-  const oldTab = String(uiRaw.activeTab ?? "droidex");
+  // Remap old tab keys into the v6 five-tab set.
+  const oldTab = String(uiRaw.activeTab ?? "home");
   const tabMap: Record<string, TabKey> = {
+    home: "home",
     droidex: "droidex",
     profile: "profile",
     rebirths: "rebirths",
     standard: "rebirths",
     super: "rebirths",
-    cosmetics: "cosmetics",
-    nova: "nova",
-    "next-unlock": "next-unlock",
-    data: "data",
+    "next-unlock": "rebirths",
+    cosmetics: "shop",
+    nova: "shop",
+    shop: "shop",
+    data: "profile",
+    collection: "droidex",
   };
-  const activeTab = tabMap[oldTab] ?? "droidex";
+  const activeTab = tabMap[oldTab] ?? "home";
 
   // v5: novaIconicOwned slice (ICONIC droid Nova Shop purchases)
   const novaIconicOwned: string[] = Array.isArray(obj.novaIconicOwned)
@@ -213,11 +219,16 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
     novaUpgrades,
     novaIconicOwned,
     ui: {
-      ...uiRaw,
+      // creditsCurrent intentionally dropped from uiRaw (moved to profile in v6).
+      ...stripUiCredits(uiRaw),
       activeTab,
-      creditsCurrent: (uiRaw.creditsCurrent as string) ?? "",
     } as PersistedState["ui"],
   };
+}
+
+function stripUiCredits(ui: Record<string, unknown>): Record<string, unknown> {
+  const { creditsCurrent: _drop, ...rest } = ui;
+  return rest;
 }
 
 function liftStandardRebirthRewards(raw: unknown): StandardRebirth[] {
@@ -247,7 +258,7 @@ function mergeCards(a: CollectionCard, b: CollectionCard): CollectionCard {
   };
 }
 
-function coerceProfile(p: Record<string, unknown>): Profile {
+function coerceProfile(p: Record<string, unknown>, uiCreditsFallback?: string): Profile {
   const std = typeof p.standardRebirth === "number" ? p.standardRebirth : 0;
   // v3 had profile.superRebirth = { level: string, rank: string }; treat level as the SRB count if numeric.
   const srOld = (p.superRebirth as Record<string, unknown>) ?? {};
@@ -262,12 +273,19 @@ function coerceProfile(p: Record<string, unknown>): Profile {
     typeof p.cycleOverride === "number" && p.cycleOverride >= 1 && p.cycleOverride <= 4
       ? (p.cycleOverride as RebirthCycle)
       : null;
+  // v6: currentCredits lives on profile; fall back to the old ui.creditsCurrent.
+  const currentCredits =
+    typeof p.currentCredits === "string" ? p.currentCredits : (uiCreditsFallback ?? "");
+  const chips = Number(p.upgradeChips);
   return {
+    baseName: typeof p.baseName === "string" ? p.baseName : undefined,
     standardRebirth: Math.max(0, Math.floor(std)),
     superRebirthCount: Math.max(0, Math.floor(count)),
     cycleOverride,
+    currentCredits,
     novaEarned: Math.max(0, Math.floor(Number(p.novaEarned) || 0)),
     novaSpent: Math.max(0, Math.floor(Number(p.novaSpent) || 0)),
+    upgradeChips: Number.isFinite(chips) && chips > 0 ? Math.floor(chips) : undefined,
   };
 }
 

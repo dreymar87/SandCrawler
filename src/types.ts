@@ -66,6 +66,8 @@ export interface CollectionCard {
 
 /** Where the player currently is. Powers squad capacity + next-unlock filtering. */
 export interface Profile {
+  /** Optional name for the player's base, shown on Home / Profile. */
+  baseName?: string;
   /** Current Standard Rebirth level (0–23). */
   standardRebirth: number;
   /**
@@ -75,10 +77,14 @@ export interface Profile {
   superRebirthCount: number;
   /** Manual pin if the user wants to lock a cycle instead of deriving it. */
   cycleOverride: RebirthCycle | null;
+  /** Current credit balance, free-text ("1.2M"). Moved from ui in v6. */
+  currentCredits: string;
   /** Total Nova Crystals the player has earned across their account. */
   novaEarned: number;
   /** Total Nova Crystals spent (in the shop or elsewhere). */
   novaSpent: number;
+  /** Optional current Upgrade Chip balance. */
+  upgradeChips?: number;
 }
 
 export interface RebirthReq {
@@ -226,18 +232,12 @@ export interface UiPrefs {
   rarityFilter?: Rarity | "ALL";
   /** "ALL" | "OWNED" | "MISSING" — Droidex collected filter. */
   collectedFilter?: "ALL" | "OWNED" | "MISSING";
-  /** Free-text current credits, e.g. "1.2M". Used by next-unlock + progress. */
-  creditsCurrent: string;
+  /** Set once the first-run intro has been dismissed. */
+  hasOnboarded?: boolean;
 }
 
-export type TabKey =
-  | "droidex"
-  | "profile"
-  | "rebirths"
-  | "cosmetics"
-  | "nova"
-  | "next-unlock"
-  | "data";
+/** The five primary bottom-nav destinations. */
+export type TabKey = "home" | "droidex" | "rebirths" | "shop" | "profile";
 
 /**
  * Export envelope. The "app" field is a guard against importing random JSON.

@@ -38,21 +38,11 @@ export const CREDIT_SUFFIXES: Record<string, bigint> = {
 };
 
 export const TAB_LABELS: Record<TabKey, string> = {
+  home: "Home",
   droidex: "Droidex",
-  profile: "Profile",
   rebirths: "Rebirths",
-  cosmetics: "Cosmetics",
-  nova: "Nova Shop",
-  "next-unlock": "Next Unlock",
-  data: "Data",
+  shop: "Shop",
+  profile: "Profile",
 };
 
-export const TAB_ORDER: TabKey[] = [
-  "droidex",
-  "profile",
-  "rebirths",
-  "cosmetics",
-  "nova",
-  "next-unlock",
-  "data",
-];
+export const TAB_ORDER: TabKey[] = ["home", "droidex", "rebirths", "shop", "profile"];

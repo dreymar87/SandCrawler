@@ -18,5 +18,8 @@ export const SEED_VERSION = 3;
  *      SUPER_REBIRTH_BONUSES table (they're SRB rewards, not RB rewards).
  *      Adds `novaIconicOwned` slice for ICONIC Nova Shop purchases.
  *      Nova Shop level caps raised with null-padded unknown costs.
+ * v6 — IA redesign: 5 primary tabs (home/droidex/rebirths/shop/profile).
+ *      `ui.creditsCurrent` moves to `profile.currentCredits`; Profile
+ *      gains `baseName` + `upgradeChips`. Old tab keys remapped.
  */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;

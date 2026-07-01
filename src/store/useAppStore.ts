@@ -16,7 +16,7 @@ import type {
   Tier,
 } from "../types";
 
-const STORAGE_KEY = "sandcrawler:v5";
+const STORAGE_KEY = "sandcrawler:v6";
 
 function bootstrapState(): PersistedState {
   return emptyState();
@@ -37,9 +37,12 @@ interface Actions {
   addCustomDroid(def: DroidDef): void;
 
   // ── Profile ───────────────────────────────────────────────────────────
+  setBaseName(name: string): void;
   setStandardRebirth(level: number): void;
   setSuperRebirthCount(n: number): void;
   setCycleOverride(c: RebirthCycle | null): void;
+  setCreditsCurrent(value: string): void;
+  setUpgradeChips(n: number | undefined): void;
   setNovaEarned(n: number): void;
   setNovaSpent(n: number): void;
   addNovaEarned(delta: number): void;
@@ -58,8 +61,8 @@ interface Actions {
 
   // ── UI ─────────────────────────────────────────────────────────────────
   setActiveTab(tab: TabKey): void;
-  setCreditsCurrent(value: string): void;
   setUiPref<K extends keyof PersistedState["ui"]>(key: K, value: PersistedState["ui"][K]): void;
+  dismissOnboarding(): void;
 
   // ── Bulk ──────────────────────────────────────────────────────────────
   replaceAll(state: PersistedState): void;
@@ -129,6 +132,10 @@ export const useAppStore = create<AppStore>()(
         });
       },
 
+      setBaseName(name) {
+        set((s) => ({ profile: { ...s.profile, baseName: name.trim() || undefined } }));
+      },
+
       setStandardRebirth(level) {
         set((s) => ({
           profile: { ...s.profile, standardRebirth: Math.max(0, Math.floor(level)) },
@@ -143,6 +150,19 @@ export const useAppStore = create<AppStore>()(
 
       setCycleOverride(c) {
         set((s) => ({ profile: { ...s.profile, cycleOverride: c } }));
+      },
+
+      setCreditsCurrent(value) {
+        set((s) => ({ profile: { ...s.profile, currentCredits: value } }));
+      },
+
+      setUpgradeChips(n) {
+        set((s) => ({
+          profile: {
+            ...s.profile,
+            upgradeChips: n === undefined || n <= 0 ? undefined : Math.floor(n),
+          },
+        }));
       },
 
       setNovaEarned(n) {
@@ -236,12 +256,12 @@ export const useAppStore = create<AppStore>()(
         set((s) => ({ ui: { ...s.ui, activeTab: tab } }));
       },
 
-      setCreditsCurrent(value) {
-        set((s) => ({ ui: { ...s.ui, creditsCurrent: value } }));
-      },
-
       setUiPref(key, value) {
         set((s) => ({ ui: { ...s.ui, [key]: value } }));
+      },
+
+      dismissOnboarding() {
+        set((s) => ({ ui: { ...s.ui, hasOnboarded: true } }));
       },
 
       replaceAll(state) {

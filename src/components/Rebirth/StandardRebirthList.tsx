@@ -1,8 +1,9 @@
-import { useStandardRebirths, useStandardReadiness, useActiveCycle } from "../../store/selectors";
+import { useStandardRebirths, useStandardReadiness, useActiveCycle, useNextUnlock } from "../../store/selectors";
 import { rosterCovers } from "../../lib/readiness";
 import { srbBonusAt } from "../../lib/novaCrystals";
 import { cycleLabel } from "../../lib/rebirthCycles";
 import { useAppStore } from "../../store/useAppStore";
+import { GapList } from "../NextUnlock/GapList";
 import { ProgressBar } from "../common/ProgressBar";
 import { TierPill } from "../common/TierPill";
 import type { StandardRebirth } from "../../types";
@@ -17,7 +18,7 @@ export function StandardRebirthList() {
   const ready = useStandardReadiness();
   const cycle = useActiveCycle();
   const cards = useAppStore((s) => s.cards);
-  const credits = useAppStore((s) => s.ui.creditsCurrent);
+  const credits = useAppStore((s) => s.profile.currentCredits);
   const setCredits = useAppStore((s) => s.setCreditsCurrent);
   const currentLevel = useAppStore((s) => s.profile.standardRebirth);
 
@@ -45,6 +46,8 @@ export function StandardRebirthList() {
           Switch cycles or Super Rebirth count on the Profile tab.
         </p>
       </section>
+
+      <ClosestSection credits={credits} />
 
       {list.length === 0 ? (
         <EmptyState />
@@ -170,6 +173,48 @@ function RebirthRow({
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** "Closest to ready" — the folded-in Next Unlock, scoped to this cycle. */
+function ClosestSection({ credits }: { credits: string }) {
+  const { ready, near } = useNextUnlock(3);
+  if (ready.length === 0 && near.length === 0) return null;
+  return (
+    <section className="card p-4 mb-4 border-holo-dim/50">
+      <div className="flex items-baseline gap-2 mb-3">
+        <h2 className="font-display font-bold text-base">Closest to ready</h2>
+        {ready.length > 0 ? (
+          <span className="font-mono text-[10px] text-ok font-bold">{ready.length} ready now</span>
+        ) : null}
+      </div>
+      {ready.slice(0, 2).map((s) => (
+        <div
+          key={`r-${s.rb.level}`}
+          className="rounded-[10px] border border-ok/40 bg-ok/5 px-3 py-2 mb-2 flex items-center gap-2"
+        >
+          <span className="font-display font-bold text-ok text-[14px]">Rebirth {s.rb.level}</span>
+          <span className="font-mono text-[10px] text-muted">ready</span>
+          <span className="flex-1" />
+          <span className="font-display font-bold text-[14px] text-sun">{s.rb.credits}</span>
+        </div>
+      ))}
+      {near.slice(0, 2).map((s) => (
+        <div key={`n-${s.rb.level}`} className="mb-3 last:mb-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-display font-bold text-[14px] text-sun">Rebirth {s.rb.level}</span>
+            <span className="flex-1" />
+            <span className="font-display font-bold text-[13px] text-sun">{s.rb.credits}</span>
+          </div>
+          <ProgressBar required={s.rb.credits || "0"} current={credits} />
+          {s.creditsOnly ? (
+            <p className="text-[12px] text-muted mt-1.5">All droids covered — bank credits.</p>
+          ) : (
+            <GapList gaps={s.gaps} />
+          )}
+        </div>
+      ))}
+    </section>
   );
 }
 

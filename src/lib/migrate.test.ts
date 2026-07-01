@@ -65,8 +65,9 @@ describe("migrate", () => {
     expect(state.schemaVersion).toBe(SCHEMA_VERSION);
     expect(state.cards).toHaveLength(2);
     expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", owned: true, active: true });
-    expect(state.ui.creditsCurrent).toBe("1K");
-    // Old "collection" tab key remaps to "droidex" — it doesn't exist in v4.
+    // v6: ui.creditsCurrent lifted into profile.currentCredits.
+    expect(state.profile.currentCredits).toBe("1K");
+    // Old "collection" tab key remaps to "droidex".
     expect(state.ui.activeTab).toBe("droidex");
   });
 
@@ -88,6 +89,36 @@ describe("migrate", () => {
     expect(state.customDroids[0]!.rarity).toBe("ICONIC");
     // Old "super" tab remaps to "rebirths".
     expect(state.ui.activeTab).toBe("rebirths");
+  });
+
+  it("v5 → v6: remaps tabs and lifts ui.creditsCurrent → profile.currentCredits", () => {
+    const v5 = {
+      schemaVersion: 5,
+      cards: [],
+      profile: {
+        standardRebirth: 12,
+        superRebirthCount: 1,
+        cycleOverride: null,
+        novaEarned: 40,
+        novaSpent: 0,
+      },
+      customDroids: [],
+      standardOverrides: [],
+      cosmetics: [],
+      novaUpgrades: [],
+      novaIconicOwned: [],
+      ui: { activeTab: "nova", creditsCurrent: "3.4B" },
+    };
+    const state = migrate(v5);
+    expect(state.schemaVersion).toBe(SCHEMA_VERSION);
+    // "nova" and "cosmetics" collapse into "shop"; "data"/"next-unlock" too.
+    expect(state.ui.activeTab).toBe("shop");
+    expect(migrate({ ...v5, ui: { activeTab: "cosmetics" } }).ui.activeTab).toBe("shop");
+    expect(migrate({ ...v5, ui: { activeTab: "next-unlock" } }).ui.activeTab).toBe("rebirths");
+    expect(migrate({ ...v5, ui: { activeTab: "data" } }).ui.activeTab).toBe("profile");
+    // credits lifted off ui onto the profile.
+    expect(state.profile.currentCredits).toBe("3.4B");
+    expect((state.ui as unknown as Record<string, unknown>).creditsCurrent).toBeUndefined();
   });
 
   it("dedupes cards with the same (name, tier)", () => {

@@ -70,7 +70,7 @@ export type ScoredAny = ScoredStandard;
  */
 export function useNextUnlock(limit = 5): { ready: ScoredAny[]; near: ScoredAny[] } {
   const cards = useAppStore((s) => s.cards);
-  const credits = useAppStore((s) => s.ui.creditsCurrent);
+  const credits = useAppStore((s) => s.profile.currentCredits);
   const standards = useStandardRebirths();
   const currentRebirth = useAppStore((s) => s.profile.standardRebirth);
 
@@ -93,7 +93,7 @@ export function useNextUnlock(limit = 5): { ready: ScoredAny[]; near: ScoredAny[
 
 export function useStandardReadiness(): Map<number, boolean> {
   const cards = useAppStore((s) => s.cards);
-  const credits = useAppStore((s) => s.ui.creditsCurrent);
+  const credits = useAppStore((s) => s.profile.currentCredits);
   const rebirths = useStandardRebirths();
   return useMemo(() => {
     const map = new Map<number, boolean>();
@@ -107,7 +107,7 @@ export function useReadyCounts(): {
   standardTotal: number;
 } {
   const cards = useAppStore((s) => s.cards);
-  const credits = useAppStore((s) => s.ui.creditsCurrent);
+  const credits = useAppStore((s) => s.profile.currentCredits);
   const standards = useStandardRebirths();
   return useMemo(() => {
     const standardReady = standards.filter((rb) => standardRebirthReady(rb, cards, credits)).length;
@@ -232,4 +232,46 @@ export function useNovaLevels(): Map<string, number> {
     for (const u of upgrades) m.set(u.id, u.level);
     return m;
   }, [upgrades]);
+}
+
+/** Everything the Home dashboard needs, in one hook. */
+export interface HomeSummary {
+  baseName?: string;
+  cycle: RebirthCycle;
+  standardRebirth: number;
+  superRebirthCount: number;
+  currentCredits: string;
+  production: ProductionTotals;
+  nova: NovaBalance;
+  completion: {
+    ownedCards: number;
+    totalCards: number;
+    ownedDroids: number;
+    totalDroids: number;
+    activeCards: number;
+  };
+  srbBonus: SuperRebirthBonus | null;
+}
+
+export function useHomeSummary(): HomeSummary {
+  const baseName = useAppStore((s) => s.profile.baseName);
+  const standardRebirth = useAppStore((s) => s.profile.standardRebirth);
+  const superRebirthCount = useAppStore((s) => s.profile.superRebirthCount);
+  const currentCredits = useAppStore((s) => s.profile.currentCredits);
+  const cycle = useActiveCycle();
+  const production = useProduction();
+  const nova = useNovaBalance();
+  const completion = useDroidexCompletion();
+  const srbBonus = useSrbBonusAtCurrentRB();
+  return {
+    baseName,
+    cycle,
+    standardRebirth,
+    superRebirthCount,
+    currentCredits,
+    production,
+    nova,
+    completion,
+    srbBonus,
+  };
 }
