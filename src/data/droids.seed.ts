@@ -14,10 +14,10 @@ import type { DroidDef, Tier } from "../types";
  * `tiers` array (5 normally, 1 for event-locked MYTHIC droids).
  */
 
-/** All six tiers, including the rare FLAWLESS variant. */
+/** All six tiers, including the rare FLAWLESS variant (COMMON…MYTHIC droids). */
 const ALL_TIERS: Tier[] = ["DEFAULT", "GOLD", "DIAMOND", "RAINBOW", "BESKAR", "FLAWLESS"];
-/** ICONIC event droids: DEFAULT regular spawn + FLAWLESS 1/1000. */
-const ICONIC_TIERS: Tier[] = ["DEFAULT", "FLAWLESS"];
+/** ICONIC event droids are DEFAULT-only — no upgrade tiers, no FLAWLESS. */
+const ICONIC_TIERS: Tier[] = ["DEFAULT"];
 
 export const DROID_DICT: readonly DroidDef[] = [
   // ── COMMON ───────────────────────────────────────────────────────────────
@@ -109,12 +109,26 @@ export const DROID_DICT: readonly DroidDef[] = [
     aliases: ["OPTI STRIKE", "OPTI-STRK", "OPTISTRIKE"],
   },
 
-  // ── ICONIC (event droids; DEFAULT + FLAWLESS variant, percentage boosters) ──
+  // ── MYTHIC (sandcrawler-only; upgrade normally through FLAWLESS; RB24-27) ──
+  { canonical: "SNOW MOUSE", class: "WORKER", rarity: "MYTHIC", tiers: ALL_TIERS, aliases: ["SNOWMOUSE"] },
+  { canonical: "RIC", class: "WORKER", rarity: "MYTHIC", tiers: ALL_TIERS },
+  { canonical: "LOADLIFTER", class: "WORKER", rarity: "MYTHIC", tiers: ALL_TIERS, aliases: ["LOAD LIFTER", "LOAD-LIFTER"] },
+  { canonical: "LEP", class: "WORKER", rarity: "MYTHIC", tiers: ALL_TIERS },
+  { canonical: "RIC-1200", class: "WORKER", rarity: "MYTHIC", tiers: ALL_TIERS, aliases: ["RIC1200", "RIC 1200"] },
+  { canonical: "DRFT-R", class: "ASTROMECH", rarity: "MYTHIC", tiers: ALL_TIERS, aliases: ["DRFTR", "DRIFTER", "DRFT R"] },
+  { canonical: "CYCLENS", class: "ASTROMECH", rarity: "MYTHIC", tiers: ALL_TIERS },
+  { canonical: "MO-TRAK", class: "ASTROMECH", rarity: "MYTHIC", tiers: ALL_TIERS, aliases: ["MOTRAK", "MO TRAK"] },
+  { canonical: "TRI-TEK", class: "ASTROMECH", rarity: "MYTHIC", tiers: ALL_TIERS, aliases: ["TRITEK", "TRI TEK"] },
+  { canonical: "IG", class: "BATTLE", rarity: "MYTHIC", tiers: ALL_TIERS },
+  { canonical: "KX", class: "BATTLE", rarity: "MYTHIC", tiers: ALL_TIERS },
+
+  // ── ICONIC (event droids; DEFAULT-only, percentage income boosters) ──────
   { canonical: "BB8", class: "ASTROMECH", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["BB-8"] },
   { canonical: "MISTER BONES", class: "BATTLE", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["MR BONES", "MR. BONES"] },
   { canonical: "IG-11 MARSHAL", class: "BATTLE", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["IG-11", "IG11", "IG11 MARSHAL"] },
   { canonical: "DJ-R3X", class: "WORKER", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["DJ R-3X", "DJ R3X", "DJ-R-3X"] },
-  { canonical: "CB-23", class: "ASTROMECH", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, comingSoon: true, aliases: ["CB23"] },
+  { canonical: "CB-23", class: "ASTROMECH", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["CB23"] },
+  { canonical: "R2-D2", class: "ASTROMECH", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["R2D2", "R2 D2"] },
 ];
 
 /** Total Droidex card count = sum over droids of their tier-count. */

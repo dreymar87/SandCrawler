@@ -17,11 +17,15 @@ export type Tier = "DEFAULT" | "GOLD" | "DIAMOND" | "RAINBOW" | "BESKAR" | "FLAW
 export type DroidClass = "WORKER" | "ASTROMECH" | "BATTLE" | "UNKNOWN";
 
 /**
- * Collection rarity, low → high. ICONIC was previously labelled MYTHIC
- * — the authoritative community data uses ICONIC. Migration v3→v4
- * rewrites old MYTHIC labels.
+ * Collection rarity, low → high.
+ *
+ * MYTHIC and ICONIC are distinct top rarities: MYTHIC droids (SNOW MOUSE,
+ * MO-TRAK, …) upgrade normally (DEFAULT→BESKAR + FLAWLESS) and have chip
+ * costs; ICONIC droids (BB8, R2-D2, …) are event-locked, DEFAULT-only, and
+ * give a percentage income boost. (Historically we briefly used "MYTHIC"
+ * for what are now ICONIC droids — migration v3→v4 rewrote those labels.)
  */
-export type Rarity = "COMMON" | "RARE" | "EPIC" | "LEGENDARY" | "ICONIC";
+export type Rarity = "COMMON" | "RARE" | "EPIC" | "LEGENDARY" | "MYTHIC" | "ICONIC";
 
 /**
  * Standard Rebirth requirements cycle through 4 tables. Cycle =

@@ -19,10 +19,10 @@ export const UPGRADE_TIERS = ["DEFAULT", "GOLD", "DIAMOND", "RAINBOW", "BESKAR"]
 
 export const CLASSES = ["WORKER", "ASTROMECH", "BATTLE", "UNKNOWN"] as const satisfies readonly DroidClass[];
 
-export const RARITIES = ["COMMON", "RARE", "EPIC", "LEGENDARY", "ICONIC"] as const satisfies readonly Rarity[];
+export const RARITIES = ["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "ICONIC"] as const satisfies readonly Rarity[];
 
 /** The highest Standard Rebirth level we have data for. */
-export const MAX_STANDARD_REBIRTH = 23;
+export const MAX_STANDARD_REBIRTH = 27;
 
 /**
  * Credit suffix multipliers. The game shows values like "10.00K", "1.36B";

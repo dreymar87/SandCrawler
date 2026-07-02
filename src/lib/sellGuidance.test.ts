@@ -2,11 +2,17 @@ import { describe, expect, it } from "vitest";
 import { rebirthsForCycle, sellHint } from "./sellGuidance";
 
 describe("rebirthsForCycle", () => {
-  it("returns exactly the 23 levels for cycle 1", () => {
+  it("returns exactly the 27 levels for cycle 1", () => {
     const rows = rebirthsForCycle(1);
-    expect(rows).toHaveLength(23);
+    expect(rows).toHaveLength(27);
     expect(rows[0]?.level).toBe(1);
-    expect(rows[22]?.level).toBe(23);
+    expect(rows[26]?.level).toBe(27);
+  });
+
+  it("RB24 cycle 1 requires a MYTHIC droid (MO-TRAK) per the new data", () => {
+    const rb24 = rebirthsForCycle(1).find((r) => r.level === 24)!;
+    expect(rb24.credits).toBe("9T");
+    expect(rb24.needs.map((n) => n.name)).toContain("MO-TRAK");
   });
 
   it("RB1 of cycle 1 is CB / PIT / DRK-1 PROBE per the workbook", () => {

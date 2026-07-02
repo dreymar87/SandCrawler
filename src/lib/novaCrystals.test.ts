@@ -18,12 +18,14 @@ describe("srbBonusAt", () => {
     expect(srbBonusAt(12)).toEqual({ rbLevel: 12, crystals: 11, creditMult: 0.22, xpMult: 1.1 });
   });
 
-  it("returns the workbook's bonus row for RB23", () => {
+  it("returns the workbook's bonus rows through RB27", () => {
     expect(srbBonusAt(23)).toEqual({ rbLevel: 23, crystals: 121, creditMult: 2.42, xpMult: 12.1 });
+    expect(srbBonusAt(24)).toEqual({ rbLevel: 24, crystals: 137, creditMult: 2.74, xpMult: 13.7 });
+    expect(srbBonusAt(27)).toEqual({ rbLevel: 27, crystals: 191, creditMult: 3.82, xpMult: 19.1 });
   });
 
-  it("returns null above RB23 (no data)", () => {
-    expect(srbBonusAt(24)).toBe(null);
+  it("returns null above RB27 (no data)", () => {
+    expect(srbBonusAt(28)).toBe(null);
   });
 });
 

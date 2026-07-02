@@ -26,35 +26,42 @@ DEFAULT → GOLD → DIAMOND → RAINBOW → BESKAR ───── FLAWLESS
 ```
 
 - A FLAWLESS card outranks BESKAR for tier-substitution purposes.
+- FLAWLESS applies to the 62 upgradeable droids; **ICONIC droids are
+  DEFAULT-only** (no FLAWLESS variant).
 - We map `Basic` → `DEFAULT` on import (community shorthand).
 
 ## Collection rarity
 
-Five rarities, low → high:
+Six rarities, low → high:
 
 ```
-COMMON → RARE → EPIC → LEGENDARY → ICONIC
+COMMON → RARE → EPIC → LEGENDARY → MYTHIC → ICONIC
 ```
 
-- **ICONIC** replaces what we previously called MYTHIC; the
-  authoritative community sheet uses ICONIC.
-- ICONIC droids are **event-locked**: they spawn at DEFAULT (and
-  optionally FLAWLESS) only — no Gold/Diamond/Rainbow/Beskar upgrades.
-- ICONIC droids generate **percentage income** (e.g. `15%/s`) instead
-  of a flat credits-per-second value — they multiply your base income.
+- **MYTHIC** and **ICONIC** are distinct top rarities:
+  - **MYTHIC** droids (SNOW MOUSE, RIC, MO-TRAK, KX, …) spawn only from
+    the sandcrawler and **upgrade normally** through the six tiers
+    (DEFAULT…FLAWLESS), with their own steep chip costs. Introduced for
+    RB24-27.
+  - **ICONIC** droids (BB8, MISTER BONES, IG-11 MARSHAL, DJ-R3X, CB-23,
+    R2-D2) are **event-locked, DEFAULT-only** (no upgrades, no FLAWLESS)
+    and generate a **percentage income** boost (`15%/s`, or `25%/s` for
+    R2-D2) rather than a flat credits/sec value.
+  - (Historically we briefly used "MYTHIC" for what are now ICONIC
+    droids; migration v3→v4 rewrote those labels. The two are now
+    separate.)
 
 ## Droid classes
 
-Three production classes:
+Three production classes: **WORKER**, **ASTROMECH**, **BATTLE**.
 
-- **WORKER**, **ASTROMECH**, **BATTLE**.
-
-54 + 2 = **56 base droids** as of Pass 3:
-- 54 upgradeable droids (each contributes 6 tier cards = 324 cards).
-- 5 ICONIC event droids (BB8, MISTER BONES, IG-11 MARSHAL, DJ-R3X, CB-23
-  coming soon — 2 cards each).
-- The community count "260" refers to the Droidex card total once
-  FLAWLESS and the new event droids are in.
+**68 base droids → 378 cards** (as of the RB24-27 data drop):
+- 62 upgradeable droids (COMMON/RARE/EPIC/LEGENDARY/MYTHIC), each 6 tier
+  cards (DEFAULT…FLAWLESS) = 372 cards.
+- 6 ICONIC event droids, DEFAULT-only = 6 cards.
+- The workbook's "0/316" headline is stale and self-inconsistent (its own
+  per-tier columns sum to 378: base 68 + five higher tiers × 62). We use
+  the dict-derived 378.
 
 ## Active-droid rule
 
@@ -85,8 +92,9 @@ starts at RB16, not RB17):
 ## Rebirth cycles
 
 Standard Rebirth runs through a **4-cycle loop**. Each cycle has its own
-23 droid+tier requirements; **credit costs and per-rebirth rewards are
-constant across cycles**.
+**27** droid+tier requirements (RB1-27; RB24-27 introduce MYTHIC droids);
+**credit costs and per-rebirth rewards are constant across cycles**. Note
+the RB21-23 requirements for cycles 3 & 4 were revised in the latest data.
 
 ```
 Run #     | Cycle | Source
@@ -109,7 +117,7 @@ a slot unlocks in one of the squads. Stored as
 
 ## Super Rebirth bonuses
 
-When you **Super Rebirth from RB level N** (12 ≤ N ≤ 23), you receive a
+When you **Super Rebirth from RB level N** (12 ≤ N ≤ 27), you receive a
 one-time bonus: Nova Crystals + an additive credit multiplier + an
 additive XP multiplier. These are *not* per-rebirth rewards — they fire
 once at the moment of Super Rebirth.
@@ -118,9 +126,12 @@ once at the moment of Super Rebirth.
 | --------- | -------- | -------- | ----- |
 | 12        | 11       | 1.22     | 2.1   |
 | 13        | 16       | 1.32     | 2.6   |
-| 14        | 22       | 1.44     | 3.2   |
 | …         | …        | …        | …     |
 | 23        | 121      | 3.42     | 13.1  |
+| 24        | 137      | 3.74     | 14.7  |
+| 25        | 154      | 4.08     | 16.4  |
+| 26        | 172      | 4.44     | 18.2  |
+| 27        | 191      | 4.82     | 20.1  |
 
 Stored in `src/data/superRebirthBonuses.seed.ts`, looked up via
 `srbBonusAt(rbLevel)`. Multipliers stored as `+N`-style deltas (RB12 →
@@ -128,14 +139,17 @@ Stored in `src/data/superRebirthBonuses.seed.ts`, looked up via
 
 ## Chip-upgrade costs
 
-Per-rarity chip costs (and cantina-upgrade odds) — `chipCosts.seed.ts`:
+Per-rarity chip costs (and cantina-upgrade odds) — `chipCosts.seed.ts`.
+MYTHIC droids are sandcrawler-only and not in the cantina rotation
+(odds 0):
 
-| Rarity     | DEFAULT→G | G→D  | D→R  | R→B   | Total | Cantina |
-| ---------- | --------- | ---- | ---- | ----- | ----- | ------- |
-| COMMON     | 10        | 25   | 40   | 80    | 155   | 30%     |
-| RARE       | 30        | 60   | 100  | 250   | 440   | 16%     |
-| EPIC       | 120       | 180  | 240  | 5,000 | 5,540 | 8%      |
-| LEGENDARY  | 400       | 1,200| 4,000| 12,000| 17,600| 4%      |
+| Rarity     | DEFAULT→G | G→D    | D→R    | R→B     | Total   | Cantina |
+| ---------- | --------- | ------ | ------ | ------- | ------- | ------- |
+| COMMON     | 10        | 25     | 40     | 80      | 155     | 30%     |
+| RARE       | 30        | 60     | 100    | 250     | 440     | 16%     |
+| EPIC       | 120       | 180    | 240    | 5,000   | 5,540   | 8%      |
+| LEGENDARY  | 400       | 1,200  | 4,000  | 12,000  | 17,600  | 4%      |
+| MYTHIC     | 8,000     | 15,000 | 40,000 | 80,000  | 143,000 | —       |
 
 ## Sell guidance
 
@@ -167,15 +181,16 @@ mean the level exists but its cost isn't yet publicly known. The UI
 shows `?` for unknown next-level costs and still allows progress past
 them.
 
-- **Core**: Max Health (L8), Damage (L8), **Credits** (L11),
-  Flawless Charm (L1), Movement Speed (L8), Double Daily Quests (L1),
+- **Core**: Max Health (L8), Damage (L8), **Credits** (L18),
+  Flawless Charm (L1), Movement Speed (L18), Double Daily Quests (L1),
   Pickaxe Mastery (L11), Jawa Bartering (L5), Super Crates (L3).
 - **Workshop**: Lounge Slot (L4), Upgrade Chip Scrap (L10),
-  Scrap Value (L8), Blueprint Scrap (L4), Crafting Speed (L5),
+  Scrap Value (L10), Blueprint Scrap (L4), Crafting Speed (L10),
   Blueprint Storage (L3), Collect All (L3), Rebirth Droid Alert (L1),
   Blueprint Vendor (L1).
-- **ICONIC Droids**: BB8 / MISTER BONES / IG-11 MARSHAL / DJ-R3X at
-  **30 crystals each**, CB-23 at **75 crystals**. One-shot purchase.
+- **ICONIC Droids** (Nova Shop purchase): BB8 / MISTER BONES /
+  IG-11 MARSHAL / DJ-R3X at **30 crystals each**, CB-23 at **75
+  crystals**. One-shot purchase. (R2-D2 is event-only — not purchasable.)
 
 `crystalsSpent(upgrades, defs, iconicOwned)` sums the player's spent
 total across both. `balance = novaEarned − crystalsSpent`. Unknown

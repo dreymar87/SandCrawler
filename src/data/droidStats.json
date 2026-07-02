@@ -858,7 +858,7 @@
       "value": "27.72m"
     },
     "BESKAR": {
-      "cost": "13.20b",
+      "cost": "412.50m",
       "income": "12.24k/s",
       "value": "288.75m"
     }
@@ -1016,13 +1016,13 @@
     },
     "RAINBOW": {
       "cost": "72m",
-      "income": "5.04k/s",
+      "income": "4.80k/s",
       "value": "50.40m"
     },
     "BESKAR": {
       "cost": "750m",
       "income": "20.40k/s",
-      "value": "16.80b"
+      "value": "525.00m"
     }
   },
   "B2 SUPER": {
@@ -1103,7 +1103,7 @@
     "BESKAR": {
       "cost": "637.50m",
       "income": "18.36k/s",
-      "value": "14.28b"
+      "value": "446.25m"
     }
   },
   "HAUL-R": {
@@ -1130,7 +1130,7 @@
     "BESKAR": {
       "cost": "300m",
       "income": "9.18k/s",
-      "value": "6.72b"
+      "value": "210.00m"
     }
   },
   "LNG-SHOT": {
@@ -1214,7 +1214,7 @@
       "value": "8.12b"
     }
   },
-  "MONO-WALKER": {
+  "MONO-WLKR": {
     "DEFAULT": {
       "cost": "37m",
       "income": "1.50k/s",
@@ -1314,10 +1314,10 @@
     "RAINBOW": {
       "cost": "372m",
       "income": "10.43k/s",
-      "value": "347.20m"
+      "value": "260.40m"
     },
     "BESKAR": {
-      "cost": "14.8b",
+      "cost": "12.40b",
       "income": "31.30k/s",
       "value": "8.68b"
     }
@@ -1341,7 +1341,7 @@
     "RAINBOW": {
       "cost": "360m",
       "income": "10.08k/s",
-      "value": "336.00m"
+      "value": "252.00m"
     },
     "BESKAR": {
       "cost": "12b",
@@ -1349,7 +1349,7 @@
       "value": "8.40b"
     }
   },
-  "OPTI-STRIKE": {
+  "OPTI-STRK": {
     "DEFAULT": {
       "cost": "37m",
       "income": "1.50k/s",
@@ -1374,6 +1374,303 @@
       "cost": "14.8b",
       "income": "36.00k/s",
       "value": "10.36b"
+    }
+  },
+  "SNOW MOUSE": {
+    "DEFAULT": {
+      "cost": "180m",
+      "income": "4.40k/s",
+      "value": "126.00m"
+    },
+    "GOLD": {
+      "cost": "720m",
+      "income": "8.80k/s",
+      "value": "504.00m"
+    },
+    "DIAMOND": {
+      "cost": "1.42b",
+      "income": "17.60k/s",
+      "value": "1.00b"
+    },
+    "RAINBOW": {
+      "cost": "4.32b",
+      "income": "35.20k/s",
+      "value": "3.02b"
+    },
+    "BESKAR": {
+      "cost": "144b",
+      "income": "70.40k/s",
+      "value": "100.8b"
+    }
+  },
+  "RIC": {
+    "DEFAULT": {
+      "cost": "204m",
+      "income": "5.10k/s",
+      "value": "142.80m"
+    },
+    "GOLD": {
+      "cost": "816m",
+      "income": "10.20k/s",
+      "value": "638.40m"
+    },
+    "DIAMOND": {
+      "cost": "1.63b",
+      "income": "20.40k/s",
+      "value": "1.14b"
+    },
+    "RAINBOW": {
+      "cost": "4.90b",
+      "income": "40.80k/s",
+      "value": "3.43b"
+    },
+    "BESKAR": {
+      "cost": "163.20b",
+      "income": "81.60k/s",
+      "value": "114.24b"
+    }
+  },
+  "LOADLIFTER": {
+    "DEFAULT": {
+      "cost": "300m",
+      "income": "7.20k/s",
+      "value": "210.00m"
+    },
+    "GOLD": {
+      "cost": "1.20b",
+      "income": "14.40k/s",
+      "value": "840.00m"
+    },
+    "DIAMOND": {
+      "cost": "2.40b",
+      "income": "28.80k/s",
+      "value": "1.68b"
+    },
+    "RAINBOW": {
+      "cost": "7.20b",
+      "income": "57.60k/s",
+      "value": "5.04b"
+    },
+    "BESKAR": {
+      "cost": "240b",
+      "income": "115.20k/s",
+      "value": "168.00b"
+    }
+  },
+  "LEP": {
+    "DEFAULT": {
+      "cost": "252m",
+      "income": "6.50k/s",
+      "value": "176.40m"
+    },
+    "GOLD": {
+      "cost": "1.01b",
+      "income": "13.00k/s",
+      "value": "705.60m"
+    },
+    "DIAMOND": {
+      "cost": "2.02b",
+      "income": "26.00k/s",
+      "value": "1.41b"
+    },
+    "RAINBOW": {
+      "cost": "6.05b",
+      "income": "52k/s",
+      "value": "4.23b"
+    },
+    "BESKAR": {
+      "cost": "201.60b",
+      "income": "104k/s",
+      "value": "141.12b"
+    }
+  },
+  "RIC-1200": {
+    "DEFAULT": {
+      "cost": "228m",
+      "income": "5.80k/s",
+      "value": "159.60m"
+    },
+    "GOLD": {
+      "cost": "912m",
+      "income": "11.60k/s",
+      "value": "638.40m"
+    },
+    "DIAMOND": {
+      "cost": "1.82b",
+      "income": "23.20k/s",
+      "value": "1.27b"
+    },
+    "RAINBOW": {
+      "cost": "5.47b",
+      "income": "46.40k/s",
+      "value": "3.82b"
+    },
+    "BESKAR": {
+      "cost": "182.40b",
+      "income": "92.80k/s",
+      "value": "127.68b"
+    }
+  },
+  "DRFT-R": {
+    "DEFAULT": {
+      "cost": "228m",
+      "income": "5.80k/s",
+      "value": "159.60m"
+    },
+    "GOLD": {
+      "cost": "912m",
+      "income": "11.60k/s",
+      "value": "638.40m"
+    },
+    "DIAMOND": {
+      "cost": "1.82b",
+      "income": "23.20k/s",
+      "value": "1.27b"
+    },
+    "RAINBOW": {
+      "cost": "5.47b",
+      "income": "46.40k/s",
+      "value": "3.82b"
+    },
+    "BESKAR": {
+      "cost": "182.40b",
+      "income": "92.80k/s",
+      "value": "127.68b"
+    }
+  },
+  "CYCLENS": {
+    "DEFAULT": {
+      "cost": "180m",
+      "income": "4.40k/s",
+      "value": "126.00m"
+    },
+    "GOLD": {
+      "cost": "720m",
+      "income": "8.80k/s",
+      "value": "504.00m"
+    },
+    "DIAMOND": {
+      "cost": "1.42b",
+      "income": "17.60k/s",
+      "value": "1.00b"
+    },
+    "RAINBOW": {
+      "cost": "4.32b",
+      "income": "35.20k/s",
+      "value": "3.02b"
+    },
+    "BESKAR": {
+      "cost": "144b",
+      "income": "70.40k/s",
+      "value": "100.8b"
+    }
+  },
+  "MO-TRAK": {
+    "DEFAULT": {
+      "cost": "300m",
+      "income": "7.20k/s",
+      "value": "210.00m"
+    },
+    "GOLD": {
+      "cost": "1.20b",
+      "income": "14.40k/s",
+      "value": "840.00m"
+    },
+    "DIAMOND": {
+      "cost": "2.40b",
+      "income": "28.80k/s",
+      "value": "1.68b"
+    },
+    "RAINBOW": {
+      "cost": "7.20b",
+      "income": "57.60k/s",
+      "value": "5.04b"
+    },
+    "BESKAR": {
+      "cost": "240b",
+      "income": "115.20k/s",
+      "value": "168.00b"
+    }
+  },
+  "TRI-TEK": {
+    "DEFAULT": {
+      "cost": "252m",
+      "income": "6.50k/s",
+      "value": "176.40m"
+    },
+    "GOLD": {
+      "cost": "1.01b",
+      "income": "13.00k/s",
+      "value": "705.60m"
+    },
+    "DIAMOND": {
+      "cost": "2.02b",
+      "income": "26.00k/s",
+      "value": "1.41b"
+    },
+    "RAINBOW": {
+      "cost": "6.05b",
+      "income": "52k/s",
+      "value": "4.23b"
+    },
+    "BESKAR": {
+      "cost": "201.60b",
+      "income": "104k/s",
+      "value": "141.12b"
+    }
+  },
+  "IG": {
+    "DEFAULT": {
+      "cost": "228m",
+      "income": "5.80k/s",
+      "value": "239.40m"
+    },
+    "GOLD": {
+      "cost": "1.37b",
+      "income": "11.00k/s",
+      "value": "959.00m"
+    },
+    "DIAMOND": {
+      "cost": "1.82b",
+      "income": "23.20k/s",
+      "value": "1.91b"
+    },
+    "RAINBOW": {
+      "cost": "5.47b",
+      "income": "46.40k/s",
+      "value": "3.82b"
+    },
+    "BESKAR": {
+      "cost": "182.40b",
+      "income": "92.80k/s",
+      "value": "191.52b"
+    }
+  },
+  "KX": {
+    "DEFAULT": {
+      "cost": "300m",
+      "income": "7.20k/s",
+      "value": "210.00m"
+    },
+    "GOLD": {
+      "cost": "1.20b",
+      "income": "14.40k/s",
+      "value": "840.00m"
+    },
+    "DIAMOND": {
+      "cost": "2.40b",
+      "income": "28.80k/s",
+      "value": "1.68b"
+    },
+    "RAINBOW": {
+      "cost": "7.20b",
+      "income": "57.60k/s",
+      "value": "5.04b"
+    },
+    "BESKAR": {
+      "cost": "240b",
+      "income": "115.20k/s",
+      "value": "168.00b"
     }
   },
   "BB8": {
@@ -1407,7 +1704,14 @@
   "CB-23": {
     "DEFAULT": {
       "cost": null,
-      "income": "COMING SOON",
+      "income": "15%/s",
+      "value": null
+    }
+  },
+  "R2-D2": {
+    "DEFAULT": {
+      "cost": null,
+      "income": "25%/s",
       "value": null
     }
   }

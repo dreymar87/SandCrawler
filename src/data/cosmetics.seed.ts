@@ -77,7 +77,8 @@ export const COSMETICS: readonly CosmeticItem[] = [
   paint("Astromech Purple Paint", "Craft 500 droids", "CRAFT", 500),
   paint("Flawless Paint", "Craft 15 Flawless droids", "FLAWLESS_CRAFT", 15),
   paint("Super Flawless Paint", "Craft 50 Flawless droids", "FLAWLESS_CRAFT", 50),
-  paint("Ringmaster Paint", "Fly through every ring", "RINGS"),
+  paint("Ringmaster Paint", "Fly through every yellow ring", "RINGS"),
+  paint("Advanced Ringmaster Paint", "Fly through every orange ring", "RINGS"),
   paint("Beskar Paint", "Collect 25 different Beskar droids", "BESKAR_COLLECT", 25),
   paint("Super Beskar Paint", "Collect 50 different Beskar droids", "BESKAR_COLLECT", 50),
   paint("Resistance Regalia Paint", "BB8 event", "EVENT"),
@@ -85,8 +86,9 @@ export const COSMETICS: readonly CosmeticItem[] = [
   paint("Mandalorian Workshop Paint", "Mandalorian event", "EVENT"),
   paint("Nova Crystal Stage 1", "Unlock with Nova Crystals (30)", "NOVA", 30),
   paint("Nova Crystal Stage 2", "Unlock with Nova Crystals (120 + Stage 1)", "NOVA", 120),
-  paint("Nova Crystal Stage 3", "Unlock with Nova Crystals (??? + Stage 2)", "NOVA"),
+  paint("Nova Crystal Stage 3", "Unlock with Nova Crystals (400 + Stage 2)", "NOVA", 400),
   paint("DJ R-3X Paint", "DJ R-3X event", "EVENT"),
+  paint("R2-D2 Paint", "R2-D2 event", "EVENT"),
 
   // ── Droid Effects ───────────────────────────────────────────────────
   effect("Groovy Aura", "DJ R-3X event"),

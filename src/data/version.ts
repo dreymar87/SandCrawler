@@ -1,5 +1,5 @@
 /** Bumped when the seed dictionary or Standard Rebirth seed changes. */
-export const SEED_VERSION = 3;
+export const SEED_VERSION = 4;
 
 /**
  * Bumped when PersistedState's shape changes incompatibly. `migrate.ts`
