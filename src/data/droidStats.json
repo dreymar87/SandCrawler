@@ -377,33 +377,6 @@
       "value": "1.12m"
     }
   },
-  "BU-4D": {
-    "DEFAULT": {
-      "cost": "130k",
-      "income": "58/s",
-      "value": "91.00k"
-    },
-    "GOLD": {
-      "cost": "520k",
-      "income": "116/s",
-      "value": "364.00k"
-    },
-    "DIAMOND": {
-      "cost": "1.04m",
-      "income": "232/s",
-      "value": "728.00k"
-    },
-    "RAINBOW": {
-      "cost": "1.56m",
-      "income": "464/s",
-      "value": "1.10m"
-    },
-    "BESKAR": {
-      "cost": "2.08m",
-      "income": "696/s",
-      "value": "1.45m"
-    }
-  },
   "BAL-CORE": {
     "DEFAULT": {
       "cost": "43k",
@@ -1713,6 +1686,33 @@
       "cost": null,
       "income": "25%/s",
       "value": null
+    }
+  },
+  "B-U4D": {
+    "DEFAULT": {
+      "cost": "130k",
+      "income": "58/s",
+      "value": "91.00k"
+    },
+    "GOLD": {
+      "cost": "520k",
+      "income": "116/s",
+      "value": "364.00k"
+    },
+    "DIAMOND": {
+      "cost": "1.04m",
+      "income": "232/s",
+      "value": "728.00k"
+    },
+    "RAINBOW": {
+      "cost": "1.56m",
+      "income": "464/s",
+      "value": "1.10m"
+    },
+    "BESKAR": {
+      "cost": "2.08m",
+      "income": "696/s",
+      "value": "1.45m"
     }
   }
 }

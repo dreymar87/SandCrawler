@@ -3,7 +3,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { TierPill } from "../common/TierPill";
 
 export function GapList({ gaps }: { gaps: Gap[] }) {
-  const setCardState = useAppStore((s) => s.setCardState);
+  const bumpWorking = useAppStore((s) => s.bumpWorking);
   return (
     <ul className="space-y-1.5 mt-2">
       {gaps.map((g, i) => (
@@ -19,7 +19,7 @@ export function GapList({ gaps }: { gaps: Gap[] }) {
           <button
             type="button"
             className="btn btn-sm btn-ghost"
-            onClick={() => setCardState(g.name, g.requiredTier, { owned: true, active: true })}
+            onClick={() => bumpWorking(g.name, g.requiredTier)}
             title="Mark this card as owned and active at the required tier"
           >
             I have it

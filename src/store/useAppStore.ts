@@ -22,18 +22,15 @@ function bootstrapState(): PersistedState {
   return emptyState();
 }
 
-/** Bumps cards through the three-state cycle used by the Droidex grid. */
-function cycleCardState(c: CollectionCard | undefined): { owned: boolean; active: boolean } | "remove" {
-  // missing → owned (inactive) → active → missing
-  if (!c) return { owned: true, active: false };
-  if (c.owned && !c.active) return { owned: true, active: true };
-  return "remove";
-}
-
 interface Actions {
   // ── Droidex collection ────────────────────────────────────────────────
-  setCardState(name: string, tier: Tier, patch: Partial<Pick<CollectionCard, "owned" | "active" | "notes">>): void;
-  cycleCard(name: string, tier: Tier): void;
+  setCardCounts(
+    name: string,
+    tier: Tier,
+    patch: Partial<Pick<CollectionCard, "owned" | "working" | "lounge" | "notes">>,
+  ): void;
+  /** Bump this card's Working count by 1 (used by "I have it" shortcuts). */
+  bumpWorking(name: string, tier: Tier): void;
   addCustomDroid(def: DroidDef): void;
 
   // ── Profile ───────────────────────────────────────────────────────────
@@ -76,47 +73,59 @@ export const useAppStore = create<AppStore>()(
     (set) => ({
       ...bootstrapState(),
 
-      setCardState(name, tier, patch) {
+      setCardCounts(name, tier, patch) {
         set((s) => {
           const idx = s.cards.findIndex(
             (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase() && c.tier === tier,
           );
-          const next = [...s.cards];
-          if (idx < 0) {
-            if (!patch.owned && !patch.active) return {};
-            next.push({
-              name: name.trim(),
-              tier: normalizeTier(tier),
-              owned: patch.owned ?? true,
-              active: patch.active ?? false,
-              notes: patch.notes,
-            });
-          } else {
-            const merged: CollectionCard = { ...next[idx]!, ...patch };
-            if (!merged.owned && !merged.active) {
-              next.splice(idx, 1);
-            } else {
-              next[idx] = merged;
-            }
+          const clean = (n: unknown): number => Math.max(0, Math.floor(Number(n) || 0));
+          const list = [...s.cards];
+          const current = idx >= 0 ? list[idx]! : null;
+          const working = patch.working !== undefined ? clean(patch.working) : (current?.working ?? 0);
+          const lounge = patch.lounge !== undefined ? clean(patch.lounge) : (current?.lounge ?? 0);
+          // Owned auto-true whenever a copy is deployed; otherwise honor the patch or existing state.
+          const deployed = working + lounge > 0;
+          const owned = deployed
+            ? true
+            : patch.owned !== undefined
+              ? !!patch.owned
+              : (current?.owned ?? true);
+          const notes = patch.notes !== undefined ? patch.notes : current?.notes;
+          if (!owned && working === 0 && lounge === 0) {
+            if (idx >= 0) list.splice(idx, 1);
+            return { cards: list };
           }
-          return { cards: next };
+          const next: CollectionCard = {
+            name: (current?.name ?? name.trim()),
+            tier: normalizeTier(tier),
+            owned,
+            working,
+            lounge,
+            notes,
+          };
+          if (idx < 0) list.push(next);
+          else list[idx] = next;
+          return { cards: list };
         });
       },
 
-      cycleCard(name, tier) {
+      bumpWorking(name, tier) {
         set((s) => {
           const idx = s.cards.findIndex(
             (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase() && c.tier === tier,
           );
-          const current = idx >= 0 ? s.cards[idx] : undefined;
-          const next = cycleCardState(current);
           const list = [...s.cards];
-          if (next === "remove") {
-            if (idx >= 0) list.splice(idx, 1);
-          } else if (idx < 0) {
-            list.push({ name: name.trim(), tier: normalizeTier(tier), owned: next.owned, active: next.active });
+          if (idx < 0) {
+            list.push({
+              name: name.trim(),
+              tier: normalizeTier(tier),
+              owned: true,
+              working: 1,
+              lounge: 0,
+            });
           } else {
-            list[idx] = { ...current!, ...next };
+            const c = list[idx]!;
+            list[idx] = { ...c, working: c.working + 1, owned: true };
           }
           return { cards: list };
         });

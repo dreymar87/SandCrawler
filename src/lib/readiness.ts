@@ -3,35 +3,45 @@ import { satisfies, tierGap, tierRank } from "./tiers";
 import { parseCredits } from "./credits";
 import { normalizeName } from "./normalize";
 
-/** Cards that count toward rebirth requirements (active = Working or Lounge). */
+/** How many of this card are deployed anywhere (Working + Lounge). */
+export function deployedCount(c: CollectionCard): number {
+  return c.working + c.lounge;
+}
+
+/** True iff at least one copy is deployed (satisfies rebirth eligibility). */
+export function isActive(c: CollectionCard): boolean {
+  return deployedCount(c) > 0;
+}
+
+/** Cards that count toward rebirth requirements (any copy deployed). */
 export function activeCards(cards: readonly CollectionCard[]): CollectionCard[] {
-  return cards.filter((c) => c.active);
+  return cards.filter(isActive);
 }
 
 /**
- * Does any active card in the collection cover this single requirement?
+ * Does any deployed card in the collection cover this single requirement?
  * Match by normalized name AND tier substitution (owned tier ≥ required).
  *
- * This is the prototype's `rosterCovers` (§5 of the brief), retargeted at
- * the card-based collection. Tier substitution means an active MOUSE@GOLD
- * card satisfies a MOUSE@DEFAULT requirement.
+ * Tier substitution means a deployed MOUSE@GOLD card satisfies a
+ * MOUSE@DEFAULT requirement. Lounge counts here — the game accepts
+ * either Working or Lounge for the rebirth NEED set.
  */
 export function rosterCovers(req: RebirthReq, cards: readonly CollectionCard[]): boolean {
   const reqKey = normalizeName(req.name);
   return cards.some(
     (c) =>
-      c.active &&
+      isActive(c) &&
       normalizeName(c.name) === reqKey &&
       satisfies(req.tier, c.tier),
   );
 }
 
-/** Best owned tier for `name` across active cards, or `null` if none active. */
+/** Best owned tier for `name` across deployed cards, or `null` if none deployed. */
 export function bestOwnedTier(name: string, cards: readonly CollectionCard[]): Tier | null {
   const key = normalizeName(name);
   let best: Tier | null = null;
   for (const c of cards) {
-    if (!c.active) continue;
+    if (!isActive(c)) continue;
     if (normalizeName(c.name) !== key) continue;
     if (best === null || tierRank(c.tier) > tierRank(best)) best = c.tier;
   }

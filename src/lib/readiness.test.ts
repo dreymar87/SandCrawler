@@ -8,12 +8,15 @@ import {
   standardRebirthReady,
 } from "./readiness";
 
-const mouseDefault: CollectionCard = { name: "MOUSE", tier: "DEFAULT", owned: true, active: true };
-const mouseGold: CollectionCard = { name: "MOUSE", tier: "GOLD", owned: true, active: true };
-const mouseInactive: CollectionCard = { name: "MOUSE", tier: "BESKAR", owned: true, active: false };
+const mouseDefault: CollectionCard = { name: "MOUSE", tier: "DEFAULT", owned: true, working: 1, lounge: 0 };
+const mouseGold: CollectionCard = { name: "MOUSE", tier: "GOLD", owned: true, working: 1, lounge: 0 };
+const mouseLoungeOnly: CollectionCard = { name: "MOUSE", tier: "GOLD", owned: true, working: 0, lounge: 2 };
+const mouseInactive: CollectionCard = { name: "MOUSE", tier: "BESKAR", owned: true, working: 0, lounge: 0 };
+
 describe("activeCards", () => {
-  it("filters to active cards only", () => {
+  it("filters to cards with any copy deployed (working OR lounge)", () => {
     expect(activeCards([mouseDefault, mouseInactive])).toEqual([mouseDefault]);
+    expect(activeCards([mouseLoungeOnly, mouseInactive])).toEqual([mouseLoungeOnly]);
   });
 });
 
@@ -24,11 +27,15 @@ describe("rosterCovers", () => {
     // Punctuation differences alone don't break the match (alias logic for
     // WLKR<->Walker lives in the droid dictionary, not here).
     expect(rosterCovers({ name: "MONO-WLKR", tier: "DEFAULT" }, [
-      { name: "Mono Wlkr", tier: "DEFAULT", owned: true, active: true },
+      { name: "Mono Wlkr", tier: "DEFAULT", owned: true, working: 1, lounge: 0 },
     ])).toBe(true);
   });
 
-  it("ignores inactive droids", () => {
+  it("Lounge-only cards still cover requirements (rebirth-eligible)", () => {
+    expect(rosterCovers({ name: "MOUSE", tier: "DEFAULT" }, [mouseLoungeOnly])).toBe(true);
+  });
+
+  it("ignores cards with 0 working AND 0 lounge (stored-only)", () => {
     expect(rosterCovers({ name: "Mouse", tier: "DEFAULT" }, [mouseInactive])).toBe(false);
   });
 
@@ -65,9 +72,9 @@ describe("standardRebirthReady", () => {
 
   it("requires droids covered AND credits >= threshold", () => {
     const cards: CollectionCard[] = [
-      { name: "CB", tier: "DEFAULT", owned: true, active: true },
-      { name: "PIT", tier: "DEFAULT", owned: true, active: true },
-      { name: "DRK-1 PROBE", tier: "DEFAULT", owned: true, active: true },
+      { name: "CB", tier: "DEFAULT", owned: true, working: 1, lounge: 0 },
+      { name: "PIT", tier: "DEFAULT", owned: true, working: 1, lounge: 0 },
+      { name: "DRK-1 PROBE", tier: "DEFAULT", owned: true, working: 1, lounge: 0 },
     ];
     expect(standardRebirthReady(rb, cards, "10K")).toBe(true);
     expect(standardRebirthReady(rb, cards, "9K")).toBe(false);

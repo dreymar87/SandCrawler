@@ -15,44 +15,59 @@ const stats: DroidStats = {
   },
 };
 
+const card = (
+  name: string,
+  tier: CollectionCard["tier"],
+  working: number,
+  lounge = 0,
+): CollectionCard => ({ name, tier, owned: true, working, lounge });
+
 describe("computeProduction", () => {
-  it("sums flat credits/sec across active cards", () => {
-    const cards: CollectionCard[] = [
-      { name: "MOUSE", tier: "DEFAULT", owned: true, active: true },
-      { name: "MOUSE", tier: "GOLD", owned: true, active: true },
-      { name: "GONK", tier: "DEFAULT", owned: true, active: true },
-    ];
-    const r = computeProduction(cards, stats);
+  it("sums flat credits/sec across working cards", () => {
+    const r = computeProduction(
+      [card("MOUSE", "DEFAULT", 1), card("MOUSE", "GOLD", 1), card("GONK", "DEFAULT", 1)],
+      stats,
+    );
     expect(r.flat).toBe(10n); // 2 + 4 + 4
     expect(r.percentLabels).toEqual([]);
     expect(r.contributors).toBe(3);
   });
 
-  it("skips inactive cards", () => {
-    const cards: CollectionCard[] = [
-      { name: "MOUSE", tier: "DEFAULT", owned: true, active: false },
-      { name: "GONK", tier: "DEFAULT", owned: true, active: true },
-    ];
-    const r = computeProduction(cards, stats);
+  it("multiplies income by the working count (duplicates)", () => {
+    // 3 GOLD MOUSEs deployed = 3 × 4/s = 12/s
+    const r = computeProduction([card("MOUSE", "GOLD", 3)], stats);
+    expect(r.flat).toBe(12n);
+    expect(r.contributors).toBe(3);
+  });
+
+  it("Lounge droids don't produce credits", () => {
+    // 5 in Lounge, 0 working → 0/s. And they're still rebirth-eligible elsewhere.
+    const r = computeProduction([card("MOUSE", "GOLD", 0, 5)], stats);
+    expect(r.flat).toBe(0n);
+    expect(r.contributors).toBe(0);
+  });
+
+  it("skips cards with 0 working (owned-only stays quiet)", () => {
+    const r = computeProduction(
+      [
+        { name: "MOUSE", tier: "DEFAULT", owned: true, working: 0, lounge: 0 },
+        card("GONK", "DEFAULT", 1),
+      ],
+      stats,
+    );
     expect(r.flat).toBe(4n);
     expect(r.contributors).toBe(1);
   });
 
-  it("collects percentage incomes separately (MYTHIC boosters multiply, don't add)", () => {
-    const cards: CollectionCard[] = [
-      { name: "BB8", tier: "DEFAULT", owned: true, active: true },
-      { name: "MOUSE", tier: "DEFAULT", owned: true, active: true },
-    ];
-    const r = computeProduction(cards, stats);
+  it("percentage boosters surface once per working copy", () => {
+    // 2 BB8s working = "5%/s" listed twice; MOUSE's 2/s adds normally.
+    const r = computeProduction([card("BB8", "DEFAULT", 2), card("MOUSE", "DEFAULT", 1)], stats);
     expect(r.flat).toBe(2n);
-    expect(r.percentLabels).toEqual(["5%/s"]);
+    expect(r.percentLabels).toEqual(["5%/s", "5%/s"]);
   });
 
   it("ignores cards whose stats aren't in the table", () => {
-    const cards: CollectionCard[] = [
-      { name: "UNKNOWN-DROID", tier: "DEFAULT", owned: true, active: true },
-    ];
-    const r = computeProduction(cards, stats);
+    const r = computeProduction([card("UNKNOWN-DROID", "DEFAULT", 1)], stats);
     expect(r.flat).toBe(0n);
     expect(r.contributors).toBe(0);
   });

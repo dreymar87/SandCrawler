@@ -21,5 +21,9 @@ export const SEED_VERSION = 4;
  * v6 — IA redesign: 5 primary tabs (home/droidex/rebirths/shop/profile).
  *      `ui.creditsCurrent` moves to `profile.currentCredits`; Profile
  *      gains `baseName` + `upgradeChips`. Old tab keys remapped.
+ * v7 — CollectionCard swaps `active: boolean` for `working: number` +
+ *      `lounge: number` (per-status duplicate counts). Only Working
+ *      contributes to production; Working+Lounge both count for
+ *      rebirths. Migration: `active:true` → `working:1`.
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;

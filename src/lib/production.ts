@@ -12,13 +12,13 @@ export interface ProductionTotals {
 }
 
 /**
- * Sums per-second income across active cards. Skipping inactive cards is
- * the whole reason `active` exists on a CollectionCard — only deployed
- * droids actually generate credits.
+ * Sums per-second income across Working cards. Lounge droids are
+ * rebirth-eligible but produce zero credits, so they don't count here.
+ * Each card's income multiplies by `card.working` — duplicates work.
  *
- * Percentage boosters (MYTHIC events like BB8) aren't additive with flat
- * credits/sec, so they're returned as raw labels for the UI to render
- * separately.
+ * Percentage boosters (ICONIC events like BB8, R2-D2) aren't additive
+ * with flat credits/sec, so they're returned as raw labels for the UI
+ * to render separately. They contribute once per active copy.
  */
 export function computeProduction(
   cards: readonly CollectionCard[],
@@ -29,15 +29,17 @@ export function computeProduction(
   let contributors = 0;
 
   for (const card of cards) {
-    if (!card.active) continue;
+    if (card.working <= 0) continue;
     const stat = stats[card.name]?.[card.tier];
     if (!stat) continue;
     const v = parseIncome(stat.income);
     if (v === null) {
-      percentLabels.push(stat.income);
+      // Percentage boosters — one label per working copy so the multiplicative
+      // effect is visible ("+ 15%/s + 15%/s" for two working BB8s).
+      for (let i = 0; i < card.working; i++) percentLabels.push(stat.income);
     } else if (v > 0n) {
-      flat += v;
-      contributors += 1;
+      flat += v * BigInt(card.working);
+      contributors += card.working;
     }
   }
 

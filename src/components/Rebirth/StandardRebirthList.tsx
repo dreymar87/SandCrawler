@@ -1,3 +1,4 @@
+import { SUPER_REBIRTH_BONUSES } from "../../data/superRebirthBonuses.seed";
 import { useStandardRebirths, useStandardReadiness, useActiveCycle, useNextUnlock } from "../../store/selectors";
 import { rosterCovers } from "../../lib/readiness";
 import { srbBonusAt } from "../../lib/novaCrystals";
@@ -64,7 +65,80 @@ export function StandardRebirthList() {
           />
         ))
       )}
+
+      <SrbBonusesSection currentLevel={currentLevel} />
     </div>
+  );
+}
+
+/**
+ * Full RB12–27 Super Rebirth bonus table, collapsible. Highlights the row
+ * for your current RB so you can compare "SR here vs one more" at a glance.
+ */
+function SrbBonusesSection({ currentLevel }: { currentLevel: number }) {
+  return (
+    <section className="card p-0 mt-6">
+      <details className="group">
+        <summary className="cursor-pointer select-none px-4 py-3 flex items-baseline gap-2 list-none">
+          <span className="font-display font-bold text-base">Super Rebirth bonuses</span>
+          <span className="font-mono text-[10.5px] text-muted-alt">RB12 – RB27</span>
+          <span className="flex-1" />
+          <span className="font-mono text-[10.5px] text-holo group-open:hidden">show</span>
+          <span className="font-mono text-[10.5px] text-holo hidden group-open:inline">hide</span>
+        </summary>
+        <div className="px-4 pb-4">
+          <p className="font-mono text-[10.5px] text-muted-alt mb-3">
+            One-time bonus earned when you Super Rebirth at that RB level. Multipliers stack
+            additively with your existing multipliers.
+          </p>
+          <div className="rounded-[10px] border border-line overflow-hidden">
+            <table className="w-full text-[12.5px]">
+              <thead>
+                <tr className="bg-panel-alt font-mono text-[10px] uppercase tracking-wider text-muted-alt">
+                  <th className="text-left px-3 py-2">RB</th>
+                  <th className="text-right px-2 py-2">Crystals</th>
+                  <th className="text-right px-2 py-2">Credit ×</th>
+                  <th className="text-right px-3 py-2">XP ×</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SUPER_REBIRTH_BONUSES.map((b) => {
+                  const isCurrent = b.rbLevel === currentLevel;
+                  return (
+                    <tr
+                      key={b.rbLevel}
+                      className={`border-t border-line ${
+                        isCurrent ? "bg-holo/10 text-holo" : ""
+                      }`}
+                    >
+                      <td className="px-3 py-1.5 font-display font-bold">RB{b.rbLevel}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">
+                        +{b.crystals}
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono">
+                        ×{(1 + b.creditMult).toFixed(2)}
+                      </td>
+                      <td className="px-3 py-1.5 text-right font-mono">
+                        ×{(1 + b.xpMult).toFixed(1)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {currentLevel >= 12 && currentLevel <= 27 ? (
+            <p className="font-mono text-[10.5px] text-holo mt-2">
+              You're at RB{currentLevel} — highlighted row above.
+            </p>
+          ) : (
+            <p className="font-mono text-[10.5px] text-muted-alt mt-2">
+              Set your current RB on the Profile tab to highlight it here.
+            </p>
+          )}
+        </div>
+      </details>
+    </section>
   );
 }
 

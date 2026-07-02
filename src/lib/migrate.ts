@@ -117,13 +117,25 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
   // Cards: same paths as v3, but tier values now include FLAWLESS.
   let cards: CollectionCard[] = [];
   if (Array.isArray(obj.cards)) {
-    cards = (obj.cards as Record<string, unknown>[]).map((c) => ({
-      name: resolveName(((c.name as string) ?? "")),
-      tier: normalizeTier(c.tier as string | undefined),
-      owned: c.owned !== false,
-      active: !!c.active,
-      notes: (c.notes as string) ?? undefined,
-    }));
+    cards = (obj.cards as Record<string, unknown>[]).map((c) => {
+      // v7: prefer explicit working/lounge counts; fall back to legacy `active`.
+      const explicitWorking = typeof c.working === "number" ? Math.max(0, Math.floor(c.working)) : null;
+      const explicitLounge = typeof c.lounge === "number" ? Math.max(0, Math.floor(c.lounge)) : null;
+      let working = explicitWorking ?? 0;
+      let lounge = explicitLounge ?? 0;
+      if (explicitWorking === null && explicitLounge === null) {
+        // Legacy v6: `active: true` → assume 1 Working.
+        if (c.active === true) working = 1;
+      }
+      return {
+        name: resolveName(((c.name as string) ?? "")),
+        tier: normalizeTier(c.tier as string | undefined),
+        owned: c.owned !== false || working > 0 || lounge > 0,
+        working,
+        lounge,
+        notes: (c.notes as string) ?? undefined,
+      };
+    });
   } else if (Array.isArray(obj.roster)) {
     cards = (obj.roster as Record<string, unknown>[]).map((d) => {
       const rawName = ((d.droidId as string) ?? (d.name as string) ?? "").toString();
@@ -131,11 +143,19 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
       const explicitActive = typeof d.active === "boolean" ? (d.active as boolean) : null;
       const active = explicitActive ?? (status === "Working" || status === "Lounge");
       const owned = typeof d.owned === "boolean" ? (d.owned as boolean) : true;
+      // Legacy roster: map Working/Lounge status precisely when available.
+      let working = 0;
+      let lounge = 0;
+      if (active) {
+        if (status === "Lounge") lounge = 1;
+        else working = 1;
+      }
       return {
         name: resolveName(rawName),
         tier: normalizeTier(d.tier as string | undefined),
-        owned,
-        active,
+        owned: owned || working > 0 || lounge > 0,
+        working,
+        lounge,
         notes: (d.notes as string) ?? undefined,
       };
     });
@@ -249,11 +269,14 @@ function liftStandardRebirthRewards(raw: unknown): StandardRebirth[] {
 }
 
 function mergeCards(a: CollectionCard, b: CollectionCard): CollectionCard {
+  const working = Math.max(a.working, b.working);
+  const lounge = Math.max(a.lounge, b.lounge);
   return {
     name: a.name,
     tier: a.tier,
-    owned: a.owned || b.owned,
-    active: a.active || b.active,
+    owned: a.owned || b.owned || working > 0 || lounge > 0,
+    working,
+    lounge,
     notes: a.notes ?? b.notes,
   };
 }

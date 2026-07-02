@@ -44,8 +44,9 @@ describe("migrate", () => {
     const state = migrate(v1);
     expect(state.schemaVersion).toBe(SCHEMA_VERSION);
     expect(state.cards).toHaveLength(2);
-    expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", active: true });
-    expect(state.cards[1]).toMatchObject({ name: "PIT", tier: "DEFAULT", active: true });
+    // v1 "status: Working" → v7 working: 1; "status: Lounge" → lounge: 1.
+    expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", working: 1, lounge: 0 });
+    expect(state.cards[1]).toMatchObject({ name: "PIT", tier: "DEFAULT", working: 0, lounge: 1 });
     expect(state.profile).toEqual(defaultProfile());
   });
 
@@ -64,7 +65,9 @@ describe("migrate", () => {
     const state = migrate(v2);
     expect(state.schemaVersion).toBe(SCHEMA_VERSION);
     expect(state.cards).toHaveLength(2);
-    expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", owned: true, active: true });
+    // v2 `active: true` → v7 `working: 1`; `active: false` retains owned only.
+    expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", owned: true, working: 1, lounge: 0 });
+    expect(state.cards[1]).toMatchObject({ name: "PIT", tier: "DEFAULT", owned: true, working: 0, lounge: 0 });
     // v6: ui.creditsCurrent lifted into profile.currentCredits.
     expect(state.profile.currentCredits).toBe("1K");
     // Old "collection" tab key remaps to "droidex".
@@ -124,13 +127,44 @@ describe("migrate", () => {
   it("dedupes cards with the same (name, tier)", () => {
     const dup = {
       cards: [
-        { name: "MOUSE", tier: "GOLD", owned: true, active: false },
-        { name: "MOUSE", tier: "GOLD", owned: false, active: true },
+        { name: "MOUSE", tier: "GOLD", owned: true, working: 0, lounge: 0 },
+        { name: "MOUSE", tier: "GOLD", owned: false, working: 3, lounge: 0 },
       ],
     };
     const state = migrate(dup);
     expect(state.cards).toHaveLength(1);
-    expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", owned: true, active: true });
+    expect(state.cards[0]).toMatchObject({ name: "MOUSE", tier: "GOLD", owned: true, working: 3, lounge: 0 });
+  });
+
+  it("v6 → v7: legacy `active: true` becomes `working: 1`", () => {
+    const v6 = {
+      schemaVersion: 6,
+      cards: [
+        { name: "MOUSE", tier: "GOLD", owned: true, active: true },
+        { name: "PIT", tier: "DEFAULT", owned: true, active: false },
+      ],
+    };
+    const state = migrate(v6);
+    expect(state.cards[0]).toMatchObject({ owned: true, working: 1, lounge: 0 });
+    expect(state.cards[1]).toMatchObject({ owned: true, working: 0, lounge: 0 });
+  });
+
+  it("v7 cards with explicit counts preserve them", () => {
+    const v7 = {
+      schemaVersion: 7,
+      cards: [{ name: "MOUSE", tier: "GOLD", owned: true, working: 5, lounge: 2 }],
+    };
+    const state = migrate(v7);
+    expect(state.cards[0]).toMatchObject({ working: 5, lounge: 2 });
+  });
+
+  it("legacy droid name BU-4D resolves to canonical B-U4D via aliases", () => {
+    const legacy = {
+      schemaVersion: 6,
+      cards: [{ name: "BU-4D", tier: "GOLD", owned: true, active: true }],
+    };
+    const state = migrate(legacy);
+    expect(state.cards[0]?.name).toBe("B-U4D");
   });
 
   it("unwraps a current ExportEnvelope and preserves cosmetics + nova upgrades + ICONIC purchases", () => {
@@ -140,7 +174,7 @@ describe("migrate", () => {
       exportedAt: "2026-06-17T00:00:00Z",
       payload: {
         schemaVersion: SCHEMA_VERSION,
-        cards: [{ name: "GONK", tier: "GOLD", owned: true, active: true }],
+        cards: [{ name: "GONK", tier: "GOLD", owned: true, working: 1, lounge: 0 }],
         profile: {
           standardRebirth: 5,
           superRebirthCount: 3,

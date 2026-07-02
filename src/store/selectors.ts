@@ -157,7 +157,8 @@ export function useDroidexCompletion(): {
         ownedCards += 1;
         ownedDroidNames.add(c.name.toUpperCase());
       }
-      if (c.active) activeCards += 1;
+      // Count total deployed copies across Working + Lounge (was a boolean pre-v7).
+      activeCards += c.working + c.lounge;
     }
     return {
       ownedCards,

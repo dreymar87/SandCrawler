@@ -51,20 +51,23 @@ export interface DroidDef {
 }
 
 /**
- * A single Droidex card = a droid at a specific tier. Replaces the old
- * RosterEntry. You can own the same droid at multiple tiers as distinct
- * cards (matches the in-game Droidex).
+ * A single Droidex card = a droid at a specific tier. You can own the
+ * same droid at multiple tiers as distinct cards (matches the in-game
+ * Droidex).
  *
- * Cards are stored sparsely: an entry exists only when owned or active.
+ * Cards are stored sparsely: an entry exists only when owned or deployed
+ * anywhere (working > 0 or lounge > 0).
  */
 export interface CollectionCard {
   /** Canonical droid name. */
   name: string;
   tier: Tier;
-  /** Collected in your Droidex. */
+  /** Collected in your Droidex at all. Auto-true when working+lounge > 0. */
   owned: boolean;
-  /** Deployed (Working OR Lounge) — only active cards count toward rebirths. */
-  active: boolean;
+  /** How many are on production duty (Worker/Astromech/Battle) — mines credits. */
+  working: number;
+  /** How many are parked in the Lounge (rebirth-eligible, but no credits). */
+  lounge: number;
   notes?: string;
 }
 

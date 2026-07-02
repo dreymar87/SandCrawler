@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { TIERS, RARITIES, CLASSES } from "../../constants";
 import { DROID_DICT } from "../../data/droids.seed";
 import { haptic } from "../../lib/native";
@@ -9,14 +9,14 @@ import type { CollectionCard, DroidClass, DroidDef, Rarity, Tier } from "../../t
 /**
  * The Droidex grid: every known droid × every tier as a tappable cell.
  *
- * Tap cycles each cell missing → owned → active → missing. Filters apply
- * to the row level (whole droid), with cells outside the droid's tier
- * range hidden (e.g. MYTHIC droids show only the DEFAULT cell).
+ * Tap opens a per-cell editor with Owned + Working count + Lounge count.
+ * Filters apply at the row level; cells outside a droid's tier range are
+ * hidden (e.g. ICONIC droids show only the DEFAULT cell).
  */
 export function DroidexGrid() {
   const cards = useAppStore((s) => s.cards);
   const customDroids = useAppStore((s) => s.customDroids);
-  const cycleCard = useAppStore((s) => s.cycleCard);
+  const setCardCounts = useAppStore((s) => s.setCardCounts);
   const setUiPref = useAppStore((s) => s.setUiPref);
   const rarityFilter = useAppStore((s) => s.ui.rarityFilter ?? "ALL");
   const classFilter = useAppStore((s) => s.ui.classFilter ?? "ALL");
@@ -24,12 +24,14 @@ export function DroidexGrid() {
   const collectedFilter = useAppStore((s) => s.ui.collectedFilter ?? "ALL");
   const completion = useDroidexCompletion();
 
+  // Which (droid, tier) cell is being edited. Only one open at a time.
+  const [openCell, setOpenCell] = useState<{ droid: string; tier: Tier } | null>(null);
+
   const dict = useMemo(() => [...DROID_DICT, ...customDroids], [customDroids]);
 
-  // Map of (name|tier) → card for O(1) lookup during render.
   const cardIndex = useMemo(() => {
     const m = new Map<string, CollectionCard>();
-    for (const c of cards) m.set(key(c.name, c.tier), c);
+    for (const c of cards) m.set(cardKey(c.name, c.tier), c);
     return m;
   }, [cards]);
 
@@ -38,7 +40,7 @@ export function DroidexGrid() {
       if (rarityFilter !== "ALL" && d.rarity !== rarityFilter) return false;
       if (classFilter !== "ALL" && d.class !== classFilter) return false;
       if (collectedFilter !== "ALL") {
-        const anyOwned = d.tiers.some((t) => cardIndex.get(key(d.canonical, t))?.owned);
+        const anyOwned = d.tiers.some((t) => cardIndex.get(cardKey(d.canonical, t))?.owned);
         if (collectedFilter === "OWNED" && !anyOwned) return false;
         if (collectedFilter === "MISSING" && anyOwned) return false;
       }
@@ -65,8 +67,9 @@ export function DroidexGrid() {
           />
         </div>
         <p className="font-mono text-[10.5px] text-muted">
-          Tap a cell once for <b className="text-ink">owned</b>, again for{" "}
-          <b className="text-holo">active</b> (Working / Lounge), again to clear.
+          Tap a cell to set counts for <b className="text-ink">owned</b>,{" "}
+          <b className="text-holo">working</b> (mines credits), and{" "}
+          <b className="text-sun">lounge</b> (parked, rebirth-eligible).
         </p>
       </section>
 
@@ -107,25 +110,46 @@ export function DroidexGrid() {
         {rows.length === 0 ? (
           <p className="text-muted text-center py-6">No droids match those filters.</p>
         ) : (
-          rows.map((d) => (
-            <DroidRow
-              key={d.canonical}
-              droid={d}
-              cardIndex={cardIndex}
-              onCycle={(tier) => {
-                haptic("light");
-                cycleCard(d.canonical, tier);
-              }}
-              tierFilter={tierFilter}
-            />
-          ))
+          rows.map((d) => {
+            const openTier = openCell?.droid === d.canonical ? openCell.tier : null;
+            const openCard = openTier
+              ? cardIndex.get(cardKey(d.canonical, openTier))
+              : undefined;
+            return (
+              <div key={d.canonical}>
+                <DroidRow
+                  droid={d}
+                  cardIndex={cardIndex}
+                  openTier={openTier}
+                  onCellTap={(tier) => {
+                    haptic("light");
+                    setOpenCell(
+                      openCell?.droid === d.canonical && openCell.tier === tier
+                        ? null
+                        : { droid: d.canonical, tier },
+                    );
+                  }}
+                  tierFilter={tierFilter}
+                />
+                {openTier ? (
+                  <CellEditor
+                    droid={d.canonical}
+                    tier={openTier}
+                    card={openCard}
+                    onChange={(patch) => setCardCounts(d.canonical, openTier, patch)}
+                    onClose={() => setOpenCell(null)}
+                  />
+                ) : null}
+              </div>
+            );
+          })
         )}
       </div>
     </div>
   );
 }
 
-const key = (name: string, tier: Tier) => `${name.trim().toLowerCase()}|${tier}`;
+const cardKey = (name: string, tier: Tier) => `${name.trim().toLowerCase()}|${tier}`;
 
 interface FilterRowProps<V extends string> {
   label: string;
@@ -161,11 +185,12 @@ function FilterRow<V extends string>({ label, value, options, onChange }: Filter
 interface DroidRowProps {
   droid: DroidDef;
   cardIndex: Map<string, CollectionCard>;
-  onCycle: (tier: Tier) => void;
+  openTier: Tier | null;
+  onCellTap: (tier: Tier) => void;
   tierFilter: Tier | "ALL";
 }
 
-function DroidRow({ droid, cardIndex, onCycle, tierFilter }: DroidRowProps) {
+function DroidRow({ droid, cardIndex, openTier, onCellTap, tierFilter }: DroidRowProps) {
   return (
     <div className="card px-3 py-2.5 flex items-center gap-3">
       <div className="flex-1 min-w-0">
@@ -190,14 +215,14 @@ function DroidRow({ droid, cardIndex, onCycle, tierFilter }: DroidRowProps) {
           if (!exists || filtered) {
             return <div key={t} className="w-9 h-9 opacity-0 pointer-events-none" aria-hidden />;
           }
-          const card = cardIndex.get(key(droid.canonical, t));
+          const card = cardIndex.get(cardKey(droid.canonical, t));
           return (
             <TierCell
               key={t}
               tier={t}
-              owned={!!card?.owned}
-              active={!!card?.active}
-              onClick={() => onCycle(t)}
+              card={card}
+              open={openTier === t}
+              onClick={() => onCellTap(t)}
             />
           );
         })}
@@ -208,8 +233,8 @@ function DroidRow({ droid, cardIndex, onCycle, tierFilter }: DroidRowProps) {
 
 interface TierCellProps {
   tier: Tier;
-  owned: boolean;
-  active: boolean;
+  card?: CollectionCard;
+  open: boolean;
   onClick: () => void;
 }
 
@@ -240,29 +265,177 @@ const TIER_LABEL: Record<Tier, string> = {
   FLAWLESS: "FL",
 };
 
-function TierCell({ tier, owned, active, onClick }: TierCellProps) {
-  const state = active ? "active" : owned ? "owned" : "missing";
+function TierCell({ tier, card, open, onClick }: TierCellProps) {
+  const working = card?.working ?? 0;
+  const lounge = card?.lounge ?? 0;
+  const total = working + lounge;
+  const owned = !!card?.owned;
+  const state = working > 0 ? "working" : lounge > 0 ? "lounge" : owned ? "owned" : "missing";
+  const border =
+    open
+      ? "border-holo ring-2 ring-holo/40"
+      : state === "working"
+        ? "border-holo shadow-[0_0_0_2px_rgba(70,199,224,0.15)]"
+        : state === "lounge"
+          ? "border-sun/70"
+          : state === "owned"
+            ? "border-line-alt"
+            : "border-dashed border-line";
+  const bg = state === "missing" ? "" : TIER_BG[tier];
+  const text = state === "missing" ? "text-muted-alt" : TIER_ACCENT[tier];
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`${tier} (${state})`}
-      title={`${tier} — ${state}`}
-      className={`relative w-9 h-9 rounded-md border-2 grid place-items-center font-mono text-[10px] font-bold transition ${
-        active
-          ? `border-ok ${TIER_ACCENT[tier]} ${TIER_BG[tier]} shadow-[0_0_0_2px_rgba(86,208,138,0.15)]`
-          : owned
-            ? `border-line-alt ${TIER_ACCENT[tier]} ${TIER_BG[tier]}`
-            : `border-dashed border-line text-muted-alt`
-      }`}
+      aria-label={`${tier} (${state}${total ? ` ×${total}` : ""})`}
+      title={`${tier} — ${state}${total > 1 ? ` ×${total}` : ""}`}
+      aria-expanded={open}
+      className={`relative w-9 h-9 rounded-md border-2 grid place-items-center font-mono text-[10px] font-bold transition ${border} ${bg} ${text}`}
     >
       {TIER_LABEL[tier]}
-      {active ? (
+      {total > 1 ? (
         <span
-          className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-ok ring-2 ring-bg"
+          className={`absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full ${
+            working > 0 ? "bg-holo text-[#04222B]" : "bg-sun text-[#221304]"
+          } text-[9px] font-bold grid place-items-center ring-2 ring-bg`}
+          aria-hidden
+        >
+          {total}
+        </span>
+      ) : total === 1 && state === "working" ? (
+        <span
+          className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-holo ring-2 ring-bg"
           aria-hidden
         />
       ) : null}
     </button>
+  );
+}
+
+interface CellEditorProps {
+  droid: string;
+  tier: Tier;
+  card: CollectionCard | undefined;
+  onChange: (patch: Partial<Pick<CollectionCard, "owned" | "working" | "lounge">>) => void;
+  onClose: () => void;
+}
+
+function CellEditor({ droid, tier, card, onChange, onClose }: CellEditorProps) {
+  const working = card?.working ?? 0;
+  const lounge = card?.lounge ?? 0;
+  const owned = !!card?.owned || working > 0 || lounge > 0;
+
+  return (
+    <div
+      role="dialog"
+      aria-label={`${droid} ${tier} deployment`}
+      className="card mt-1 mb-2 px-3 py-3 border-holo-dim/60 view-enter"
+    >
+      <div className="flex items-baseline gap-2 mb-3">
+        <span className="font-display font-semibold text-[14px]">{droid}</span>
+        <span className="font-mono text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-panel-alt text-muted-alt">
+          {tier}
+        </span>
+        <span className="flex-1" />
+        <button
+          type="button"
+          className="text-muted hover:text-ink font-mono text-[10.5px] uppercase tracking-wider"
+          onClick={onClose}
+          aria-label="Close editor"
+        >
+          Done
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3 mb-3">
+        <span className="font-mono text-[11px] uppercase tracking-wider text-muted-alt w-16">
+          Owned
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={owned}
+          onClick={() => onChange({ owned: !owned })}
+          className={`w-11 h-6 rounded-full transition-colors relative ${
+            owned ? "bg-ok/70" : "bg-line-alt"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+              owned ? "translate-x-5" : ""
+            }`}
+          />
+        </button>
+        <span className="font-mono text-[10.5px] text-muted-alt">
+          {working + lounge > 0 ? "auto-owned while deployed" : "toggle to mark collected"}
+        </span>
+      </div>
+
+      <CountRow
+        label="Working"
+        accent="text-holo"
+        hint="mines credits"
+        value={working}
+        onChange={(n) => onChange({ working: n })}
+      />
+      <CountRow
+        label="Lounge"
+        accent="text-sun"
+        hint="parked, counts for rebirths"
+        value={lounge}
+        onChange={(n) => onChange({ lounge: n })}
+      />
+    </div>
+  );
+}
+
+function CountRow({
+  label,
+  accent,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string;
+  accent: string;
+  hint: string;
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 py-1.5">
+      <span className={`font-mono text-[11px] uppercase tracking-wider w-16 ${accent}`}>
+        {label}
+      </span>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          className="w-7 h-7 rounded-md border border-line-alt text-muted hover:text-ink disabled:opacity-30"
+          onClick={() => onChange(Math.max(0, value - 1))}
+          disabled={value === 0}
+          aria-label={`Decrease ${label.toLowerCase()}`}
+        >
+          −
+        </button>
+        <input
+          type="number"
+          min={0}
+          inputMode="numeric"
+          className="w-14 text-center font-display font-bold text-lg bg-panel-alt border border-line rounded-md py-1"
+          value={value}
+          onChange={(e) => onChange(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+          aria-label={`${label} count`}
+        />
+        <button
+          type="button"
+          className="w-7 h-7 rounded-md border border-line-alt text-muted hover:text-ink"
+          onClick={() => onChange(value + 1)}
+          aria-label={`Increase ${label.toLowerCase()}`}
+        >
+          +
+        </button>
+      </div>
+      <span className="font-mono text-[10.5px] text-muted-alt truncate">{hint}</span>
+    </div>
   );
 }

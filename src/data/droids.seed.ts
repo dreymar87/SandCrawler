@@ -37,7 +37,7 @@ export const DROID_DICT: readonly DroidDef[] = [
   { canonical: "BDX EXPLORER", class: "WORKER", rarity: "RARE", tiers: ALL_TIERS, aliases: ["BDX"] },
   { canonical: "ARG", class: "WORKER", rarity: "RARE", tiers: ALL_TIERS },
   { canonical: "SENATE HOVERCAM", class: "WORKER", rarity: "RARE", tiers: ALL_TIERS, aliases: ["HOVERCAM"] },
-  { canonical: "BU-4D", class: "WORKER", rarity: "RARE", tiers: ALL_TIERS, aliases: ["BU4D", "BUFORD"] },
+  { canonical: "B-U4D", class: "WORKER", rarity: "RARE", tiers: ALL_TIERS, aliases: ["BU-4D", "BU4D", "B U4D", "BUFORD"] },
   { canonical: "BAL-CORE", class: "WORKER", rarity: "RARE", tiers: ALL_TIERS, aliases: ["BAL CORE"] },
   { canonical: "ROLL-R", class: "WORKER", rarity: "RARE", tiers: ALL_TIERS, aliases: ["ROLLR", "ROLLER"] },
   { canonical: "2BB", class: "ASTROMECH", rarity: "RARE", tiers: ALL_TIERS, aliases: ["2-BB", "TWOBB"] },
