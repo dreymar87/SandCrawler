@@ -74,7 +74,24 @@ Studio (or CI with the SDK installed).
 
 1. Install **Android Studio** (bundles the SDK + platform tools + a JDK),
    or the command-line SDK with an API 34+ platform.
-2. `npm install` (installs the Capacitor CLI + plugins).
+2. **Use JDK 17** (21 also works). The build uses Gradle 8.14 + Android
+   Gradle Plugin 8.13, which do **not** support JDK 24/25. If `JAVA_HOME`
+   points at a newer JDK you'll see:
+   `Unsupported class file major version 69` (that's Java 25; 68 = Java 24).
+   Fix by pointing the build at a JDK 17:
+   ```powershell
+   # Windows PowerShell — install once, then set for the session:
+   winget install EclipseAdoptium.Temurin.17.JDK
+   $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot"
+   ```
+   ```bash
+   # macOS / Linux:
+   export JAVA_HOME=$(/usr/libexec/java_home -v 17)   # macOS
+   ```
+   The simplest route is to **build from Android Studio** (Build ▸ Build
+   APK), which uses its bundled JDK 17 (JetBrains Runtime) and sidesteps
+   the system `JAVA_HOME` entirely.
+3. `npm install` (installs the Capacitor CLI + plugins).
 
 ### Build a debug APK
 
