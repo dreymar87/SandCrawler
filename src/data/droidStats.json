@@ -1714,5 +1714,12 @@
       "income": "696/s",
       "value": "1.45m"
     }
+  },
+  "C-3PO": {
+    "DEFAULT": {
+      "cost": null,
+      "income": "15%/s",
+      "value": null
+    }
   }
 }

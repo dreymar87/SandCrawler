@@ -231,6 +231,12 @@ function DroidRow({ droid, cardIndex, openTier, onCellTap, tierFilter }: DroidRo
             </span>
           ) : null}
         </div>
+        {droid.companionEffect ? (
+          <div className="font-mono text-[10px] text-holo-dim mt-1 leading-tight">
+            <span className="uppercase tracking-wide text-muted-alt mr-1">Companion</span>
+            {droid.companionEffect}
+          </div>
+        ) : null}
       </div>
       <div className="flex gap-1.5">
         {TIERS.map((t) => {

@@ -47,6 +47,14 @@ export interface DroidDef {
   eventLocked?: boolean;
   /** Not yet released (e.g. CB-23 today). */
   comingSoon?: boolean;
+  /**
+   * Unique companion effect granted while this droid is deployed
+   * (currently only populated for ICONIC droids — non-ICONIC droids get
+   * per-rarity companion buffs that are shared across every droid of
+   * that rarity/class, tracked separately). Free-text label; UI just
+   * renders it as a hint.
+   */
+  companionEffect?: string;
   tags?: string[];
 }
 
