@@ -239,6 +239,11 @@ export interface UiPrefs {
   rarityFilter?: Rarity | "ALL";
   /** "ALL" | "OWNED" | "MISSING" — Droidex collected filter. */
   collectedFilter?: "ALL" | "OWNED" | "MISSING";
+  /**
+   * Droidex strategy filter (cycle-aware). KEEP: droids required later in
+   * the active cycle. SELL: droids safe to sell now. ALL: no filter.
+   */
+  strategyFilter?: "ALL" | "KEEP" | "SELL";
   /** Set once the first-run intro has been dismissed. */
   hasOnboarded?: boolean;
 }

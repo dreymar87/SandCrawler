@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { TIERS, RARITIES, CLASSES } from "../../constants";
 import { DROID_DICT } from "../../data/droids.seed";
 import { haptic } from "../../lib/native";
+import { isDroidSafeToSell } from "../../lib/cycleStrategy";
 import { useAppStore } from "../../store/useAppStore";
-import { useDroidexCompletion } from "../../store/selectors";
+import { useActiveCycle, useDroidexCompletion } from "../../store/selectors";
 import type { CollectionCard, DroidClass, DroidDef, Rarity, Tier } from "../../types";
 
 /**
@@ -22,6 +23,9 @@ export function DroidexGrid() {
   const classFilter = useAppStore((s) => s.ui.classFilter ?? "ALL");
   const tierFilter = useAppStore((s) => s.ui.tierFilter ?? "ALL");
   const collectedFilter = useAppStore((s) => s.ui.collectedFilter ?? "ALL");
+  const strategyFilter = useAppStore((s) => s.ui.strategyFilter ?? "ALL");
+  const currentLevel = useAppStore((s) => s.profile.standardRebirth);
+  const activeCycle = useActiveCycle();
   const completion = useDroidexCompletion();
 
   // Which (droid, tier) cell is being edited. Only one open at a time.
@@ -44,9 +48,14 @@ export function DroidexGrid() {
         if (collectedFilter === "OWNED" && !anyOwned) return false;
         if (collectedFilter === "MISSING" && anyOwned) return false;
       }
+      if (strategyFilter !== "ALL") {
+        const safe = isDroidSafeToSell(d.canonical, activeCycle, currentLevel);
+        if (strategyFilter === "KEEP" && safe) return false;
+        if (strategyFilter === "SELL" && !safe) return false;
+      }
       return true;
     });
-  }, [dict, cardIndex, rarityFilter, classFilter, collectedFilter]);
+  }, [dict, cardIndex, rarityFilter, classFilter, collectedFilter, strategyFilter, activeCycle, currentLevel]);
 
   return (
     <div>
@@ -103,6 +112,21 @@ export function DroidexGrid() {
               setUiPref("collectedFilter", v as "ALL" | "OWNED" | "MISSING")
             }
           />
+        </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1.5 items-center">
+          <FilterRow
+            label="Strategy"
+            value={strategyFilter}
+            options={["ALL", "KEEP", "SELL"] as const}
+            onChange={(v) =>
+              setUiPref("strategyFilter", v as "ALL" | "KEEP" | "SELL")
+            }
+          />
+          {strategyFilter !== "ALL" ? (
+            <span className="font-mono text-[9.5px] text-muted-alt">
+              cycle {activeCycle} · RB {currentLevel}
+            </span>
+          ) : null}
         </div>
       </section>
 

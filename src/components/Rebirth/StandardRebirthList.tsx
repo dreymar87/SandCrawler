@@ -7,6 +7,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { GapList } from "../NextUnlock/GapList";
 import { ProgressBar } from "../common/ProgressBar";
 import { TierPill } from "../common/TierPill";
+import { CycleStrategySection } from "./CycleStrategySection";
 import type { StandardRebirth } from "../../types";
 
 /**
@@ -49,6 +50,8 @@ export function StandardRebirthList() {
       </section>
 
       <ClosestSection credits={credits} />
+
+      <CycleStrategySection />
 
       {list.length === 0 ? (
         <EmptyState />
