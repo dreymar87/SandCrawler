@@ -44,18 +44,24 @@ describe("computeCycleStrategy", () => {
     expect(s.chipTotals).toEqual(expected);
   });
 
-  it("sorts keepers by rarity DESC then chip cost DESC", () => {
+  it("sorts keepers by rarity ASC then earliest-needed RB ASC", () => {
     const s = computeCycleStrategy(1);
-    // First keeper should be the highest-rarity, highest-chip-cost entry.
+    // Within the same rarity, earlier RB needs should come first (that's
+    // the play-order that matches gameplay progression).
     for (let i = 1; i < s.keepers.length; i++) {
       const a = s.keepers[i - 1]!;
       const b = s.keepers[i]!;
-      // rarity-wise, `a` should be >= `b`
-      // We only assert monotonicity via the sort itself: a comes before b.
-      // If same rarity, chipCost DESC.
       if (a.rarity === b.rarity) {
-        expect(a.chipCost ?? 0).toBeGreaterThanOrEqual(b.chipCost ?? 0);
+        expect(a.firstNeeded).toBeLessThanOrEqual(b.firstNeeded);
       }
+    }
+    // First keeper's rarity rank should be <= last keeper's rank (ASC).
+    const first = s.keepers[0]!;
+    const last = s.keepers[s.keepers.length - 1]!;
+    expect(first.rarity).not.toBe("MYTHIC"); // first should be low-rarity
+    // If any MYTHIC exists, it should be at or near the end.
+    if (s.keepers.some((k) => k.rarity === "MYTHIC")) {
+      expect(["MYTHIC", "LEGENDARY", "EPIC"]).toContain(last.rarity);
     }
   });
 

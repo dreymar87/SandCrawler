@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { CollectionCard, Rarity, RebirthCycle, Tier } from "../../types";
 import { computeCycleStrategy, type CycleStrategy, type KeeperEntry } from "../../lib/cycleStrategy";
-import { formatChipCost } from "../../lib/chipCosts";
+import { chipsBetween, formatChipCost } from "../../lib/chipCosts";
 import { bestOwnedTier } from "../../lib/readiness";
 import { satisfies } from "../../lib/tiers";
 import { cycleLabel } from "../../lib/rebirthCycles";
@@ -24,8 +24,24 @@ export function CycleStrategySection() {
 
   const strategy = useMemo(() => computeCycleStrategy(pickedCycle), [pickedCycle]);
 
-  const totalChips = Object.values(strategy.chipTotals).reduce<number>((a, b) => a + (b ?? 0), 0);
-  const summary = `${strategy.keepers.length} droids · ${formatChipCost(totalChips)} chips`;
+  // Per-rarity chip totals for what YOU still owe — accounts for what
+  // you already own so the budget matches the individual row costs.
+  const remainingTotals = useMemo(() => {
+    const totals: Partial<Record<Exclude<Rarity, "ICONIC">, number>> = {};
+    for (const k of strategy.keepers) {
+      if (k.rarity === "ICONIC") continue;
+      const owned = bestOwnedTier(k.name, cards);
+      if (owned && satisfies(k.targetTier, owned)) continue; // already covered
+      const chips = chipsBetween(k.rarity, owned ?? "DEFAULT", k.targetTier);
+      if (chips === null || chips <= 0) continue;
+      const key = k.rarity as Exclude<Rarity, "ICONIC">;
+      totals[key] = (totals[key] ?? 0) + chips;
+    }
+    return totals;
+  }, [strategy.keepers, cards]);
+
+  const totalChips = Object.values(remainingTotals).reduce<number>((a, b) => a + (b ?? 0), 0);
+  const summary = `${strategy.keepers.length} droids · ${formatChipCost(totalChips)} chips to buy`;
 
   return (
     <section className="card p-0 mt-4 mb-4">
@@ -39,7 +55,7 @@ export function CycleStrategySection() {
         </summary>
         <div className="px-4 pb-4 space-y-3">
           <CyclePicker picked={pickedCycle} active={activeCycle} onPick={setPickedCycle} />
-          <ChipBudget totals={strategy.chipTotals} />
+          <ChipBudget totals={remainingTotals} />
           <KeepersList entries={strategy.keepers} cards={cards} />
           <p className="font-mono text-[10.5px] text-muted-alt">
             Status compares against your Droidex. <b className="text-ink">Have</b> = you own the
@@ -99,7 +115,7 @@ function ChipBudget({
   return (
     <div className="rounded-[10px] border border-line overflow-hidden">
       <div className="px-3 py-2 bg-panel-alt font-mono text-[10px] uppercase tracking-wider text-muted-alt">
-        Chip budget (DEFAULT → target)
+        Chips still to buy (based on what you own)
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-2 px-3 py-2.5">
         {rows.map((r) => (
@@ -150,6 +166,13 @@ function KeepersList({
 function KeeperRow({ entry, cards }: { entry: KeeperEntry; cards: readonly CollectionCard[] }) {
   const owned = bestOwnedTier(entry.name, cards);
   const status = keeperStatus(owned, entry.targetTier);
+  // Chips YOU still need to spend, given your current best tier — the
+  // whole point of the strategy view is "what work remains," not
+  // "what the full cost would have been from scratch."
+  const remainingChips =
+    status === "HAVE"
+      ? 0
+      : chipsBetween(entry.rarity, owned ?? "DEFAULT", entry.targetTier);
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-0.5 px-3 py-2">
       <div className="min-w-0">
@@ -164,11 +187,20 @@ function KeeperRow({ entry, cards }: { entry: KeeperEntry; cards: readonly Colle
           <span className="font-mono text-[10px] text-muted-alt">
             RB {entry.appearsAt.map((n) => n).join(", ")}
           </span>
+          {status === "UPGRADE" && owned ? (
+            <span className="font-mono text-[10px] text-sun">
+              have {owned}
+            </span>
+          ) : null}
         </div>
       </div>
       <TierPill tier={entry.targetTier} />
-      <span className="font-mono text-[11.5px] font-semibold tabular-nums text-right">
-        {formatChipCost(entry.chipCost)}
+      <span
+        className={`font-mono text-[11.5px] font-semibold tabular-nums text-right ${
+          status === "HAVE" ? "text-muted-alt" : ""
+        }`}
+      >
+        {formatChipCost(remainingChips)}
       </span>
     </li>
   );

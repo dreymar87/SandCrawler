@@ -65,11 +65,13 @@ export function computeCycleStrategy(cycle: RebirthCycle): CycleStrategy {
     };
   });
 
-  // Sort: rarity rank DESC (MYTHIC/LEGENDARY first), then chip cost DESC.
+  // Sort: rarity rank ASC (COMMON → MYTHIC), then by the earliest RB level
+  // where the droid is needed. Matches the natural progression of play —
+  // you'll want your low-rarity RB1-RB5 keepers before your MYTHIC RB25s.
   keepers.sort((a, b) => {
-    const dr = rarityRank(b.rarity) - rarityRank(a.rarity);
+    const dr = rarityRank(a.rarity) - rarityRank(b.rarity);
     if (dr !== 0) return dr;
-    return (b.chipCost ?? 0) - (a.chipCost ?? 0);
+    return a.firstNeeded - b.firstNeeded;
   });
 
   const chipTotals: Partial<Record<Exclude<Rarity, "ICONIC">, number>> = {};
