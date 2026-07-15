@@ -57,10 +57,15 @@ export const SQUAD_DEFS: Record<SquadType, SquadDef> = {
     accent: "text-danger",
   },
   LOUNGE: {
+    // Lounge capacity is NOT the generic baseSlots+unlocks path — it's
+    // credit-bought slots (base 5 + RB17/RB18, reset on SRB) plus the
+    // Nova-Shop "Lounge Slot" level. See src/lib/baseView.ts. `unlocks`
+    // is intentionally empty so getMaxSlots("LOUNGE", …) isn't used for
+    // capacity.
     type: "LOUNGE",
     label: "Lounge",
     baseSlots: 5,
-    unlocks: [16, 17, 18, 19, 20],
+    unlocks: [],
     description: "Park droids you're saving for upcoming rebirths.",
     accent: "text-sun",
   },

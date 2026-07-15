@@ -100,6 +100,12 @@ export interface Profile {
   novaSpent: number;
   /** Optional current Upgrade Chip balance. */
   upgradeChips?: number;
+  /**
+   * Credit-purchased Lounge slots (the base 0–5 plus the RB17/RB18
+   * credit unlocks). These reset to 0 on Super Rebirth. Nova-Shop Lounge
+   * slots are tracked separately (they persist) and added on top.
+   */
+  loungeCreditSlots: number;
 }
 
 export interface RebirthReq {
@@ -273,7 +279,7 @@ export interface UiPrefs {
 }
 
 /** The five primary bottom-nav destinations. */
-export type TabKey = "home" | "droidex" | "rebirths" | "shop" | "profile";
+export type TabKey = "base" | "droidex" | "rebirths" | "shop" | "profile";
 
 /**
  * Export envelope. The "app" field is a guard against importing random JSON.

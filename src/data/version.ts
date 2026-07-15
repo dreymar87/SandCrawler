@@ -25,5 +25,10 @@ export const SEED_VERSION = 5;
  *      `lounge: number` (per-status duplicate counts). Only Working
  *      contributes to production; Working+Lounge both count for
  *      rebirths. Migration: `active:true` → `working:1`.
+ * v8 — Base tab replaces Home. `ui.activeTab "home"` remaps to `"base"`.
+ *      Profile gains `loungeCreditSlots` (default 5) — credit-bought
+ *      lounge slots that reset on Super Rebirth. Lounge capacity is now
+ *      credit slots + Nova-Shop lounge level (not the generic
+ *      baseSlots+unlocks path).
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;

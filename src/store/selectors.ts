@@ -10,6 +10,7 @@ import { rebirthsForCycle } from "../lib/sellGuidance";
 import { computeProduction, type ProductionTotals } from "../lib/production";
 import { scoreRequirements, standardRebirthReady, type ScoredRank } from "../lib/readiness";
 import { getMaxSlots, nextSlotUnlock } from "../lib/squads";
+import { buildBaseView, loungeCapacity, type BaseView } from "../lib/baseView";
 import type {
   CosmeticItem,
   CosmeticKind,
@@ -124,15 +125,27 @@ export interface SquadCapacity {
 
 export function useSquadCapacity(): SquadCapacity[] {
   const rebirth = useAppStore((s) => s.profile.standardRebirth);
-  return useMemo(
-    () =>
-      SQUAD_TYPES.map((type) => ({
+  const loungeCreditSlots = useAppStore((s) => s.profile.loungeCreditSlots);
+  const novaUpgrades = useAppStore((s) => s.novaUpgrades);
+  return useMemo(() => {
+    const novaLoungeSlots =
+      novaUpgrades.find((u) => u.id === "workshop.lounge-slot")?.level ?? 0;
+    return SQUAD_TYPES.map((type) => {
+      // Lounge capacity is credit slots + Nova slots, not the generic path.
+      if (type === "LOUNGE") {
+        return {
+          type,
+          current: loungeCapacity(loungeCreditSlots, novaLoungeSlots),
+          next: nextSlotUnlock(type, rebirth), // always null now (no unlocks)
+        };
+      }
+      return {
         type,
         current: getMaxSlots(type, rebirth),
         next: nextSlotUnlock(type, rebirth),
-      })),
-    [rebirth],
-  );
+      };
+    });
+  }, [rebirth, loungeCreditSlots, novaUpgrades]);
 }
 
 export function useProduction(): ProductionTotals {
@@ -233,6 +246,29 @@ export function useNovaLevels(): Map<string, number> {
     for (const u of upgrades) m.set(u.id, u.level);
     return m;
   }, [upgrades]);
+}
+
+/** The Base tab view — squad fill, Lounge capacity, and sell candidates. */
+export function useBaseView(): BaseView {
+  const cards = useAppStore((s) => s.cards);
+  const customDroids = useAppStore((s) => s.customDroids);
+  const standardRebirth = useAppStore((s) => s.profile.standardRebirth);
+  const loungeCreditSlots = useAppStore((s) => s.profile.loungeCreditSlots);
+  const novaUpgrades = useAppStore((s) => s.novaUpgrades);
+  const cycle = useActiveCycle();
+  return useMemo(() => {
+    const novaLoungeSlots =
+      novaUpgrades.find((u) => u.id === "workshop.lounge-slot")?.level ?? 0;
+    return buildBaseView({
+      cards,
+      dict: [...DROID_DICT, ...customDroids],
+      stats: DROID_STATS,
+      standardRebirth,
+      loungeCreditSlots,
+      novaLoungeSlots,
+      cycle,
+    });
+  }, [cards, customDroids, standardRebirth, loungeCreditSlots, novaUpgrades, cycle]);
 }
 
 /** Everything the Home dashboard needs, in one hook. */

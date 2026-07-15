@@ -18,8 +18,9 @@ createRoot(root).render(
 void initNative({
   onBack: () => {
     const { ui, setActiveTab } = useAppStore.getState();
-    if (ui.activeTab !== "home") {
-      setActiveTab("home");
+    // Android back from any sub-tab returns to Base; from Base it exits.
+    if (ui.activeTab !== "base") {
+      setActiveTab("base");
       return true; // consumed
     }
     return false; // let Capacitor exit the app

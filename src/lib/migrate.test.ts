@@ -158,6 +158,19 @@ describe("migrate", () => {
     expect(state.cards[0]).toMatchObject({ working: 5, lounge: 2 });
   });
 
+  it("v7 → v8: remaps the Home tab to Base and defaults loungeCreditSlots", () => {
+    const v7 = {
+      schemaVersion: 7,
+      cards: [],
+      profile: { standardRebirth: 3, superRebirthCount: 1 },
+      ui: { activeTab: "home" },
+    };
+    const state = migrate(v7);
+    expect(state.ui.activeTab).toBe("base");
+    // Pre-v8 payloads get the base 5 credit lounge slots by default.
+    expect(state.profile.loungeCreditSlots).toBe(5);
+  });
+
   it("legacy droid name BU-4D resolves to canonical B-U4D via aliases", () => {
     const legacy = {
       schemaVersion: 6,

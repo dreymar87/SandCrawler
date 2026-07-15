@@ -21,11 +21,12 @@ describe("getMaxSlots", () => {
     expect(getMaxSlots("COMPANION", 23)).toBe(1);
   });
 
-  it("Lounge unlocks at RB16–20 (corrected per Cait/Omega's sheet)", () => {
+  it("Lounge no longer uses getMaxSlots — capacity is credit + nova (see baseView)", () => {
+    // v8: LOUNGE.unlocks is [] so the generic path returns just the base.
+    // Real lounge capacity = loungeCreditSlots + Nova level, computed in
+    // src/lib/baseView.ts (loungeCapacity / maxLoungeCreditSlots).
     expect(getMaxSlots("LOUNGE", 15)).toBe(5);
-    expect(getMaxSlots("LOUNGE", 16)).toBe(6);
-    expect(getMaxSlots("LOUNGE", 17)).toBe(7);
-    expect(getMaxSlots("LOUNGE", 20)).toBe(10);
+    expect(getMaxSlots("LOUNGE", 20)).toBe(5);
   });
 });
 

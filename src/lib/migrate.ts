@@ -11,6 +11,7 @@ import type {
   TabKey,
 } from "../types";
 import { buildDroidIndex } from "./autocomplete";
+import { LOUNGE_BASE_SLOTS } from "./baseView";
 import { normalizeTier } from "./tiers";
 
 /**
@@ -50,7 +51,7 @@ export function emptyState(): PersistedState {
     cosmetics: [],
     novaUpgrades: [],
     novaIconicOwned: [],
-    ui: { activeTab: "home" },
+    ui: { activeTab: "base" },
   };
 }
 
@@ -62,6 +63,7 @@ export function defaultProfile(): Profile {
     currentCredits: "",
     novaEarned: 0,
     novaSpent: 0,
+    loungeCreditSlots: LOUNGE_BASE_SLOTS,
   };
 }
 
@@ -198,10 +200,11 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
       })
     : [];
 
-  // Remap old tab keys into the v6 five-tab set.
-  const oldTab = String(uiRaw.activeTab ?? "home");
+  // Remap old tab keys into the current five-tab set. v8: Home → Base.
+  const oldTab = String(uiRaw.activeTab ?? "base");
   const tabMap: Record<string, TabKey> = {
-    home: "home",
+    base: "base",
+    home: "base",
     droidex: "droidex",
     profile: "profile",
     rebirths: "rebirths",
@@ -214,7 +217,7 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
     data: "profile",
     collection: "droidex",
   };
-  const activeTab = tabMap[oldTab] ?? "home";
+  const activeTab = tabMap[oldTab] ?? "base";
 
   // v5: novaIconicOwned slice (ICONIC droid Nova Shop purchases)
   const novaIconicOwned: string[] = Array.isArray(obj.novaIconicOwned)
@@ -300,6 +303,8 @@ function coerceProfile(p: Record<string, unknown>, uiCreditsFallback?: string): 
   const currentCredits =
     typeof p.currentCredits === "string" ? p.currentCredits : (uiCreditsFallback ?? "");
   const chips = Number(p.upgradeChips);
+  // v8: loungeCreditSlots — default to the base 5 for pre-v8 payloads.
+  const loungeCredit = Number(p.loungeCreditSlots);
   return {
     baseName: typeof p.baseName === "string" ? p.baseName : undefined,
     standardRebirth: Math.max(0, Math.floor(std)),
@@ -309,6 +314,9 @@ function coerceProfile(p: Record<string, unknown>, uiCreditsFallback?: string): 
     novaEarned: Math.max(0, Math.floor(Number(p.novaEarned) || 0)),
     novaSpent: Math.max(0, Math.floor(Number(p.novaSpent) || 0)),
     upgradeChips: Number.isFinite(chips) && chips > 0 ? Math.floor(chips) : undefined,
+    loungeCreditSlots: Number.isFinite(loungeCredit) && loungeCredit >= 0
+      ? Math.floor(loungeCredit)
+      : LOUNGE_BASE_SLOTS,
   };
 }
 

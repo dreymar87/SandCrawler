@@ -106,6 +106,24 @@ describe("performSuperRebirth", () => {
     expect(p.currentCredits).toBe("");
     expect(p.upgradeChips).toBe(0);
   });
+
+  it("resets credit-bought lounge slots to 0 (nova slots persist elsewhere)", () => {
+    useAppStore.getState().setLoungeCreditSlots(7);
+    expect(useAppStore.getState().profile.loungeCreditSlots).toBe(7);
+    useAppStore.getState().performSuperRebirth();
+    expect(useAppStore.getState().profile.loungeCreditSlots).toBe(0);
+  });
+});
+
+describe("setLoungeCreditSlots", () => {
+  beforeEach(() => useAppStore.getState().resetAll());
+
+  it("clamps to a non-negative integer", () => {
+    useAppStore.getState().setLoungeCreditSlots(3);
+    expect(useAppStore.getState().profile.loungeCreditSlots).toBe(3);
+    useAppStore.getState().setLoungeCreditSlots(-2);
+    expect(useAppStore.getState().profile.loungeCreditSlots).toBe(0);
+  });
 });
 
 describe("resetOnboarding", () => {

@@ -78,8 +78,8 @@ production calculator.
 
 ## Squads & slot capacity
 
-Five squads; per-rebirth slot unlocks (corrected from Pass 2 — Lounge
-starts at RB16, not RB17):
+Five squads. WORKER / ASTROMECH / BATTLE / COMPANION expand purely via
+per-rebirth slot unlocks (`getMaxSlots`, `src/lib/squads.ts`):
 
 | Squad      | Base | Unlock levels                        | Max |
 | ---------- | ---- | ------------------------------------ | --- |
@@ -87,7 +87,28 @@ starts at RB16, not RB17):
 | WORKER     | 4    | 1, 4, 7, 10, 12, 14, 16              | 11  |
 | ASTROMECH  | 3    | 2, 5, 8, 11, 13, 15                  | 9   |
 | BATTLE     | 2    | 3, 6, 9                              | 5   |
-| LOUNGE     | 5    | 16, 17, 18, 19, 20                   | 10  |
+
+**LOUNGE is special** (v8) — its capacity is *not* the generic
+base+unlocks path. It's credit-bought slots plus a persistent Nova-Shop
+upgrade:
+
+```
+loungeCapacity = loungeCreditSlots + novaLoungeSlots
+  loungeCreditSlots : base 0–5 + RB17/RB18 unlocks; credit-bought;
+                      RESETS TO 0 on Super Rebirth. Max = 5 + unlocks
+                      reached (LOUNGE_RB_UNLOCKS = [17, 18]; 19/20 TBC).
+  novaLoungeSlots   : Nova-Shop "workshop.lounge-slot" level; persists.
+```
+
+Lives in `src/lib/baseView.ts` (`loungeCapacity`, `maxLoungeCreditSlots`,
+`loungeRbUnlocksAt`). `SQUAD_DEFS.LOUNGE.unlocks` is `[]` so the generic
+path never applies.
+
+The **Base tab** (`src/components/Base/BasePanel.tsx`, replaced Home in
+v8) shows each squad's deployed÷capacity fill (deployed = Σ `working` by
+droid class, or Σ `lounge` for the Lounge) plus a "Safe to sell" list of
+owned droids no future rebirth in the cycle needs (via
+`isDroidSafeToSell`). Companion droids aren't tracked yet.
 
 ## Rebirth cycles
 

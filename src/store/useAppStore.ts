@@ -41,6 +41,7 @@ interface Actions {
   setCycleOverride(c: RebirthCycle | null): void;
   setCreditsCurrent(value: string): void;
   setUpgradeChips(n: number | undefined): void;
+  setLoungeCreditSlots(n: number): void;
   setNovaEarned(n: number): void;
   setNovaSpent(n: number): void;
   addNovaEarned(delta: number): void;
@@ -184,6 +185,12 @@ export const useAppStore = create<AppStore>()(
         }));
       },
 
+      setLoungeCreditSlots(n) {
+        set((s) => ({
+          profile: { ...s.profile, loungeCreditSlots: Math.max(0, Math.floor(n)) },
+        }));
+      },
+
       setNovaEarned(n) {
         set((s) => ({ profile: { ...s.profile, novaEarned: Math.max(0, Math.floor(n)) } }));
       },
@@ -319,6 +326,9 @@ export const useAppStore = create<AppStore>()(
               superRebirthCount: s.profile.superRebirthCount + 1,
               currentCredits: "",
               upgradeChips: 0,
+              // Credit-bought lounge slots reset on Super Rebirth; Nova
+              // slots persist (tracked via novaUpgrades, untouched here).
+              loungeCreditSlots: 0,
               novaEarned: s.profile.novaEarned + crystalsAwarded,
             },
           };

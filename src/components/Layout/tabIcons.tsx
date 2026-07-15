@@ -2,9 +2,15 @@ import type { TabKey } from "../../types";
 
 /** 24×24 line icons for the bottom nav, one per primary tab. */
 export const TAB_ICONS: Record<TabKey, (props: { className?: string }) => JSX.Element> = {
-  home: ({ className }) => (
+  base: ({ className }) => (
     <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M3 11.5 12 4l9 7.5M5.5 10v9h13v-9" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   droidex: ({ className }) => (
