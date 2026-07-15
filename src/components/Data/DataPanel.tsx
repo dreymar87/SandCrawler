@@ -59,7 +59,8 @@ export function DataPanel() {
       const result = await saveBackup(text, defaultBackupFilename());
       showMessage("ok", `Saved to ${result.location}`);
     } catch (err) {
-      showMessage("err", "Couldn't save backup file.");
+      const detail = err instanceof Error ? err.message : "unknown error";
+      showMessage("err", `Couldn't save file (${detail}). Use Copy code instead.`);
       console.error(err);
     }
   };

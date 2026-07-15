@@ -276,6 +276,8 @@ export interface UiPrefs {
    * onboarding is dismissed.
    */
   pendingSetup?: boolean;
+  /** Cycle-strategy "hide completed" toggle — persisted across tab nav. */
+  hideCompletedKeepers?: boolean;
 }
 
 /** The five primary bottom-nav destinations. */

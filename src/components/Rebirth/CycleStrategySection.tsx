@@ -37,7 +37,10 @@ export function CycleStrategySection() {
   const cards = useAppStore((s) => s.cards);
   const currentLevel = useAppStore((s) => s.profile.standardRebirth);
   const [pickedCycle, setPickedCycle] = useState<RebirthCycle>(activeCycle);
-  const [hideCompleted, setHideCompleted] = useState(false);
+  // Persisted so it survives navigating away and back to the Rebirths tab.
+  const hideCompleted = useAppStore((s) => s.ui.hideCompletedKeepers ?? false);
+  const setUiPref = useAppStore((s) => s.setUiPref);
+  const setHideCompleted = (v: boolean) => setUiPref("hideCompletedKeepers", v);
 
   const strategy = useMemo(() => computeCycleStrategy(pickedCycle), [pickedCycle]);
 

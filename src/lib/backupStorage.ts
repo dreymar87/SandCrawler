@@ -51,14 +51,18 @@ export async function saveBackup(
     // dynamic import guarantees native-only cost).
     const { Filesystem, Directory, Encoding } = await import("@capacitor/filesystem");
     const path = `SandCrawler/${filename}`;
+    // Directory.External = the app's own external files dir
+    // (Android/data/<pkg>/files). Needs NO storage permission on any
+    // Android version, unlike Directory.Documents (which requires the
+    // shared-storage permission and silently fails without it).
     await Filesystem.writeFile({
       path,
-      directory: Directory.Documents,
+      directory: Directory.External,
       data: contents,
       encoding: Encoding.UTF8,
       recursive: true,
     });
-    return { location: `Documents/${path}`, target: "native" };
+    return { location: `App files / ${path}`, target: "native" };
   }
   // Web path.
   downloadJson(filename, contents);

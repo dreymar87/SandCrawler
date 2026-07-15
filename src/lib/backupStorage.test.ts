@@ -12,7 +12,7 @@ vi.mock("@capacitor/core", () => ({
 }));
 vi.mock("@capacitor/filesystem", () => ({
   Filesystem: { writeFile },
-  Directory: { Documents: "DOCUMENTS" },
+  Directory: { Documents: "DOCUMENTS", External: "EXTERNAL" },
   Encoding: { UTF8: "utf8" },
 }));
 vi.mock("./exportImport", () => ({ downloadJson }));
@@ -61,19 +61,19 @@ describe("saveBackup", () => {
     });
   });
 
-  it("native path: writes to Documents/SandCrawler/<name> via Filesystem", async () => {
+  it("native path: writes to the app's External dir (no permission needed)", async () => {
     vi.mocked(Capacitor.isNativePlatform).mockReturnValueOnce(true);
     const r = await saveBackup("{}", "sandcrawler-backup-test.json");
     expect(writeFile).toHaveBeenCalledWith({
       path: "SandCrawler/sandcrawler-backup-test.json",
-      directory: "DOCUMENTS",
+      directory: "EXTERNAL",
       data: "{}",
       encoding: "utf8",
       recursive: true,
     });
     expect(downloadJson).not.toHaveBeenCalled();
     expect(r).toEqual({
-      location: "Documents/SandCrawler/sandcrawler-backup-test.json",
+      location: "App files / SandCrawler/sandcrawler-backup-test.json",
       target: "native",
     });
   });
