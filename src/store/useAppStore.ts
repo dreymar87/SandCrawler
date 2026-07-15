@@ -280,11 +280,13 @@ export const useAppStore = create<AppStore>()(
       },
 
       dismissOnboarding() {
-        set((s) => ({ ui: { ...s.ui, hasOnboarded: true } }));
+        set((s) => ({ ui: { ...s.ui, hasOnboarded: true, pendingSetup: false } }));
       },
 
       resetOnboarding() {
-        set((s) => ({ ui: { ...s.ui, hasOnboarded: false } }));
+        // Explicit "show me the intro again" — starts on the explainer,
+        // not the setup form (pendingSetup stays false).
+        set((s) => ({ ui: { ...s.ui, hasOnboarded: false, pendingSetup: false } }));
       },
 
       replaceAll(state) {
@@ -292,7 +294,10 @@ export const useAppStore = create<AppStore>()(
       },
 
       resetAll() {
-        set(() => bootstrapState());
+        // Fresh start → re-open onboarding straight on the setup form so
+        // the player re-enters where they are.
+        const fresh = bootstrapState();
+        set(() => ({ ...fresh, ui: { ...fresh.ui, pendingSetup: true } }));
       },
 
       performSuperRebirth() {

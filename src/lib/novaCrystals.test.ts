@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { NovaUpgrade, NovaUpgradeState } from "../types";
+import { NOVA_UPGRADES } from "../data/novaShop.seed";
 import {
   computeBalance,
   crystalsSpent,
+  earnedForAvailable,
   iconicCostFor,
   nextLevelCost,
   srbBonusAt,
@@ -119,3 +121,24 @@ describe("computeBalance", () => {
     expect(computeBalance(100, 30)).toEqual({ earned: 100, spent: 30, balance: 70 });
   });
 });
+
+describe("earnedForAvailable", () => {
+  it("returns the available amount when nothing is spent", () => {
+    expect(earnedForAvailable(500, [], [])).toBe(500);
+  });
+
+  it("adds computed spent so balance back-computes to available", () => {
+    // core.max-health costs [1,6,13,...]; level 2 spends 1 + 6 = 7.
+    const states: NovaUpgradeState[] = [{ id: "core.max-health", level: 2 }];
+    const earned = earnedForAvailable(500, states, []);
+    // balance = earned - spent must equal the available we asked for.
+    expect(earned - crystalsSpentFromSeed(states)).toBe(500);
+    expect(earned).toBe(507);
+  });
+});
+
+/** Helper mirroring the module's spent computation against the real seed. */
+function crystalsSpentFromSeed(states: NovaUpgradeState[]): number {
+  // Re-import through crystalsSpent + the real NOVA_UPGRADES seed.
+  return crystalsSpent(states, NOVA_UPGRADES);
+}

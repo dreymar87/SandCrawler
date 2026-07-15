@@ -1,4 +1,4 @@
-import { NOVA_ICONIC_PURCHASES } from "../data/novaShop.seed";
+import { NOVA_ICONIC_PURCHASES, NOVA_UPGRADES } from "../data/novaShop.seed";
 import { SUPER_REBIRTH_BONUSES } from "../data/superRebirthBonuses.seed";
 import type { NovaUpgrade, NovaUpgradeState, SuperRebirthBonus } from "../types";
 
@@ -60,4 +60,20 @@ export interface NovaBalance {
 
 export function computeBalance(earned: number, spent: number): NovaBalance {
   return { earned, spent, balance: earned - spent };
+}
+
+/**
+ * Given the crystals a player has *available* (their spendable balance)
+ * plus their current upgrade/ICONIC state, return the lifetime `earned`
+ * total to store so that `balance = earned − spent = available`.
+ *
+ * Used by the setup wizard, which asks for the intuitive "how many do
+ * you have now?" rather than the harder-to-know lifetime earned.
+ */
+export function earnedForAvailable(
+  available: number,
+  upgradeStates: readonly NovaUpgradeState[],
+  iconicOwned: readonly string[] = [],
+): number {
+  return available + crystalsSpent(upgradeStates, NOVA_UPGRADES, iconicOwned);
 }

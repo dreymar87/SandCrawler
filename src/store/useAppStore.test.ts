@@ -111,10 +111,29 @@ describe("performSuperRebirth", () => {
 describe("resetOnboarding", () => {
   beforeEach(() => useAppStore.getState().resetAll());
 
-  it("clears ui.hasOnboarded so the intro shows again", () => {
+  it("clears ui.hasOnboarded so the intro shows again (not the setup step)", () => {
     useAppStore.getState().dismissOnboarding();
     expect(useAppStore.getState().ui.hasOnboarded).toBe(true);
     useAppStore.getState().resetOnboarding();
     expect(useAppStore.getState().ui.hasOnboarded).toBe(false);
+    expect(useAppStore.getState().ui.pendingSetup).toBe(false);
+  });
+});
+
+describe("onboarding setup flag", () => {
+  it("resetAll re-opens onboarding straight on the setup step", () => {
+    useAppStore.getState().dismissOnboarding(); // hasOnboarded = true
+    useAppStore.getState().resetAll();
+    const ui = useAppStore.getState().ui;
+    expect(ui.hasOnboarded).toBeFalsy(); // intro/setup shows again
+    expect(ui.pendingSetup).toBe(true); // ...on the setup step
+  });
+
+  it("dismissOnboarding marks onboarded and clears the setup flag", () => {
+    useAppStore.getState().resetAll(); // pendingSetup = true
+    expect(useAppStore.getState().ui.pendingSetup).toBe(true);
+    useAppStore.getState().dismissOnboarding();
+    expect(useAppStore.getState().ui.hasOnboarded).toBe(true);
+    expect(useAppStore.getState().ui.pendingSetup).toBe(false);
   });
 });

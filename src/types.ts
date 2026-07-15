@@ -263,6 +263,13 @@ export interface UiPrefs {
    * on (undefined = true); explicit `false` silences `haptic()`.
    */
   hapticsEnabled?: boolean;
+  /**
+   * When true, the onboarding modal opens directly on the setup form,
+   * skipping the tab explainer. Set by `resetAll()` so a fresh-start
+   * reset re-collects the player's current state; cleared when
+   * onboarding is dismissed.
+   */
+  pendingSetup?: boolean;
 }
 
 /** The five primary bottom-nav destinations. */
