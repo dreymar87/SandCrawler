@@ -6,6 +6,7 @@ import { isDroidSafeToSell } from "../../lib/cycleStrategy";
 import { useAppStore } from "../../store/useAppStore";
 import { useActiveCycle, useDroidexCompletion } from "../../store/selectors";
 import type { CollectionCard, DroidClass, DroidDef, Rarity, Tier } from "../../types";
+import { Stepper } from "../common/Stepper";
 
 /**
  * The Droidex grid: every known droid × every tier as a tappable cell.
@@ -401,71 +402,20 @@ function CellEditor({ droid, tier, card, onChange, onClose }: CellEditorProps) {
         </span>
       </div>
 
-      <CountRow
+      <Stepper
         label="Working"
         accent="text-holo"
         hint="mines credits"
         value={working}
         onChange={(n) => onChange({ working: n })}
       />
-      <CountRow
+      <Stepper
         label="Lounge"
         accent="text-sun"
         hint="parked, counts for rebirths"
         value={lounge}
         onChange={(n) => onChange({ lounge: n })}
       />
-    </div>
-  );
-}
-
-function CountRow({
-  label,
-  accent,
-  hint,
-  value,
-  onChange,
-}: {
-  label: string;
-  accent: string;
-  hint: string;
-  value: number;
-  onChange: (n: number) => void;
-}) {
-  return (
-    <div className="flex items-center gap-3 py-1.5">
-      <span className={`font-mono text-[11px] uppercase tracking-wider w-16 ${accent}`}>
-        {label}
-      </span>
-      <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          className="w-7 h-7 rounded-md border border-line-alt text-muted hover:text-ink disabled:opacity-30"
-          onClick={() => onChange(Math.max(0, value - 1))}
-          disabled={value === 0}
-          aria-label={`Decrease ${label.toLowerCase()}`}
-        >
-          −
-        </button>
-        <input
-          type="number"
-          min={0}
-          inputMode="numeric"
-          className="w-14 text-center font-display font-bold text-lg bg-panel-alt border border-line rounded-md py-1"
-          value={value}
-          onChange={(e) => onChange(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
-          aria-label={`${label} count`}
-        />
-        <button
-          type="button"
-          className="w-7 h-7 rounded-md border border-line-alt text-muted hover:text-ink"
-          onClick={() => onChange(value + 1)}
-          aria-label={`Increase ${label.toLowerCase()}`}
-        >
-          +
-        </button>
-      </div>
-      <span className="font-mono text-[10.5px] text-muted-alt truncate">{hint}</span>
     </div>
   );
 }

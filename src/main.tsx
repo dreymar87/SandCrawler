@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
-import { initNative } from "./lib/native";
+import { initNative, setHapticsEnabled } from "./lib/native";
 import { useAppStore } from "./store/useAppStore";
 import "./index.css";
 
@@ -25,3 +25,8 @@ void initNative({
     return false; // let Capacitor exit the app
   },
 });
+
+// Sync the haptic-feedback preference into the native helper. Default
+// on until the user explicitly opts out (undefined → true).
+setHapticsEnabled(useAppStore.getState().ui.hapticsEnabled !== false);
+useAppStore.subscribe((s) => setHapticsEnabled(s.ui.hapticsEnabled !== false));

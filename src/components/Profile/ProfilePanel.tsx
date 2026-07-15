@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { MAX_STANDARD_REBIRTH } from "../../constants";
 import { SQUAD_DEFS } from "../../data/squads.seed";
 import { formatPerSecond } from "../../lib/production";
 import { ALL_CYCLES, cycleLabel } from "../../lib/rebirthCycles";
+import { toast } from "../../lib/toast";
+import { haptic } from "../../lib/native";
 import {
   useActiveCycle,
   useNovaBalance,
@@ -12,6 +15,7 @@ import {
 import { useAppStore } from "../../store/useAppStore";
 import type { RebirthCycle } from "../../types";
 import { DataPanel } from "../Data/DataPanel";
+import { Stepper } from "../common/Stepper";
 
 /**
  * The Profile tab: the editable record of the player's base — name,
@@ -33,12 +37,31 @@ export function ProfilePanel() {
   const setNovaEarned = useAppStore((s) => s.setNovaEarned);
   const credits = useAppStore((s) => s.profile.currentCredits);
   const setCredits = useAppStore((s) => s.setCreditsCurrent);
+  const performSuperRebirth = useAppStore((s) => s.performSuperRebirth);
+  const resetOnboarding = useAppStore((s) => s.resetOnboarding);
+  const setUiPref = useAppStore((s) => s.setUiPref);
+  const hidePastRebirths = useAppStore((s) => s.ui.hidePastRebirths ?? false);
+  const compactRebirths = useAppStore((s) => s.ui.compactRebirths ?? false);
+  const hapticsEnabled = useAppStore((s) => s.ui.hapticsEnabled ?? true);
+
+  const [confirmingSrb, setConfirmingSrb] = useState(false);
 
   const capacity = useSquadCapacity();
   const production = useProduction();
   const activeCycle = useActiveCycle();
   const nova = useNovaBalance();
   const srbBonus = useSrbBonusAtCurrentRB();
+
+  const doSuperRebirth = () => {
+    const result = performSuperRebirth();
+    setConfirmingSrb(false);
+    haptic("medium");
+    if (result.crystalsAwarded > 0) {
+      toast(`Super Rebirth #${result.newSrbCount} · +${result.crystalsAwarded} crystals`);
+    } else {
+      toast(`Super Rebirth #${result.newSrbCount}`);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -58,92 +81,122 @@ export function ProfilePanel() {
           maxLength={40}
         />
         <label className="field-label" htmlFor="p-chips">
-          Upgrade chips (optional)
+          Upgrade chips
         </label>
-        <input
+        <Stepper
           id="p-chips"
-          type="number"
-          min={0}
-          className="input"
-          placeholder="e.g. 4200"
-          value={upgradeChips ?? ""}
-          onChange={(e) => {
-            const v = e.target.value.trim();
-            setUpgradeChips(v === "" ? undefined : Number(v));
-          }}
+          size="md"
+          value={upgradeChips ?? 0}
+          onChange={(n) => setUpgradeChips(n === 0 ? undefined : n)}
         />
         <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
-          Track your chip stash to plan tier upgrades.
+          Track your chip stash to plan tier upgrades. Resets on Super Rebirth.
         </p>
       </section>
 
       {/* Current Standard Rebirth */}
       <section className="card p-4">
         <h2 className="font-display font-bold text-base mb-3">Standard Rebirth</h2>
-        <div className="flex items-center gap-3">
+        <Stepper
+          size="md"
+          value={standardRebirth}
+          onChange={setStd}
+          min={0}
+          max={MAX_STANDARD_REBIRTH}
+          ariaLabel="Standard Rebirth level"
+        />
+        <div className="mt-3">
           <input
-            type="number"
+            type="range"
             min={0}
             max={MAX_STANDARD_REBIRTH}
-            className="input w-28 text-center font-display font-bold text-xl"
             value={standardRebirth}
-            onChange={(e) => setStd(Number(e.target.value) || 0)}
+            onChange={(e) => setStd(Number(e.target.value))}
+            className="w-full accent-holo"
+            aria-label="Standard Rebirth slider"
           />
-          <div className="flex-1">
-            <input
-              type="range"
-              min={0}
-              max={MAX_STANDARD_REBIRTH}
-              value={standardRebirth}
-              onChange={(e) => setStd(Number(e.target.value))}
-              className="w-full accent-holo"
-              aria-label="Standard Rebirth level"
-            />
-            <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
-              0 → {MAX_STANDARD_REBIRTH}. Next Unlock skips rebirths at or below this level.
-            </p>
-          </div>
+          <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
+            0 → {MAX_STANDARD_REBIRTH}. Next Unlock skips rebirths at or below this level.
+          </p>
         </div>
       </section>
 
       {/* Super Rebirth + active cycle */}
       <section className="card p-4">
         <h2 className="font-display font-bold text-base mb-3">Super Rebirth &amp; cycle</h2>
-        <div className="grid grid-cols-[1fr_2fr] gap-3 items-end">
-          <div>
-            <label className="field-label" htmlFor="p-srb">
-              Super Rebirths completed
-            </label>
-            <input
-              id="p-srb"
-              type="number"
-              min={0}
-              className="input text-center font-display font-bold text-xl"
-              value={superRebirthCount}
-              onChange={(e) => setSrbCount(Number(e.target.value) || 0)}
+        <label className="field-label" htmlFor="p-srb">
+          Super Rebirths completed
+        </label>
+        <Stepper
+          id="p-srb"
+          size="md"
+          value={superRebirthCount}
+          onChange={setSrbCount}
+        />
+        <div className="mt-4">
+          <span className="field-label">Active cycle</span>
+          <div className="grid grid-cols-5 gap-1.5">
+            <CyclePill
+              label="Auto"
+              active={cycleOverride === null}
+              onClick={() => setCycleOverride(null)}
             />
-          </div>
-          <div>
-            <span className="field-label">Active cycle</span>
-            <div className="grid grid-cols-5 gap-1.5">
+            {ALL_CYCLES.map((c) => (
               <CyclePill
-                label="Auto"
-                active={cycleOverride === null}
-                onClick={() => setCycleOverride(null)}
+                key={c}
+                label={`RBC${c}`}
+                active={cycleOverride === c}
+                onClick={() => setCycleOverride(c as RebirthCycle)}
               />
-              {ALL_CYCLES.map((c) => (
-                <CyclePill
-                  key={c}
-                  label={`RBC${c}`}
-                  active={cycleOverride === c}
-                  onClick={() => setCycleOverride(c as RebirthCycle)}
-                />
-              ))}
-            </div>
-            <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
-              {cycleLabel(activeCycle)} → cycles loop every 4 Super Rebirths.
-            </p>
+            ))}
           </div>
+          <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
+            {cycleLabel(activeCycle)} → cycles loop every 4 Super Rebirths.
+          </p>
+        </div>
+
+        {/* "I Super Rebirthed" action — resets deployed roster + credits + chips, awards crystals. */}
+        <div className="mt-4 pt-4 border-t border-line">
+          {!confirmingSrb ? (
+            <button
+              type="button"
+              onClick={() => setConfirmingSrb(true)}
+              className="btn btn-ghost w-full border-holo/60 text-holo hover:bg-holo/10"
+            >
+              I Super Rebirthed
+            </button>
+          ) : (
+            <div className="rounded-[10px] border border-holo/60 bg-holo/5 p-3">
+              <p className="text-[12.5px] text-ink mb-2">
+                Super Rebirth from <b className="text-holo">RB{standardRebirth}</b>?
+              </p>
+              <ul className="font-mono text-[10.5px] text-muted-alt space-y-0.5 mb-3">
+                <li>
+                  + {srbBonus?.crystals ?? 0} crystals{" "}
+                  {srbBonus ? "" : "(no bonus below RB12)"}
+                </li>
+                <li>Working & Lounge counts reset to 0 (Droidex owned kept)</li>
+                <li>Credits & upgrade chips reset to 0</li>
+                <li>RB → 0, SRB count → {superRebirthCount + 1}</li>
+              </ul>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmingSrb(false)}
+                  className="btn btn-ghost flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={doSuperRebirth}
+                  className="btn btn-primary flex-1"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -176,13 +229,11 @@ export function ProfilePanel() {
         <label className="field-label" htmlFor="p-nova">
           Total earned (manual)
         </label>
-        <input
+        <Stepper
           id="p-nova"
-          type="number"
-          min={0}
-          className="input"
+          size="md"
           value={novaEarned}
-          onChange={(e) => setNovaEarned(Number(e.target.value) || 0)}
+          onChange={setNovaEarned}
         />
         <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
           "Spent" is derived from your Nova Shop upgrade levels and ICONIC droid purchases.
@@ -261,6 +312,50 @@ export function ProfilePanel() {
         </div>
       </section>
 
+      {/* Preferences */}
+      <section className="card p-4">
+        <details>
+          <summary className="font-display font-bold text-base cursor-pointer select-none">
+            Preferences
+          </summary>
+          <div className="mt-3 space-y-3">
+            <ToggleRow
+              label="Hide past rebirths"
+              hint="Skip rebirth rows below your current level"
+              value={hidePastRebirths}
+              onChange={(v) => setUiPref("hidePastRebirths", v)}
+            />
+            <ToggleRow
+              label="Compact rebirths"
+              hint="Denser rebirth list — hide credit bar & SRB hint"
+              value={compactRebirths}
+              onChange={(v) => setUiPref("compactRebirths", v)}
+            />
+            <ToggleRow
+              label="Haptic feedback"
+              hint="Vibrate on Droidex taps and other interactions"
+              value={hapticsEnabled}
+              onChange={(v) => setUiPref("hapticsEnabled", v)}
+            />
+            <div className="pt-2 border-t border-line">
+              <button
+                type="button"
+                onClick={() => {
+                  resetOnboarding();
+                  toast("Intro will reappear next launch.");
+                }}
+                className="btn btn-ghost btn-sm"
+              >
+                Reset onboarding
+              </button>
+              <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
+                Shows the first-run intro again next time you open the app.
+              </p>
+            </div>
+          </div>
+        </details>
+      </section>
+
       {/* Data & backup */}
       <section className="card p-4">
         <details>
@@ -297,6 +392,47 @@ function CyclePill({ label, active, onClick }: { label: string; active: boolean;
     >
       {label}
     </button>
+  );
+}
+
+function ToggleRow({
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex-1 min-w-0">
+        <div className="text-[13.5px] text-ink">{label}</div>
+        {hint ? (
+          <div className="font-mono text-[10.5px] text-muted-alt mt-0.5 leading-tight">
+            {hint}
+          </div>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={value}
+        aria-label={label}
+        onClick={() => onChange(!value)}
+        className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${
+          value ? "bg-ok/70" : "bg-line-alt"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+            value ? "translate-x-5" : ""
+          }`}
+        />
+      </button>
+    </div>
   );
 }
 

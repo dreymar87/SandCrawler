@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { SCHEMA_VERSION } from "../data/version";
 import { idbStorage } from "../lib/idbStorage";
 import { defaultProfile, emptyState, migrate } from "../lib/migrate";
+import { srbBonusAt } from "../lib/novaCrystals";
 import { normalizeTier } from "../lib/tiers";
 import type {
   CollectionCard,
@@ -60,17 +61,26 @@ interface Actions {
   setActiveTab(tab: TabKey): void;
   setUiPref<K extends keyof PersistedState["ui"]>(key: K, value: PersistedState["ui"][K]): void;
   dismissOnboarding(): void;
+  resetOnboarding(): void;
 
   // ── Bulk ──────────────────────────────────────────────────────────────
   replaceAll(state: PersistedState): void;
   resetAll(): void;
+  /**
+   * Apply the effects of Super Rebirthing:
+   *   - award SRB crystals for the current RB level (if ≥12)
+   *   - zero every card's working + lounge counts (keep owned)
+   *   - reset standardRebirth to 0, increment superRebirthCount
+   *   - clear currentCredits and upgradeChips
+   */
+  performSuperRebirth(): { crystalsAwarded: number; newSrbCount: number };
 }
 
 export type AppStore = PersistedState & Actions;
 
 export const useAppStore = create<AppStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...bootstrapState(),
 
       setCardCounts(name, tier, patch) {
@@ -273,12 +283,45 @@ export const useAppStore = create<AppStore>()(
         set((s) => ({ ui: { ...s.ui, hasOnboarded: true } }));
       },
 
+      resetOnboarding() {
+        set((s) => ({ ui: { ...s.ui, hasOnboarded: false } }));
+      },
+
       replaceAll(state) {
         set(() => state);
       },
 
       resetAll() {
         set(() => bootstrapState());
+      },
+
+      performSuperRebirth() {
+        // Compute the bonus first (need pre-mutation state).
+        const pre = get();
+        const bonus = srbBonusAt(pre.profile.standardRebirth);
+        const crystalsAwarded = bonus?.crystals ?? 0;
+        set((s) => {
+          // Zero deployed counts, keep owned + notes.
+          const cards = s.cards
+            .map((c) => ({ ...c, working: 0, lounge: 0 }))
+            // Sparse-storage rule: drop rows with no ownership + no counts.
+            .filter((c) => c.owned || c.working > 0 || c.lounge > 0);
+          return {
+            cards,
+            profile: {
+              ...s.profile,
+              standardRebirth: 0,
+              superRebirthCount: s.profile.superRebirthCount + 1,
+              currentCredits: "",
+              upgradeChips: 0,
+              novaEarned: s.profile.novaEarned + crystalsAwarded,
+            },
+          };
+        });
+        return {
+          crystalsAwarded,
+          newSrbCount: get().profile.superRebirthCount,
+        };
       },
     }),
     {

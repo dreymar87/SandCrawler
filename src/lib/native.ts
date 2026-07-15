@@ -20,8 +20,19 @@ const IMPACT: Record<HapticStyle, ImpactStyle> = {
   heavy: ImpactStyle.Heavy,
 };
 
-/** Fire a haptic tap on native; silently no-op on the web. */
+/**
+ * Runtime gate for `haptic()`. The store wires this to the
+ * `ui.hapticsEnabled` preference. Defaults to always-on until the app
+ * boots and the store subscribes.
+ */
+let hapticsEnabled = true;
+export function setHapticsEnabled(v: boolean): void {
+  hapticsEnabled = v;
+}
+
+/** Fire a haptic tap on native; silently no-op on the web or when disabled. */
 export function haptic(style: HapticStyle = "light"): void {
+  if (!hapticsEnabled) return;
   if (!Capacitor.isNativePlatform()) return;
   void Haptics.impact({ style: IMPACT[style] }).catch(() => {
     /* haptics are best-effort */

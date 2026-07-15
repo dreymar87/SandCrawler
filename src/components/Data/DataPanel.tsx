@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { SCHEMA_VERSION } from "../../data/version";
 import {
-  downloadJson,
   exportToString,
   importFromString,
   ImportError,
 } from "../../lib/exportImport";
+import { saveBackup, defaultBackupFilename } from "../../lib/backupStorage";
 import { haptic } from "../../lib/native";
 import { toast } from "../../lib/toast";
 import { useAppStore } from "../../store/useAppStore";
@@ -15,6 +15,7 @@ export function DataPanel() {
   const [mode, setMode] = useState<null | "backup" | "restore">(null);
   const [restoreText, setRestoreText] = useState("");
   const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const replaceAll = useAppStore((s) => s.replaceAll);
   const resetAll = useAppStore((s) => s.resetAll);
 
@@ -52,11 +53,31 @@ export function DataPanel() {
     }
   };
 
-  const downloadBackup = () => {
+  const downloadBackup = async () => {
     const text = exportToString(snapshot());
-    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    downloadJson(`sandcrawler-${stamp}.json`, text);
-    showMessage("ok", "Backup file saved.");
+    try {
+      const result = await saveBackup(text, defaultBackupFilename());
+      showMessage("ok", `Saved to ${result.location}`);
+    } catch (err) {
+      showMessage("err", "Couldn't save backup file.");
+      console.error(err);
+    }
+  };
+
+  const pickRestoreFile = () => fileInputRef.current?.click();
+
+  const onFileChosen = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset so choosing the same file again re-fires onChange.
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setRestoreText(text);
+      showMessage("ok", `Loaded ${file.name} — review then tap Load.`);
+    } catch {
+      showMessage("err", "Couldn't read that file.");
+    }
   };
 
   const doRestore = () => {
@@ -104,25 +125,31 @@ export function DataPanel() {
         <section className="card p-4 mb-4">
           <h2 className="font-display font-semibold text-base mb-3">Back up everything</h2>
           <p className="text-[13px] text-muted mb-3">
-            Copy this code or save it to a file. It contains your full plan and droid list. Restore
-            it on any device.
+            Save your full plan and droid list to a file, or copy it as text. Restore on any device.
           </p>
-          <textarea
-            className="textarea"
-            rows={4}
-            readOnly
-            value={exportToString(snapshot())}
-            onClick={(e) => (e.currentTarget as HTMLTextAreaElement).select()}
-          />
-          <div className="flex gap-2.5 mt-3">
+          <div className="flex gap-2.5 mb-3">
+            <button className="btn btn-primary flex-1" onClick={downloadBackup}>
+              Save to file
+            </button>
+            <button className="btn btn-ghost" onClick={copyBackup}>
+              Copy code
+            </button>
+          </div>
+          <details className="mt-2">
+            <summary className="font-mono text-[11px] text-muted-alt uppercase tracking-wider cursor-pointer">
+              Show raw JSON
+            </summary>
+            <textarea
+              className="textarea mt-2"
+              rows={4}
+              readOnly
+              value={exportToString(snapshot())}
+              onClick={(e) => (e.currentTarget as HTMLTextAreaElement).select()}
+            />
+          </details>
+          <div className="flex justify-end mt-3">
             <button className="btn btn-ghost" onClick={() => setMode(null)}>
               Close
-            </button>
-            <button className="btn btn-ghost" onClick={downloadBackup}>
-              Save file
-            </button>
-            <button className="btn btn-primary flex-1" onClick={copyBackup}>
-              Copy code
             </button>
           </div>
         </section>
@@ -132,22 +159,38 @@ export function DataPanel() {
         <section className="card p-4 mb-4">
           <h2 className="font-display font-semibold text-base mb-3">Restore from a backup</h2>
           <p className="text-[13px] text-muted mb-3">
-            Paste a backup code and tap Load. This replaces everything currently in the tracker.
-            Backups from the older prototype are also accepted.
+            Load a backup file, or paste a backup code. This replaces everything currently in the
+            tracker. Backups from the older prototype are also accepted.
           </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={onFileChosen}
+          />
+          <div className="flex gap-2.5 mb-3">
+            <button className="btn btn-primary flex-1" onClick={pickRestoreFile}>
+              Choose file…
+            </button>
+            <button
+              className="btn btn-ghost flex-1"
+              onClick={doRestore}
+              disabled={!restoreText.trim()}
+            >
+              Load
+            </button>
+          </div>
           <textarea
             className="textarea"
             rows={4}
-            placeholder="Paste your backup code here…"
+            placeholder="…or paste a backup code here"
             value={restoreText}
             onChange={(e) => setRestoreText(e.target.value)}
           />
-          <div className="flex gap-2.5 mt-3">
-            <button className="btn btn-ghost flex-1" onClick={() => setMode(null)}>
+          <div className="flex justify-end mt-3">
+            <button className="btn btn-ghost" onClick={() => setMode(null)}>
               Cancel
-            </button>
-            <button className="btn btn-primary flex-1" onClick={doRestore}>
-              Load
             </button>
           </div>
         </section>

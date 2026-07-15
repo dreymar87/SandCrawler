@@ -254,6 +254,15 @@ export interface UiPrefs {
   strategyFilter?: "ALL" | "KEEP" | "SELL";
   /** Set once the first-run intro has been dismissed. */
   hasOnboarded?: boolean;
+  /** Hide rebirth rows below the player's current level. */
+  hidePastRebirths?: boolean;
+  /** Denser rebirth-list layout — smaller rows, no credit bar / SRB hint. */
+  compactRebirths?: boolean;
+  /**
+   * Emit device haptics on Droidex taps and other interactions. Defaults
+   * on (undefined = true); explicit `false` silences `haptic()`.
+   */
+  hapticsEnabled?: boolean;
 }
 
 /** The five primary bottom-nav destinations. */
