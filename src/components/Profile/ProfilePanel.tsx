@@ -192,8 +192,8 @@ export function ProfilePanel() {
             <span className="font-mono text-[10px] uppercase tracking-wider text-muted-alt">
               SRB at RB{standardRebirth}:
             </span>{" "}
-            +{srbBonus.crystals} crystals · ×{(1 + srbBonus.creditMult).toFixed(2)} credits · ×
-            {(1 + srbBonus.xpMult).toFixed(1)} XP
+            {srbBonus.crystals} crystals · {Math.round(srbBonus.creditMult * 100)}% credit mult ·{" "}
+            {Math.round(srbBonus.xpMult * 100)}% XP mult
           </div>
         ) : (
           <p className="font-mono text-[10.5px] text-muted-alt mt-2">

@@ -91,8 +91,8 @@ function SrbBonusesSection({ currentLevel }: { currentLevel: number }) {
         </summary>
         <div className="px-4 pb-4">
           <p className="font-mono text-[10.5px] text-muted-alt mb-3">
-            One-time bonus earned when you Super Rebirth at that RB level. Multipliers stack
-            additively with your existing multipliers.
+            One-time bonus earned when you Super Rebirth at that RB level. Values match the
+            community sheet's "NOVA CRYSTALS / RB LEVEL" table.
           </p>
           <div className="rounded-[10px] border border-line overflow-hidden">
             <table className="w-full text-[12.5px]">
@@ -100,8 +100,8 @@ function SrbBonusesSection({ currentLevel }: { currentLevel: number }) {
                 <tr className="bg-panel-alt font-mono text-[10px] uppercase tracking-wider text-muted-alt">
                   <th className="text-left px-3 py-2">RB</th>
                   <th className="text-right px-2 py-2">Crystals</th>
-                  <th className="text-right px-2 py-2">Credit ×</th>
-                  <th className="text-right px-3 py-2">XP ×</th>
+                  <th className="text-right px-2 py-2">Credit Mult</th>
+                  <th className="text-right px-3 py-2">XP Mult</th>
                 </tr>
               </thead>
               <tbody>
@@ -116,13 +116,13 @@ function SrbBonusesSection({ currentLevel }: { currentLevel: number }) {
                     >
                       <td className="px-3 py-1.5 font-display font-bold">RB{b.rbLevel}</td>
                       <td className="px-2 py-1.5 text-right font-mono">
-                        +{b.crystals}
+                        {b.crystals}
                       </td>
                       <td className="px-2 py-1.5 text-right font-mono">
-                        ×{(1 + b.creditMult).toFixed(2)}
+                        {Math.round(b.creditMult * 100)}%
                       </td>
                       <td className="px-3 py-1.5 text-right font-mono">
-                        ×{(1 + b.xpMult).toFixed(1)}
+                        {Math.round(b.xpMult * 100)}%
                       </td>
                     </tr>
                   );
@@ -223,8 +223,8 @@ function RebirthRow({
             <span className="font-mono text-[10px] uppercase tracking-wider text-sun">
               SRB bonus here:
             </span>{" "}
-            +{srb.crystals} crystals · ×{(1 + srb.creditMult).toFixed(2)} credits · ×
-            {(1 + srb.xpMult).toFixed(1)} XP
+            {srb.crystals} crystals · {Math.round(srb.creditMult * 100)}% credit mult ·{" "}
+            {Math.round(srb.xpMult * 100)}% XP mult
           </div>
         ) : null}
 

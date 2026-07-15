@@ -118,24 +118,25 @@ a slot unlocks in one of the squads. Stored as
 ## Super Rebirth bonuses
 
 When you **Super Rebirth from RB level N** (12 ≤ N ≤ 27), you receive a
-one-time bonus: Nova Crystals + an additive credit multiplier + an
-additive XP multiplier. These are *not* per-rebirth rewards — they fire
-once at the moment of Super Rebirth.
+one-time bonus: Nova Crystals + a credit-multiplier % + an XP-multiplier %.
+These are *not* per-rebirth rewards — they fire once at the moment of
+Super Rebirth. Values match the community sheet's "NOVA CRYSTALS / RB
+LEVEL" table verbatim.
 
-| RB at SRB | Crystals | Credit × | XP ×  |
-| --------- | -------- | -------- | ----- |
-| 12        | 11       | 1.22     | 2.1   |
-| 13        | 16       | 1.32     | 2.6   |
-| …         | …        | …        | …     |
-| 23        | 121      | 3.42     | 13.1  |
-| 24        | 137      | 3.74     | 14.7  |
-| 25        | 154      | 4.08     | 16.4  |
-| 26        | 172      | 4.44     | 18.2  |
-| 27        | 191      | 4.82     | 20.1  |
+| RB at SRB | Crystals | Credit Mult | XP Mult |
+| --------- | -------- | ----------- | ------- |
+| 12        | 11       | 22%         | 110%    |
+| 13        | 16       | 32%         | 160%    |
+| …         | …        | …           | …       |
+| 23        | 121      | 242%        | 1210%   |
+| 24        | 137      | 274%        | 1370%   |
+| 25        | 154      | 308%        | 1540%   |
+| 26        | 172      | 344%        | 1720%   |
+| 27        | 191      | 382%        | 1910%   |
 
-Stored in `src/data/superRebirthBonuses.seed.ts`, looked up via
-`srbBonusAt(rbLevel)`. Multipliers stored as `+N`-style deltas (RB12 →
-`0.22` for `+22%`); the UI renders as `×1.22`.
+Stored in `src/data/superRebirthBonuses.seed.ts` as decimals
+(`creditMult: 0.22` = `22%`), looked up via `srbBonusAt(rbLevel)`.
+The UI renders them as percentages (`22%`) to match the sheet exactly.
 
 ## Chip-upgrade costs
 
