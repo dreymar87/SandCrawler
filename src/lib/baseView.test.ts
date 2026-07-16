@@ -93,36 +93,42 @@ describe("buildBaseView", () => {
     expect(view.lounge.droids).toHaveLength(2);
   });
 
-  it("lists owned droids not needed later this cycle, excludes still-needed ones", () => {
+  it("lists DEPLOYED droids not needed later this cycle, excludes still-needed ones", () => {
     // "CB" is a real cycle-1 RB1 requirement → NOT safe to sell at RB0.
-    // A made-up droid name is never required → safe to sell.
+    // A made-up droid name is never required → safe to sell (when deployed).
     const view = base([
-      card("ZZZ-FAKE-DROID", "DEFAULT", 0, 0),
-      card("CB", "DEFAULT", 0, 0),
+      card("ZZZ-FAKE-DROID", "DEFAULT", 2, 0), // 2 working → deployed
+      card("CB", "DEFAULT", 1, 0), // deployed but still needed
     ]);
     const names = view.sellCandidates.map((c) => c.name);
     expect(names).toContain("ZZZ-FAKE-DROID");
     expect(names).not.toContain("CB");
   });
 
-  it("sums sell-candidate values from the stats table", () => {
-    // PIT/MOUSE values exist in STATS; both must be unneeded for the sum.
-    // Use made-up names mapped to real stats via the STATS table override.
+  it("only counts deployed cards — owned-but-not-deployed is not sellable", () => {
+    // owned:true but working:0 lounge:0 → occupies no base slot → excluded.
+    const view = base([card("ZZZ-FAKE-DROID", "DEFAULT", 0, 0, true)]);
+    expect(view.sellCandidates).toHaveLength(0);
+  });
+
+  it("counts a lounge-only droid as sellable and reports its copy count", () => {
+    const view = base([card("ZZZ-FAKE-DROID", "DEFAULT", 0, 3)]);
+    expect(view.sellCandidates).toHaveLength(1);
+    expect(view.sellCandidates[0]!.count).toBe(3);
+  });
+
+  it("sums sell value across every deployed copy", () => {
     const view = buildBaseView({
-      cards: [card("ZZZ-A", "DEFAULT", 0, 0), card("ZZZ-B", "DEFAULT", 0, 0)],
+      cards: [card("ZZZ-A", "DEFAULT", 2, 1)], // 3 deployed
       dict: DICT,
-      stats: { "ZZZ-A": { DEFAULT: { cost: null, income: "1/s", value: "665" } } },
+      stats: { "ZZZ-A": { DEFAULT: { cost: null, income: "1/s", value: "100" } } },
       standardRebirth: 0,
       loungeCreditSlots: 5,
       novaLoungeSlots: 0,
       cycle: 1,
     });
-    expect(view.sellCandidates).toHaveLength(2);
-    expect(view.sellTotal).not.toBe("0"); // 665 from ZZZ-A
-  });
-
-  it("excludes unowned cards from sell candidates", () => {
-    const view = base([card("ZZZ-FAKE-DROID", "DEFAULT", 0, 0, false)]);
-    expect(view.sellCandidates).toHaveLength(0);
+    expect(view.sellCandidates).toHaveLength(1);
+    expect(view.sellCandidates[0]!.count).toBe(3);
+    expect(view.sellTotal).toBe("300"); // 100 × 3 deployed
   });
 });

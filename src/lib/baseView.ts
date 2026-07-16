@@ -72,6 +72,8 @@ export interface SellCandidate {
   rarity: Rarity;
   /** Sell/value label from the stats table, or null when unknown. */
   value: string | null;
+  /** How many copies are deployed (working + lounge). */
+  count: number;
 }
 
 export interface BaseView {
@@ -157,20 +159,26 @@ export function buildBaseView({
     droids: loungeDroids,
   };
 
-  // Sell candidates: owned cards whose droid isn't needed later this cycle.
+  // Sell candidates: DEPLOYED cards (working or lounge — actually
+  // occupying a base slot) whose droid isn't needed later this cycle.
+  // A card merely flagged "owned" in the Droidex isn't taking a slot, so
+  // there's nothing to sell.
   const sellCandidates: SellCandidate[] = [];
   let sellTotalCredits = 0n;
   for (const c of cards) {
-    if (!c.owned) continue;
+    if (c.working <= 0 && c.lounge <= 0) continue;
     if (!isDroidSafeToSell(c.name, cycle, standardRebirth)) continue;
     const def = resolve(c.name);
     const value = stats[def?.canonical ?? c.name]?.[c.tier]?.value ?? null;
-    if (value) sellTotalCredits += parseCredits(value);
+    const deployed = c.working + c.lounge;
+    // Sum value across every deployed copy of this card.
+    if (value) sellTotalCredits += parseCredits(value) * BigInt(deployed);
     sellCandidates.push({
       name: c.name,
       tier: c.tier,
       rarity: def?.rarity ?? "COMMON",
       value,
+      count: deployed,
     });
   }
   sellCandidates.sort((a, b) => a.name.localeCompare(b.name));

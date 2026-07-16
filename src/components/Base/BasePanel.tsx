@@ -98,8 +98,8 @@ export function BasePanel() {
         </div>
         {base.sellCandidates.length === 0 ? (
           <p className="text-muted text-[13px]">
-            Nothing owned is safe to sell yet — every droid you own is still needed later this
-            cycle, or you haven't marked any as owned.
+            Nothing deployed is safe to sell — every droid you have working or in the lounge is
+            still needed later this cycle.
           </p>
         ) : (
           <ul className="divide-y divide-line">
@@ -109,8 +109,8 @@ export function BasePanel() {
           </ul>
         )}
         <p className="font-mono text-[10px] text-muted-alt mt-3 leading-snug">
-          These droids appear in no rebirth above RB{s.standardRebirth} in {cycleLabel(s.cycle)}.
-          Mirrors the Droidex SELL filter.
+          Droids you have deployed (working or lounge) that no rebirth above RB{s.standardRebirth}{" "}
+          in {cycleLabel(s.cycle)} needs.
         </p>
       </section>
     </div>
@@ -221,6 +221,9 @@ function SellRow({ candidate }: { candidate: SellCandidate }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
           <span className="font-display font-semibold text-[13.5px] truncate">{candidate.name}</span>
+          {candidate.count > 1 ? (
+            <span className="font-mono text-[10px] text-holo font-bold">×{candidate.count}</span>
+          ) : null}
           <span className="font-mono text-[9px] uppercase tracking-wide text-muted-alt">
             {candidate.rarity}
           </span>
