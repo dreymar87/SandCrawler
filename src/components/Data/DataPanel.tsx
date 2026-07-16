@@ -57,7 +57,9 @@ export function DataPanel() {
     const text = exportToString(snapshot());
     try {
       const result = await saveBackup(text, defaultBackupFilename());
-      showMessage("ok", `Saved to ${result.location}`);
+      if (result.cancelled) return; // user dismissed the share sheet — no toast
+      if (result.shared) showMessage("ok", "Backup ready — pick where to save it.");
+      else showMessage("ok", `Saved to ${result.location}`);
     } catch (err) {
       const detail = err instanceof Error ? err.message : "unknown error";
       showMessage("err", `Couldn't save file (${detail}). Use Copy code instead.`);
@@ -126,11 +128,12 @@ export function DataPanel() {
         <section className="card p-4 mb-4">
           <h2 className="font-display font-semibold text-base mb-3">Back up everything</h2>
           <p className="text-[13px] text-muted mb-3">
-            Save your full plan and droid list to a file, or copy it as text. Restore on any device.
+            Export your full plan and droid list — send it to Drive, email, or Files via the share
+            sheet, or copy it as text. Restore on any device.
           </p>
           <div className="flex gap-2.5 mb-3">
             <button className="btn btn-primary flex-1" onClick={downloadBackup}>
-              Save to file
+              Export / share
             </button>
             <button className="btn btn-ghost" onClick={copyBackup}>
               Copy code

@@ -1,22 +1,27 @@
 /**
- * Save/load backups to a real place the user can find later.
+ * Save/export a backup to somewhere the user can actually retrieve it.
  *
- * On native (Capacitor Android/iOS) we use `@capacitor/filesystem`
- * writeFile to `Directory.Documents/SandCrawler/backup-<ts>.json`.
- * On web we fall back to the anchor-download flow in
- * `exportImport.ts` — files land in the browser's Downloads folder.
+ * On native (Capacitor Android/iOS) we write the JSON to the app's cache
+ * dir and open the OS **share sheet** (`@capacitor/share`), so the user
+ * can send it to Google Drive / email / the Files app of their choice.
+ * This needs NO storage permission and avoids the Android 11+
+ * `Android/data` folder that file managers can't browse.
  *
- * The result carries a human-readable `location` so the UI can show
- * where the file actually landed ("Downloads/…", "Documents/SandCrawler/…").
+ * On web we fall back to the anchor-download flow in `exportImport.ts`
+ * — files land in the browser's Downloads folder.
  */
 import { Capacitor } from "@capacitor/core";
 import { downloadJson } from "./exportImport";
 
 export interface SaveResult {
-  /** Human-readable path shown in the UI ("Documents/SandCrawler/backup-…"). */
+  /** Human-readable outcome shown in the UI. */
   location: string;
-  /** "native" when written via Filesystem; "web" when the browser download ran. */
+  /** "native" when the share sheet ran; "web" when the browser download ran. */
   target: "native" | "web";
+  /** True when the native share sheet was invoked (vs a silent file write). */
+  shared?: boolean;
+  /** True when the user dismissed the share sheet — treat as a no-op. */
+  cancelled?: boolean;
 }
 
 /**
@@ -37,32 +42,45 @@ export function defaultBackupFilename(now?: Date): string {
   return `sandcrawler-backup-${timestampSlug(now)}.json`;
 }
 
+/** Heuristic: did the native Share reject because the user dismissed it? */
+function isShareCancel(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  return /cancel|dismiss|abort/i.test(msg);
+}
+
 /**
- * Save the given JSON `contents` under `filename`. Route depends on
- * platform. `filename` should end in `.json`.
+ * Save/export the given JSON `contents` under `filename`. Route depends
+ * on platform. `filename` should end in `.json`.
  */
 export async function saveBackup(
   contents: string,
   filename: string = defaultBackupFilename(),
 ): Promise<SaveResult> {
   if (Capacitor.isNativePlatform()) {
-    // Dynamic import so the web bundle isn't forced to include the
-    // Filesystem plugin (it's tree-shakeable in most bundlers, but the
-    // dynamic import guarantees native-only cost).
+    // Dynamic imports keep the plugins out of the web bundle.
     const { Filesystem, Directory, Encoding } = await import("@capacitor/filesystem");
-    const path = `SandCrawler/${filename}`;
-    // Directory.External = the app's own external files dir
-    // (Android/data/<pkg>/files). Needs NO storage permission on any
-    // Android version, unlike Directory.Documents (which requires the
-    // shared-storage permission and silently fails without it).
-    await Filesystem.writeFile({
-      path,
-      directory: Directory.External,
+    const { Share } = await import("@capacitor/share");
+    // Write to the cache dir (covered by the app's FileProvider
+    // cache-path), then share its URI. Cache needs no permission and the
+    // OS clears it later — the user's copy lives wherever they send it.
+    const written = await Filesystem.writeFile({
+      path: filename,
+      directory: Directory.Cache,
       data: contents,
       encoding: Encoding.UTF8,
-      recursive: true,
     });
-    return { location: `App files / ${path}`, target: "native" };
+    try {
+      await Share.share({
+        title: "SandCrawler backup",
+        text: "SandCrawler data backup",
+        url: written.uri,
+        dialogTitle: "Save or send your backup",
+      });
+    } catch (err) {
+      if (isShareCancel(err)) return { location: "", target: "native", cancelled: true };
+      throw err;
+    }
+    return { location: "the share sheet", target: "native", shared: true };
   }
   // Web path.
   downloadJson(filename, contents);
