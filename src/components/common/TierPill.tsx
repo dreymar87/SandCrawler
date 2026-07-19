@@ -6,7 +6,7 @@ const TIER_COLOR: Record<Tier, string> = {
   DIAMOND: "text-tier-diamond",
   RAINBOW: "",
   BESKAR: "text-tier-beskar",
-  FLAWLESS: "text-white",
+  GALACTIC: "text-tier-galactic",
 };
 
 interface Props {

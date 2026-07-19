@@ -129,12 +129,14 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
         // Legacy v6: `active: true` → assume 1 Working.
         if (c.active === true) working = 1;
       }
+      const companion = typeof c.companion === "number" ? Math.max(0, Math.floor(c.companion)) : 0;
       return {
         name: resolveName(((c.name as string) ?? "")),
         tier: normalizeTier(c.tier as string | undefined),
-        owned: c.owned !== false || working > 0 || lounge > 0,
+        owned: c.owned !== false || working > 0 || lounge > 0 || companion > 0,
         working,
         lounge,
+        companion,
         notes: (c.notes as string) ?? undefined,
       };
     });
@@ -158,6 +160,7 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
         owned: owned || working > 0 || lounge > 0,
         working,
         lounge,
+        companion: 0,
         notes: (d.notes as string) ?? undefined,
       };
     });
@@ -274,12 +277,14 @@ function liftStandardRebirthRewards(raw: unknown): StandardRebirth[] {
 function mergeCards(a: CollectionCard, b: CollectionCard): CollectionCard {
   const working = Math.max(a.working, b.working);
   const lounge = Math.max(a.lounge, b.lounge);
+  const companion = Math.max(a.companion, b.companion);
   return {
     name: a.name,
     tier: a.tier,
-    owned: a.owned || b.owned || working > 0 || lounge > 0,
+    owned: a.owned || b.owned || working > 0 || lounge > 0 || companion > 0,
     working,
     lounge,
+    companion,
     notes: a.notes ?? b.notes,
   };
 }

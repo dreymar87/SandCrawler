@@ -63,11 +63,12 @@ describe("tierGap", () => {
   });
 
   it("returns max distance when the droid isn't owned at all", () => {
-    // = TIERS.length (now 6 with FLAWLESS).
+    // = TIERS.length (6: DEFAULT…GALACTIC).
     expect(tierGap("DEFAULT", null)).toBe(6);
   });
 
-  it("FLAWLESS outranks BESKAR for substitution", () => {
-    expect(tierGap("BESKAR", "FLAWLESS")).toBe(0);
+  it("GALACTIC outranks BESKAR for substitution", () => {
+    expect(tierGap("BESKAR", "GALACTIC")).toBe(0);
+    expect(tierGap("GALACTIC", "BESKAR")).toBe(1);
   });
 });

@@ -21,6 +21,7 @@ export default {
           gold: "#E8B24A",
           diamond: "#5BC8F5",
           beskar: "#C3CBD6",
+          galactic: "#C77DFF",
         },
       },
       fontFamily: {

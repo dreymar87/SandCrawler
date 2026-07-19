@@ -8,10 +8,10 @@ import {
   standardRebirthReady,
 } from "./readiness";
 
-const mouseDefault: CollectionCard = { name: "MOUSE", tier: "DEFAULT", owned: true, working: 1, lounge: 0 };
-const mouseGold: CollectionCard = { name: "MOUSE", tier: "GOLD", owned: true, working: 1, lounge: 0 };
-const mouseLoungeOnly: CollectionCard = { name: "MOUSE", tier: "GOLD", owned: true, working: 0, lounge: 2 };
-const mouseInactive: CollectionCard = { name: "MOUSE", tier: "BESKAR", owned: true, working: 0, lounge: 0 };
+const mouseDefault: CollectionCard = { name: "MOUSE", tier: "DEFAULT", owned: true, working: 1, lounge: 0, companion: 0 };
+const mouseGold: CollectionCard = { name: "MOUSE", tier: "GOLD", owned: true, working: 1, lounge: 0, companion: 0 };
+const mouseLoungeOnly: CollectionCard = { name: "MOUSE", tier: "GOLD", owned: true, working: 0, lounge: 2, companion: 0 };
+const mouseInactive: CollectionCard = { name: "MOUSE", tier: "BESKAR", owned: true, working: 0, lounge: 0, companion: 0 };
 
 describe("activeCards", () => {
   it("filters to cards with any copy deployed (working OR lounge)", () => {
@@ -27,7 +27,7 @@ describe("rosterCovers", () => {
     // Punctuation differences alone don't break the match (alias logic for
     // WLKR<->Walker lives in the droid dictionary, not here).
     expect(rosterCovers({ name: "MONO-WLKR", tier: "DEFAULT" }, [
-      { name: "Mono Wlkr", tier: "DEFAULT", owned: true, working: 1, lounge: 0 },
+      { name: "Mono Wlkr", tier: "DEFAULT", owned: true, working: 1, lounge: 0, companion: 0 },
     ])).toBe(true);
   });
 
@@ -72,9 +72,9 @@ describe("standardRebirthReady", () => {
 
   it("requires droids covered AND credits >= threshold", () => {
     const cards: CollectionCard[] = [
-      { name: "CB", tier: "DEFAULT", owned: true, working: 1, lounge: 0 },
-      { name: "PIT", tier: "DEFAULT", owned: true, working: 1, lounge: 0 },
-      { name: "DRK-1 PROBE", tier: "DEFAULT", owned: true, working: 1, lounge: 0 },
+      { name: "CB", tier: "DEFAULT", owned: true, working: 1, lounge: 0, companion: 0 },
+      { name: "PIT", tier: "DEFAULT", owned: true, working: 1, lounge: 0, companion: 0 },
+      { name: "DRK-1 PROBE", tier: "DEFAULT", owned: true, working: 1, lounge: 0, companion: 0 },
     ];
     expect(standardRebirthReady(rb, cards, "10K")).toBe(true);
     expect(standardRebirthReady(rb, cards, "9K")).toBe(false);

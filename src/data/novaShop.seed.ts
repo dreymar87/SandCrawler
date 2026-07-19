@@ -13,6 +13,12 @@
 import type { NovaIconicPurchase, NovaUpgrade } from "../types";
 
 export const NOVA_UPGRADES: readonly NovaUpgrade[] = [
+  // ── Featured Upgrades ─────────────────────────────────────────────────
+  { id: "featured.critical-chance", tree: "FEATURED", name: "Critical Chance", costs: [60, 90, 120, 180] },
+  { id: "featured.critical-amount", tree: "FEATURED", name: "Critical Amount", costs: [30, 90, 150, 210, 330] },
+  // Companion Slot isn't released yet — 1 level assumed, cost unknown (rumored <500).
+  { id: "featured.companion-slot", tree: "FEATURED", name: "Companion Slot", costs: [null] },
+
   // ── Core Upgrades ─────────────────────────────────────────────────────
   {
     id: "core.max-health",
@@ -71,7 +77,7 @@ export const NOVA_UPGRADES: readonly NovaUpgrade[] = [
     id: "workshop.scrap-value",
     tree: "WORKSHOP",
     name: "Scrap Value",
-    costs: [25, 55, 85, 115, 145, 175, 205, 235, 265, 295],
+    costs: [25, 55, 85, 115, 145, 175, 205, 235, 265, 295, 325, 355, 385],
   },
   {
     id: "workshop.blueprint-scrap",

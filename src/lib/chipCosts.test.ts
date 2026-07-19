@@ -16,11 +16,16 @@ describe("chipsFromDefaultTo", () => {
     expect(chipsFromDefaultTo("MYTHIC", "DEFAULT")).toBe(0);
   });
 
+  it("includes the new BESKAR→GALACTIC step", () => {
+    // MYTHIC full path to GALACTIC = 8000+15000+40000+80000+120000
+    expect(chipsFromDefaultTo("MYTHIC", "GALACTIC")).toBe(263_000);
+    // COMMON BESKAR → GALACTIC step = 120
+    expect(chipsBetween("COMMON", "BESKAR", "GALACTIC")).toBe(120);
+  });
+
   it("returns null when no chip path exists", () => {
     // ICONIC droids don't upgrade at all
     expect(chipsFromDefaultTo("ICONIC", "GOLD")).toBe(null);
-    // FLAWLESS is a drop-only variant
-    expect(chipsFromDefaultTo("COMMON", "FLAWLESS")).toBe(null);
     // Unknown rarity has no seed row
     expect(chipsFromDefaultTo(undefined, "GOLD")).toBe(null);
   });

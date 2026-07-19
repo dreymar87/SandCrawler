@@ -76,6 +76,11 @@
     color: #fff;
     background: linear-gradient(90deg, #ff5d5d, #ffb84d, #5be37a, #46c7e0, #9b7bff);
   }
+  .tier-pill[data-t="GALACTIC"] {
+    border: 0;
+    color: #fff;
+    background: linear-gradient(120deg, #7b2ff7, #c77dff, #f6c453);
+  }
   .class-pill {
     @apply inline-flex items-center font-mono font-bold text-[9px] uppercase tracking-wide px-[7px] py-[3px] rounded-md border border-line-alt text-muted;
   }

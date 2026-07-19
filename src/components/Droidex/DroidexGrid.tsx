@@ -3,6 +3,7 @@ import { TIERS, RARITIES, CLASSES } from "../../constants";
 import { DROID_DICT } from "../../data/droids.seed";
 import { haptic } from "../../lib/native";
 import { isDroidSafeToSell } from "../../lib/cycleStrategy";
+import { companionBuffLabel } from "../../data/companionBuffs.seed";
 import { useAppStore } from "../../store/useAppStore";
 import { useActiveCycle, useDroidexCompletion } from "../../store/selectors";
 import type { CollectionCard, DroidClass, DroidDef, Rarity, Tier } from "../../types";
@@ -158,7 +159,7 @@ export function DroidexGrid() {
                 />
                 {openTier ? (
                   <CellEditor
-                    droid={d.canonical}
+                    def={d}
                     tier={openTier}
                     card={openCard}
                     onChange={(patch) => setCardCounts(d.canonical, openTier, patch)}
@@ -275,7 +276,7 @@ const TIER_ACCENT: Record<Tier, string> = {
   DIAMOND: "text-tier-diamond",
   RAINBOW: "text-white",
   BESKAR: "text-tier-beskar",
-  FLAWLESS: "text-white",
+  GALACTIC: "text-tier-galactic",
 };
 
 const TIER_BG: Record<Tier, string> = {
@@ -284,7 +285,7 @@ const TIER_BG: Record<Tier, string> = {
   DIAMOND: "bg-tier-diamond/15",
   RAINBOW: "bg-gradient-to-r from-[#ff5d5d] via-[#ffb84d] to-[#9b7bff] bg-opacity-20",
   BESKAR: "bg-tier-beskar/15",
-  FLAWLESS: "bg-gradient-to-br from-fuchsia-400/30 to-cyan-300/30",
+  GALACTIC: "bg-gradient-to-br from-fuchsia-500/25 to-amber-300/25",
 };
 
 const TIER_LABEL: Record<Tier, string> = {
@@ -293,7 +294,7 @@ const TIER_LABEL: Record<Tier, string> = {
   DIAMOND: "DI",
   RAINBOW: "RB",
   BESKAR: "BK",
-  FLAWLESS: "FL",
+  GALACTIC: "GA",
 };
 
 function TierCell({ tier, card, open, onClick }: TierCellProps) {
@@ -344,17 +345,21 @@ function TierCell({ tier, card, open, onClick }: TierCellProps) {
 }
 
 interface CellEditorProps {
-  droid: string;
+  def: DroidDef;
   tier: Tier;
   card: CollectionCard | undefined;
-  onChange: (patch: Partial<Pick<CollectionCard, "owned" | "working" | "lounge">>) => void;
+  onChange: (patch: Partial<Pick<CollectionCard, "owned" | "working" | "lounge" | "companion">>) => void;
   onClose: () => void;
 }
 
-function CellEditor({ droid, tier, card, onChange, onClose }: CellEditorProps) {
+function CellEditor({ def, tier, card, onChange, onClose }: CellEditorProps) {
+  const droid = def.canonical;
   const working = card?.working ?? 0;
   const lounge = card?.lounge ?? 0;
-  const owned = !!card?.owned || working > 0 || lounge > 0;
+  const companion = card?.companion ?? 0;
+  const owned = !!card?.owned || working > 0 || lounge > 0 || companion > 0;
+  const companionBonus =
+    def.companionEffect ?? companionBuffLabel(def.class, def.rarity, tier);
 
   return (
     <div
@@ -416,6 +421,23 @@ function CellEditor({ droid, tier, card, onChange, onClose }: CellEditorProps) {
         value={lounge}
         onChange={(n) => onChange({ lounge: n })}
       />
+      <Stepper
+        label="Companion"
+        accent="text-tier-galactic"
+        hint={companionBonus ? "1 slot · buff below" : "single companion slot"}
+        value={companion}
+        min={0}
+        max={1}
+        onChange={(n) => onChange({ companion: n })}
+      />
+      {companion > 0 && companionBonus ? (
+        <div className="mt-1 pl-3 py-1.5 border-l-2 border-tier-galactic/50 bg-tier-galactic/5 rounded-r-md">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-tier-galactic">
+            Companion buff
+          </span>{" "}
+          <span className="text-[12px] text-ink">{companionBonus}</span>
+        </div>
+      ) : null}
     </div>
   );
 }

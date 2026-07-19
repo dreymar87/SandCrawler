@@ -25,6 +25,9 @@ export function normalizeTier(t: string | undefined): Tier {
   if (!t) return "DEFAULT";
   const up = String(t).trim().toUpperCase();
   if (up === "BASIC") return "DEFAULT";
+  // FLAWLESS is no longer a tier (it's a cosmetic shiny). Legacy FLAWLESS
+  // cards were the top tier at the time → coerce to BESKAR.
+  if (up === "FLAWLESS") return "BESKAR";
   return (TIERS as readonly string[]).includes(up) ? (up as Tier) : "DEFAULT";
 }
 

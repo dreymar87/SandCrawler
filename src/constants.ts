@@ -1,9 +1,10 @@
 import type { DroidClass, Rarity, TabKey, Tier } from "./types";
 
 /**
- * Tier ordering: upgrade path (DEFAULT → BESKAR) plus FLAWLESS as a
- * 6th slot. FLAWLESS isn't reached by upgrading — it's a 1/1000 spawn
- * variant — but a FLAWLESS card outranks BESKAR for tier substitution.
+ * Tier ladder, low → high: DEFAULT → GOLD → DIAMOND → RAINBOW → BESKAR →
+ * GALACTIC. All are reachable by spending upgrade chips. (FLAWLESS is a
+ * cosmetic "shiny" spawn variant orthogonal to tier — not a tier — so it
+ * isn't in this list.)
  */
 export const TIERS = [
   "DEFAULT",
@@ -11,18 +12,18 @@ export const TIERS = [
   "DIAMOND",
   "RAINBOW",
   "BESKAR",
-  "FLAWLESS",
+  "GALACTIC",
 ] as const satisfies readonly Tier[];
 
-/** Upgrade-progression tiers (FLAWLESS excluded). Used by stat tables and chip costs. */
-export const UPGRADE_TIERS = ["DEFAULT", "GOLD", "DIAMOND", "RAINBOW", "BESKAR"] as const satisfies readonly Tier[];
+/** Upgrade-progression tiers — same as TIERS now (every tier is an upgrade target). */
+export const UPGRADE_TIERS = TIERS;
 
 export const CLASSES = ["WORKER", "ASTROMECH", "BATTLE", "UNKNOWN"] as const satisfies readonly DroidClass[];
 
 export const RARITIES = ["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "ICONIC"] as const satisfies readonly Rarity[];
 
-/** The highest Standard Rebirth level we have data for. */
-export const MAX_STANDARD_REBIRTH = 27;
+/** The highest Standard Rebirth level we track SRB bonuses for. */
+export const MAX_STANDARD_REBIRTH = 29;
 
 /**
  * Credit suffix multipliers. The game shows values like "10.00K", "1.36B";

@@ -6,12 +6,12 @@
  */
 
 /**
- * Upgrade tiers. DEFAULT → BESKAR is the upgrade path; FLAWLESS is a
- * separate 1/1000 spawn variant tracked as a 6th tier slot in the
- * Droidex. Tier substitution still uses the rank index — a FLAWLESS
- * card outranks BESKAR for requirement coverage.
+ * Upgrade tiers, low → high: DEFAULT → GOLD → DIAMOND → RAINBOW → BESKAR
+ * → GALACTIC, all reachable with upgrade chips. Higher tiers satisfy
+ * lower-tier requirements (substitution rule via rank index). FLAWLESS is
+ * a cosmetic shiny variant orthogonal to tier — not represented here.
  */
-export type Tier = "DEFAULT" | "GOLD" | "DIAMOND" | "RAINBOW" | "BESKAR" | "FLAWLESS";
+export type Tier = "DEFAULT" | "GOLD" | "DIAMOND" | "RAINBOW" | "BESKAR" | "GALACTIC";
 
 /** In-game droid "type" (the squad it belongs to). UNKNOWN is for user-added droids. */
 export type DroidClass = "WORKER" | "ASTROMECH" | "BATTLE" | "UNKNOWN";
@@ -76,6 +76,8 @@ export interface CollectionCard {
   working: number;
   /** How many are parked in the Lounge (rebirth-eligible, but no credits). */
   lounge: number;
+  /** Deployed in the single Companion slot (0 or 1) — grants a passive buff. */
+  companion: number;
   notes?: string;
 }
 
@@ -188,7 +190,7 @@ export interface CosmeticState {
 /** A Nova Shop upgrade. costs[i] is the crystals you pay to reach level i+1. */
 export interface NovaUpgrade {
   id: string;
-  tree: "CORE" | "WORKSHOP";
+  tree: "FEATURED" | "CORE" | "WORKSHOP";
   name: string;
   /** Length = max known level. `null` entries are levels whose cost is unknown. */
   costs: (number | null)[];

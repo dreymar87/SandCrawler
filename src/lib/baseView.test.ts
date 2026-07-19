@@ -26,7 +26,7 @@ const card = (
   working: number,
   lounge: number,
   owned = true,
-): CollectionCard => ({ name, tier, owned, working, lounge });
+): CollectionCard => ({ name, tier, owned, working, lounge, companion: 0 });
 
 describe("lounge capacity helpers", () => {
   it("counts RB unlocks at 17 and 18", () => {
@@ -66,6 +66,22 @@ describe("buildBaseView", () => {
       cycle: 1,
       ...overrides,
     });
+
+  it("surfaces the companion slot + its buff (non-ICONIC via class/rarity/tier)", () => {
+    const view = base([
+      { name: "MOUSE", tier: "DEFAULT", owned: true, working: 0, lounge: 0, companion: 1 },
+    ]);
+    expect(view.companion.deployed).toBe(1);
+    expect(view.companion.droids[0]!.name).toBe("MOUSE");
+    // MOUSE is WORKER/COMMON → +20% crafting speed at DEFAULT.
+    expect(view.companion.bonus).toBe("+20% crafting speed");
+  });
+
+  it("empty companion slot when nothing is marked", () => {
+    const view = base([card("MOUSE", "GOLD", 1, 0)]);
+    expect(view.companion.deployed).toBe(0);
+    expect(view.companion.bonus).toBe(null);
+  });
 
   it("sums working counts into the droid's class squad", () => {
     const view = base([

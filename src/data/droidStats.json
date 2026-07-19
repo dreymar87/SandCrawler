@@ -24,6 +24,11 @@
       "cost": "15.20k",
       "income": "24/s",
       "value": "10.64k"
+    },
+    "GALACTIC": {
+      "cost": "19.00k",
+      "income": "48/s",
+      "value": null
     }
   },
   "PIT": {
@@ -51,6 +56,11 @@
       "cost": "17.60k",
       "income": "24/s",
       "value": "12.32k"
+    },
+    "GALACTIC": {
+      "cost": "22.00k",
+      "income": "48/s",
+      "value": null
     }
   },
   "GONK": {
@@ -132,6 +142,11 @@
       "cost": "32k",
       "income": "36/s",
       "value": "22.40k"
+    },
+    "GALACTIC": {
+      "cost": "40.00k",
+      "income": "72/s",
+      "value": null
     }
   },
   "R5": {
@@ -213,6 +228,11 @@
       "cost": "80k",
       "income": "72/s",
       "value": "56k"
+    },
+    "GALACTIC": {
+      "cost": "100.00k",
+      "income": "144/s",
+      "value": null
     }
   },
   "B1 BATTLE": {
@@ -240,6 +260,11 @@
       "cost": "64k",
       "income": "60/s",
       "value": "44.80k"
+    },
+    "GALACTIC": {
+      "cost": "80.00k",
+      "income": "120/s",
+      "value": null
     }
   },
   "DRK-1 PROBE": {
@@ -348,6 +373,11 @@
       "cost": "1.41m",
       "income": "504/s",
       "value": "985.60k"
+    },
+    "GALACTIC": {
+      "cost": null,
+      "income": "1.00k/s",
+      "value": "1.23m"
     }
   },
   "SENATE HOVERCAM": {
@@ -375,6 +405,11 @@
       "cost": "1.60m",
       "income": "552/s",
       "value": "1.12m"
+    },
+    "GALACTIC": {
+      "cost": "2.00m",
+      "income": "1.10k/s",
+      "value": null
     }
   },
   "BAL-CORE": {
@@ -402,6 +437,11 @@
       "cost": "688k",
       "income": "276/s",
       "value": "481.60k"
+    },
+    "GALACTIC": {
+      "cost": "860k",
+      "income": "552/s",
+      "value": "602k"
     }
   },
   "ROLL-R": {
@@ -429,6 +469,11 @@
       "cost": "992k",
       "income": "372/s",
       "value": "694.40k"
+    },
+    "GALACTIC": {
+      "cost": "1.24m",
+      "income": "744/s",
+      "value": "868.00k"
     }
   },
   "2BB": {
@@ -483,6 +528,11 @@
       "cost": "1.18m",
       "income": "432/s",
       "value": "828.80k"
+    },
+    "GALACTIC": {
+      "cost": "1.48m",
+      "income": "864/s",
+      "value": null
     }
   },
   "R4": {
@@ -510,6 +560,11 @@
       "cost": "1.76m",
       "income": "600/s",
       "value": "1.23m"
+    },
+    "GALACTIC": {
+      "cost": "2.20m",
+      "income": "1.20k/s",
+      "value": null
     }
   },
   "R9": {
@@ -591,6 +646,11 @@
       "cost": "576k",
       "income": "216/s",
       "value": "403.20k"
+    },
+    "GALACTIC": {
+      "cost": "720k",
+      "income": "432/s",
+      "value": null
     }
   },
   "VECT-ARM": {
@@ -672,6 +732,11 @@
       "cost": "112.50m",
       "income": "4.08k/s",
       "value": "78.75m"
+    },
+    "GALACTIC": {
+      "cost": "270m",
+      "income": "6.24k/s",
+      "value": "189m"
     }
   },
   "LO": {
@@ -699,6 +764,11 @@
       "cost": "262.5m",
       "income": "8.16k/s",
       "value": "183.75m"
+    },
+    "GALACTIC": {
+      "cost": "630m",
+      "income": "12.48k/s",
+      "value": null
     }
   },
   "AMP WALKER": {
@@ -726,6 +796,11 @@
       "cost": "675m",
       "income": "19.38k/s",
       "value": "472.50m"
+    },
+    "GALACTIC": {
+      "cost": "1.62b",
+      "income": "29.64k/s",
+      "value": "1.13b"
     }
   },
   "SEN-TRI": {
@@ -753,6 +828,11 @@
       "cost": "600m",
       "income": "17.34k/s",
       "value": "420m"
+    },
+    "GALACTIC": {
+      "cost": null,
+      "income": "26.52k/s",
+      "value": "1.00b"
     }
   },
   "OPTI-POD": {
@@ -807,6 +887,11 @@
       "cost": "150m",
       "income": "5.10k/s",
       "value": "105m"
+    },
+    "GALACTIC": {
+      "cost": "360m",
+      "income": "7.80k/s",
+      "value": null
     }
   },
   "R2": {
@@ -834,6 +919,11 @@
       "cost": "412.50m",
       "income": "12.24k/s",
       "value": "288.75m"
+    },
+    "GALACTIC": {
+      "cost": "990m",
+      "income": "18.72k/s",
+      "value": null
     }
   },
   "R6": {
@@ -861,6 +951,11 @@
       "cost": "337.50m",
       "income": "10.20k/s",
       "value": "236.25m"
+    },
+    "GALACTIC": {
+      "cost": "810m",
+      "income": "15.60k/s",
+      "value": "567m"
     }
   },
   "TRAK-R": {
@@ -888,6 +983,11 @@
       "cost": "375m",
       "income": "11.22k/s",
       "value": "262.50m"
+    },
+    "GALACTIC": {
+      "cost": "900m",
+      "income": "17.16k/s",
+      "value": "630m"
     }
   },
   "ORB-WALKER": {
@@ -915,6 +1015,11 @@
       "cost": "187.50m",
       "income": "6.12k/s",
       "value": "131.25m"
+    },
+    "GALACTIC": {
+      "cost": "450m",
+      "income": "9.36k/s",
+      "value": "315m"
     }
   },
   "GUNRUNNER": {
@@ -942,6 +1047,11 @@
       "cost": "787.50m",
       "income": "22.44k/s",
       "value": "551.25m"
+    },
+    "GALACTIC": {
+      "cost": "1.89b",
+      "income": "34.32k/s",
+      "value": null
     }
   },
   "UTIL-TEC": {
@@ -969,6 +1079,11 @@
       "cost": "225m",
       "income": "7.14k/s",
       "value": "157.50m"
+    },
+    "GALACTIC": {
+      "cost": "540m",
+      "income": "10.92k/s",
+      "value": "378m"
     }
   },
   "B1 HEAVY": {
@@ -1023,6 +1138,11 @@
       "cost": "487.50m",
       "income": "14.28k/s",
       "value": "341.25m"
+    },
+    "GALACTIC": {
+      "cost": "1.17b",
+      "income": "21.84k/s",
+      "value": "819m"
     }
   },
   "B2 HEAVY": {
@@ -1050,6 +1170,11 @@
       "cost": "562.50m",
       "income": "16.32k/s",
       "value": "393.75m"
+    },
+    "GALACTIC": {
+      "cost": "1.35b",
+      "income": "24.96k/s",
+      "value": null
     }
   },
   "STRIKE-ORB": {
@@ -1077,6 +1202,11 @@
       "cost": "637.50m",
       "income": "18.36k/s",
       "value": "446.25m"
+    },
+    "GALACTIC": {
+      "cost": "1.53b",
+      "income": "28.08k/s",
+      "value": "1.07b"
     }
   },
   "HAUL-R": {
@@ -1131,6 +1261,11 @@
       "cost": "525m",
       "income": "15.30k/s",
       "value": "367.50m"
+    },
+    "GALACTIC": {
+      "cost": "1.26b",
+      "income": "23.40k/s",
+      "value": null
     }
   },
   "PROTO-ROLLER": {
@@ -1158,6 +1293,11 @@
       "cost": "8.8b",
       "income": "23.33k/s",
       "value": "6.16b"
+    },
+    "GALACTIC": {
+      "cost": "52.80b",
+      "income": "58.32k/s",
+      "value": "36.96b"
     }
   },
   "MECHA-DROID": {
@@ -1185,6 +1325,11 @@
       "cost": "11.60b",
       "income": "29.86k/s",
       "value": "8.12b"
+    },
+    "GALACTIC": {
+      "cost": "69.60b",
+      "income": "74.64k/s",
+      "value": "48.72b"
     }
   },
   "MONO-WLKR": {
@@ -1212,6 +1357,11 @@
       "cost": "14.8b",
       "income": "36.00k/s",
       "value": "10.36b"
+    },
+    "GALACTIC": {
+      "cost": "88.80b",
+      "income": "90.00k/s",
+      "value": "62.16b"
     }
   },
   "BB9": {
@@ -1239,6 +1389,11 @@
       "cost": "11.20b",
       "income": "31.20k/s",
       "value": "7.84b"
+    },
+    "GALACTIC": {
+      "cost": "67.20b",
+      "income": "78.00k/s",
+      "value": "47.04b"
     }
   },
   "R7": {
@@ -1266,6 +1421,11 @@
       "cost": "14.80b",
       "income": "36.00k/s",
       "value": "10.36b"
+    },
+    "GALACTIC": {
+      "cost": "88.80b",
+      "income": "90.00k/s",
+      "value": "62.16b"
     }
   },
   "B2-RP": {
@@ -1293,6 +1453,11 @@
       "cost": "12.40b",
       "income": "31.30k/s",
       "value": "8.68b"
+    },
+    "GALACTIC": {
+      "cost": "74.40b",
+      "income": "78.24k/s",
+      "value": "52.08b"
     }
   },
   "CYCLO-GRAV": {
@@ -1320,6 +1485,11 @@
       "cost": "12b",
       "income": "30.24k/s",
       "value": "8.40b"
+    },
+    "GALACTIC": {
+      "cost": "72.00b",
+      "income": "75.60k/s",
+      "value": "50.40b"
     }
   },
   "OPTI-STRK": {
@@ -1347,6 +1517,11 @@
       "cost": "14.8b",
       "income": "36.00k/s",
       "value": "10.36b"
+    },
+    "GALACTIC": {
+      "cost": "88.80b",
+      "income": "90.00k/s",
+      "value": "62.16b"
     }
   },
   "SNOW MOUSE": {
@@ -1713,6 +1888,11 @@
       "cost": "2.08m",
       "income": "696/s",
       "value": "1.45m"
+    },
+    "GALACTIC": {
+      "cost": "2.60m",
+      "income": "1.39k/s",
+      "value": null
     }
   },
   "C-3PO": {

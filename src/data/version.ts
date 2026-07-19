@@ -1,5 +1,5 @@
 /** Bumped when the seed dictionary or Standard Rebirth seed changes. */
-export const SEED_VERSION = 5;
+export const SEED_VERSION = 6;
 
 /**
  * Bumped when PersistedState's shape changes incompatibly. `migrate.ts`
@@ -30,5 +30,8 @@ export const SEED_VERSION = 5;
  *      lounge slots that reset on Super Rebirth. Lounge capacity is now
  *      credit slots + Nova-Shop lounge level (not the generic
  *      baseSlots+unlocks path).
+ * v9 — GALACTIC replaces FLAWLESS as the 6th tier (Flawless is a cosmetic
+ *      shiny, not a tier); card `tier: "FLAWLESS"` → `"BESKAR"`.
+ *      CollectionCard gains `companion` (0/1, default 0).
  */
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;

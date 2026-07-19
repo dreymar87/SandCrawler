@@ -65,9 +65,9 @@ describe("performSuperRebirth", () => {
     seedState({
       standardRebirth: 15,
       cards: [
-        { name: "MOUSE", tier: "GOLD", owned: true, working: 3, lounge: 0 },
-        { name: "PIT", tier: "DEFAULT", owned: true, working: 0, lounge: 2 },
-        { name: "GONK", tier: "BESKAR", owned: true, working: 0, lounge: 0 },
+        { name: "MOUSE", tier: "GOLD", owned: true, working: 3, lounge: 0, companion: 0 },
+        { name: "PIT", tier: "DEFAULT", owned: true, working: 0, lounge: 2, companion: 0 },
+        { name: "GONK", tier: "BESKAR", owned: true, working: 0, lounge: 0, companion: 0 },
       ],
     });
     useAppStore.getState().performSuperRebirth();
@@ -85,7 +85,7 @@ describe("performSuperRebirth", () => {
     // counts 0 → sparse-drop.
     seedState({
       standardRebirth: 12,
-      cards: [{ name: "MOUSE", tier: "DEFAULT", owned: false, working: 2, lounge: 0 }],
+      cards: [{ name: "MOUSE", tier: "DEFAULT", owned: false, working: 2, lounge: 0, companion: 0 }],
     });
     useAppStore.getState().performSuperRebirth();
     expect(useAppStore.getState().cards).toHaveLength(0);

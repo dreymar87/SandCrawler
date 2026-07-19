@@ -50,6 +50,7 @@ export function SetupForm({ onDone }: { onDone: () => void }) {
 
   const novaGroups = useMemo(
     () => ({
+      FEATURED: NOVA_UPGRADES.filter((u) => u.tree === "FEATURED"),
       CORE: NOVA_UPGRADES.filter((u) => u.tree === "CORE"),
       WORKSHOP: NOVA_UPGRADES.filter((u) => u.tree === "WORKSHOP"),
     }),
@@ -133,7 +134,7 @@ export function SetupForm({ onDone }: { onDone: () => void }) {
         {/* Nova shop upgrade levels */}
         <Section title="Nova shop levels">
           <div className="space-y-4">
-            {(["CORE", "WORKSHOP"] as const).map((tree) => (
+            {(["FEATURED", "CORE", "WORKSHOP"] as const).map((tree) => (
               <div key={tree}>
                 <div className="font-mono text-[10px] uppercase tracking-wider text-muted-alt mb-2">
                   {tree}

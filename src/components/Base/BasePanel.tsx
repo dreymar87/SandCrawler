@@ -4,7 +4,7 @@ import { useBaseView, useHomeSummary } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
 import { Stepper } from "../common/Stepper";
 import { TierPill } from "../common/TierPill";
-import type { DeployedDroid, LoungeFill, SellCandidate, SquadFill } from "../../lib/baseView";
+import type { CompanionSlot, DeployedDroid, LoungeFill, SellCandidate, SquadFill } from "../../lib/baseView";
 
 /**
  * The Base tab — replaces Home. Folds Home's headline stats (rebirth,
@@ -77,10 +77,10 @@ export function BasePanel() {
             <SquadFillCard key={sq.type} squad={sq} />
           ))}
           <LoungeCard lounge={base.lounge} onSetCredit={setLoungeCreditSlots} />
+          <CompanionCard companion={base.companion} />
         </div>
         <p className="font-mono text-[10px] text-muted-alt mt-3 leading-snug">
-          Deployed counts come from the working / lounge numbers you set on the Droidex.
-          Companion droids aren't tracked yet.
+          Deployed counts come from the working / lounge / companion numbers you set on the Droidex.
         </p>
       </section>
 
@@ -189,6 +189,39 @@ function LoungeCard({
       </p>
 
       <DroidChips droids={lounge.droids} empty="No droids parked in the lounge." />
+    </div>
+  );
+}
+
+function CompanionCard({ companion }: { companion: CompanionSlot }) {
+  const over = companion.deployed > 1;
+  return (
+    <div className="rounded-[10px] border border-line bg-panel-alt p-3">
+      <div className="flex items-baseline gap-2 mb-2">
+        <span className="font-display font-semibold text-[14px] text-tier-galactic">Companion</span>
+        <span className="flex-1" />
+        <span className="font-display font-bold text-[14px]">
+          {Math.min(1, companion.deployed)}
+          <span className="text-muted-alt text-[11px] ml-1">/ 1</span>
+        </span>
+      </div>
+      {companion.droids.length === 0 ? (
+        <p className="font-mono text-[10px] text-muted-alt italic">
+          No companion set. Pick one in the Droidex to apply its buff.
+        </p>
+      ) : (
+        <>
+          <DroidChips droids={companion.droids} empty="" />
+          {companion.bonus ? (
+            <p className="font-mono text-[10.5px] text-tier-galactic mt-2">{companion.bonus}</p>
+          ) : null}
+          {over ? (
+            <p className="font-mono text-[10px] text-danger mt-1">
+              Only one companion can be active — pick a single droid.
+            </p>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

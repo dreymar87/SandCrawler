@@ -232,8 +232,13 @@ export function useCosmeticOwnership(): Map<string, boolean> {
   }, [cosmetics]);
 }
 
-export function useNovaShop(): { core: NovaUpgrade[]; workshop: NovaUpgrade[] } {
+export function useNovaShop(): {
+  featured: NovaUpgrade[];
+  core: NovaUpgrade[];
+  workshop: NovaUpgrade[];
+} {
   return useMemo(() => ({
+    featured: NOVA_UPGRADES.filter((u) => u.tree === "FEATURED"),
     core: NOVA_UPGRADES.filter((u) => u.tree === "CORE"),
     workshop: NOVA_UPGRADES.filter((u) => u.tree === "WORKSHOP"),
   }), []);

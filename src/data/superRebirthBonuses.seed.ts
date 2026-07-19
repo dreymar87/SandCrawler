@@ -26,4 +26,6 @@ export const SUPER_REBIRTH_BONUSES: readonly SuperRebirthBonus[] = [
   { rbLevel: 25, crystals: 154, creditMult: 3.08, xpMult: 15.4 },
   { rbLevel: 26, crystals: 172, creditMult: 3.44, xpMult: 17.2 },
   { rbLevel: 27, crystals: 191, creditMult: 3.82, xpMult: 19.1 },
+  { rbLevel: 28, crystals: 211, creditMult: 4.22, xpMult: 21.1 },
+  { rbLevel: 29, crystals: 232, creditMult: 4.64, xpMult: 23.2 },
 ];

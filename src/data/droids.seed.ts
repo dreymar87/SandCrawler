@@ -14,8 +14,8 @@ import type { DroidDef, Tier } from "../types";
  * `tiers` array (5 normally, 1 for event-locked MYTHIC droids).
  */
 
-/** All six tiers, including the rare FLAWLESS variant (COMMON…MYTHIC droids). */
-const ALL_TIERS: Tier[] = ["DEFAULT", "GOLD", "DIAMOND", "RAINBOW", "BESKAR", "FLAWLESS"];
+/** All six upgrade tiers (COMMON…MYTHIC droids). */
+const ALL_TIERS: Tier[] = ["DEFAULT", "GOLD", "DIAMOND", "RAINBOW", "BESKAR", "GALACTIC"];
 /** ICONIC event droids are DEFAULT-only — no upgrade tiers, no FLAWLESS. */
 const ICONIC_TIERS: Tier[] = ["DEFAULT"];
 

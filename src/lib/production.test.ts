@@ -20,7 +20,7 @@ const card = (
   tier: CollectionCard["tier"],
   working: number,
   lounge = 0,
-): CollectionCard => ({ name, tier, owned: true, working, lounge });
+): CollectionCard => ({ name, tier, owned: true, working, lounge, companion: 0 });
 
 describe("computeProduction", () => {
   it("sums flat credits/sec across working cards", () => {
@@ -50,7 +50,7 @@ describe("computeProduction", () => {
   it("skips cards with 0 working (owned-only stays quiet)", () => {
     const r = computeProduction(
       [
-        { name: "MOUSE", tier: "DEFAULT", owned: true, working: 0, lounge: 0 },
+        { name: "MOUSE", tier: "DEFAULT", owned: true, working: 0, lounge: 0, companion: 0 },
         card("GONK", "DEFAULT", 1),
       ],
       stats,

@@ -28,7 +28,7 @@ interface Actions {
   setCardCounts(
     name: string,
     tier: Tier,
-    patch: Partial<Pick<CollectionCard, "owned" | "working" | "lounge" | "notes">>,
+    patch: Partial<Pick<CollectionCard, "owned" | "working" | "lounge" | "companion" | "notes">>,
   ): void;
   /** Bump this card's Working count by 1 (used by "I have it" shortcuts). */
   bumpWorking(name: string, tier: Tier): void;
@@ -94,15 +94,17 @@ export const useAppStore = create<AppStore>()(
           const current = idx >= 0 ? list[idx]! : null;
           const working = patch.working !== undefined ? clean(patch.working) : (current?.working ?? 0);
           const lounge = patch.lounge !== undefined ? clean(patch.lounge) : (current?.lounge ?? 0);
+          const companion =
+            patch.companion !== undefined ? Math.min(1, clean(patch.companion)) : (current?.companion ?? 0);
           // Owned auto-true whenever a copy is deployed; otherwise honor the patch or existing state.
-          const deployed = working + lounge > 0;
+          const deployed = working + lounge + companion > 0;
           const owned = deployed
             ? true
             : patch.owned !== undefined
               ? !!patch.owned
               : (current?.owned ?? true);
           const notes = patch.notes !== undefined ? patch.notes : current?.notes;
-          if (!owned && working === 0 && lounge === 0) {
+          if (!owned && working === 0 && lounge === 0 && companion === 0) {
             if (idx >= 0) list.splice(idx, 1);
             return { cards: list };
           }
@@ -112,6 +114,7 @@ export const useAppStore = create<AppStore>()(
             owned,
             working,
             lounge,
+            companion,
             notes,
           };
           if (idx < 0) list.push(next);
@@ -133,6 +136,7 @@ export const useAppStore = create<AppStore>()(
               owned: true,
               working: 1,
               lounge: 0,
+              companion: 0,
             });
           } else {
             const c = list[idx]!;
@@ -313,11 +317,11 @@ export const useAppStore = create<AppStore>()(
         const bonus = srbBonusAt(pre.profile.standardRebirth);
         const crystalsAwarded = bonus?.crystals ?? 0;
         set((s) => {
-          // Zero deployed counts, keep owned + notes.
+          // Zero deployed counts (working/lounge/companion), keep owned + notes.
           const cards = s.cards
-            .map((c) => ({ ...c, working: 0, lounge: 0 }))
+            .map((c) => ({ ...c, working: 0, lounge: 0, companion: 0 }))
             // Sparse-storage rule: drop rows with no ownership + no counts.
-            .filter((c) => c.owned || c.working > 0 || c.lounge > 0);
+            .filter((c) => c.owned || c.working > 0 || c.lounge > 0 || c.companion > 0);
           return {
             cards,
             profile: {

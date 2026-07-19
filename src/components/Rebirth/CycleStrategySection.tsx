@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { UPGRADE_TIERS } from "../../constants";
 import type { Rarity, RebirthCycle, Tier } from "../../types";
 import { computeCycleStrategy, type CycleStrategy, type KeeperEntry } from "../../lib/cycleStrategy";
+import { CHIP_COSTS } from "../../data/chipCosts.seed";
 import { chipsBetween, formatChipCost } from "../../lib/chipCosts";
 import { bestOwnedTier } from "../../lib/readiness";
-import { satisfies } from "../../lib/tiers";
+import { satisfies, tierRank } from "../../lib/tiers";
 import { cycleLabel } from "../../lib/rebirthCycles";
 import { useActiveCycle } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
@@ -12,8 +15,10 @@ import { TierPill } from "../common/TierPill";
 /** How many upcoming RBs count as "focus / urgent." */
 const FOCUS_LOOKAHEAD = 3;
 
-type Status = "HAVE" | "UPGRADE" | "MISSING";
-const STATUS_ORDER: Record<Status, number> = { MISSING: 0, UPGRADE: 1, HAVE: 2 };
+type Status = "DONE" | "HAVE" | "UPGRADE" | "MISSING";
+const STATUS_ORDER: Record<Status, number> = { MISSING: 0, UPGRADE: 1, HAVE: 2, DONE: 3 };
+/** Statuses that need no more action — hidden by "Hide completed". */
+const COMPLETE_STATUSES: readonly Status[] = ["HAVE", "DONE"];
 
 interface EnrichedEntry extends KeeperEntry {
   status: Status;
@@ -51,12 +56,23 @@ export function CycleStrategySection() {
   const enriched: EnrichedEntry[] = useMemo(() => {
     return strategy.keepers.map((k) => {
       const owned = bestOwnedTier(k.name, cards);
-      const status: Status =
-        owned === null ? "MISSING" : satisfies(k.targetTier, owned) ? "HAVE" : "UPGRADE";
+      // DONE = all this droid's requirements are at rebirths you've passed
+      // (no future RB in this cycle needs it) — no action regardless of tier.
+      const past = currentLevel >= k.lastNeeded;
+      const status: Status = past
+        ? "DONE"
+        : owned === null
+          ? "MISSING"
+          : satisfies(k.targetTier, owned)
+            ? "HAVE"
+            : "UPGRADE";
       const remainingChips =
-        status === "HAVE" ? 0 : chipsBetween(k.rarity, owned ?? "DEFAULT", k.targetTier);
+        status === "HAVE" || status === "DONE"
+          ? 0
+          : chipsBetween(k.rarity, owned ?? "DEFAULT", k.targetTier);
       const urgent =
         status !== "HAVE" &&
+        status !== "DONE" &&
         k.firstNeeded > currentLevel &&
         k.firstNeeded <= currentLevel + FOCUS_LOOKAHEAD;
       return { ...k, status, ownedTier: owned, remainingChips, urgent };
@@ -81,6 +97,9 @@ export function CycleStrategySection() {
     [enriched],
   );
 
+  // Chip-breakdown modal state — which keeper is expanded.
+  const [openEntry, setOpenEntry] = useState<EnrichedEntry | null>(null);
+
   return (
     <section className="card p-0 mt-4 mb-4">
       <details className="group" open>
@@ -103,17 +122,26 @@ export function CycleStrategySection() {
           ) : null}
           <ChipBudget totals={remainingTotals} />
           <HideCompletedToggle value={hideCompleted} onChange={setHideCompleted} />
-          <GroupedKeepersList entries={enriched} hideCompleted={hideCompleted} />
+          <GroupedKeepersList
+            entries={enriched}
+            hideCompleted={hideCompleted}
+            onOpen={setOpenEntry}
+          />
           <p className="font-mono text-[10.5px] text-muted-alt">
             Status compares against your Droidex. <b className="text-ok">Have</b> = you own the
             target tier (or higher) with a copy deployed.{" "}
             <b className="text-sun">Upgrade</b> = you own a lower tier deployed.{" "}
             <b className="text-muted">Missing</b> = no deployed copy. Rows marked{" "}
             <b className="text-danger">Urgent</b> are needed within your next {FOCUS_LOOKAHEAD}{" "}
-            rebirths.
+            rebirths. <b className="text-holo-dim">Done</b> = only needed at rebirths you've passed.
+            Tap a droid for its upgrade-chip breakdown.
           </p>
         </div>
       </details>
+
+      {openEntry ? (
+        <ChipBreakdownModal entry={openEntry} onClose={() => setOpenEntry(null)} />
+      ) : null}
     </section>
   );
 }
@@ -287,9 +315,11 @@ function HideCompletedToggle({
 function GroupedKeepersList({
   entries,
   hideCompleted,
+  onOpen,
 }: {
   entries: EnrichedEntry[];
   hideCompleted: boolean;
+  onOpen: (entry: EnrichedEntry) => void;
 }) {
   if (entries.length === 0) {
     return (
@@ -304,9 +334,11 @@ function GroupedKeepersList({
   for (const rarity of RARITY_ORDER_ASC) {
     const all = entries.filter((e) => e.rarity === rarity);
     if (all.length === 0) continue;
-    const counts: Record<Status, number> = { HAVE: 0, UPGRADE: 0, MISSING: 0 };
+    const counts: Record<Status, number> = { HAVE: 0, UPGRADE: 0, MISSING: 0, DONE: 0 };
     for (const e of all) counts[e.status] += 1;
-    const visible = hideCompleted ? all.filter((e) => e.status !== "HAVE") : all;
+    const visible = hideCompleted
+      ? all.filter((e) => !COMPLETE_STATUSES.includes(e.status))
+      : all;
     if (visible.length === 0 && hideCompleted) continue; // whole rarity is done — hide
     const rows = [...visible].sort(
       (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.firstNeeded - b.firstNeeded,
@@ -343,11 +375,14 @@ function GroupedKeepersList({
               {g.counts.MISSING > 0 ? (
                 <span className="text-muted mr-2">{g.counts.MISSING} missing</span>
               ) : null}
+              {g.counts.DONE > 0 ? (
+                <span className="text-holo-dim mr-2">{g.counts.DONE} done</span>
+              ) : null}
             </span>
           </div>
           <ul className="divide-y divide-line">
             {g.rows.map((k) => (
-              <KeeperRow key={k.name} entry={k} />
+              <KeeperRow key={k.name} entry={k} onOpen={() => onOpen(k)} />
             ))}
           </ul>
         </div>
@@ -357,12 +392,22 @@ function GroupedKeepersList({
 }
 
 function sumCounts(c: Record<Status, number>): number {
-  return c.HAVE + c.UPGRADE + c.MISSING;
+  return c.HAVE + c.UPGRADE + c.MISSING + c.DONE;
 }
 
-function KeeperRow({ entry }: { entry: EnrichedEntry }) {
+function KeeperRow({ entry, onOpen }: { entry: EnrichedEntry; onOpen: () => void }) {
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-0.5 px-3 py-2">
+    <li
+      className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-0.5 px-3 py-2 cursor-pointer hover:bg-panel-alt/50"
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}>
       <div className="min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="font-display font-semibold text-[13.5px] truncate">{entry.name}</span>
@@ -398,11 +443,13 @@ function KeeperRow({ entry }: { entry: EnrichedEntry }) {
 
 function StatusChip({ status }: { status: Status }) {
   const styles: Record<Status, string> = {
+    DONE: "border-holo-dim/50 text-holo-dim bg-holo-dim/10",
     HAVE: "border-ok/50 text-ok bg-ok/10",
     UPGRADE: "border-sun/50 text-sun bg-sun/10",
     MISSING: "border-line-alt text-muted",
   };
   const label: Record<Status, string> = {
+    DONE: "Done",
     HAVE: "Have",
     UPGRADE: "Upgrade",
     MISSING: "Missing",
@@ -418,6 +465,8 @@ function StatusChip({ status }: { status: Status }) {
 
 function statusColor(s: Status): string {
   switch (s) {
+    case "DONE":
+      return "text-holo-dim";
     case "HAVE":
       return "text-ok";
     case "UPGRADE":
@@ -444,4 +493,102 @@ function rarityAccent(r: Rarity): string {
     default:
       return "text-muted";
   }
+}
+
+// ── Chip-breakdown modal ─────────────────────────────────────────────────
+
+/**
+ * Tap-a-droid mini-window: the tier ladder with each step's chip cost for
+ * the droid's rarity, the current owned tier highlighted green, the target
+ * tier marked, and the total chips still needed to reach it.
+ */
+function ChipBreakdownModal({ entry, onClose }: { entry: EnrichedEntry; onClose: () => void }) {
+  const row = CHIP_COSTS.find((r) => r.rarity === entry.rarity);
+  const ownedRank = entry.ownedTier ? tierRank(entry.ownedTier) : -1;
+  const targetRank = tierRank(entry.targetTier);
+  const totalLeft = chipsBetween(entry.rarity, entry.ownedTier ?? "DEFAULT", entry.targetTier);
+
+  // Portal to <body> so the fixed overlay escapes any ancestor that
+  // creates a containing block (the section's view-enter transform).
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${entry.name} upgrade chips`}
+        className="relative w-full max-w-[420px] card p-5 m-3 view-enter"
+        style={{ marginBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+      >
+        <div className="flex items-baseline gap-2 mb-1">
+          <h2 className="font-display font-bold text-lg">{entry.name}</h2>
+          <span className={`font-mono text-[10px] uppercase tracking-wide ${rarityAccent(entry.rarity)}`}>
+            {entry.rarity}
+          </span>
+          <span className="flex-1" />
+          <button
+            type="button"
+            className="font-mono text-[10.5px] uppercase tracking-wider text-holo"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+        <p className="font-mono text-[10.5px] text-muted-alt mb-4">
+          Needed at <span className="text-ink">{entry.targetTier}</span>. Upgrade-chip cost per tier.
+        </p>
+
+        {!row ? (
+          <p className="text-[13px] text-muted">ICONIC droids don't use upgrade chips.</p>
+        ) : (
+          <>
+            <ul className="rounded-[10px] border border-line overflow-hidden divide-y divide-line mb-4">
+              {UPGRADE_TIERS.map((tier, i) => {
+                const isOwned = i === ownedRank;
+                const isTarget = tier === entry.targetTier;
+                // steps[i-1] is the cost to reach UPGRADE_TIERS[i] from the prior tier.
+                const stepCost = i === 0 ? null : row.steps[i - 1];
+                const beyondTarget = i > targetRank;
+                return (
+                  <li
+                    key={tier}
+                    className={`flex items-center gap-3 px-3 py-2 ${
+                      isOwned ? "bg-ok/10" : beyondTarget ? "opacity-40" : ""
+                    }`}
+                  >
+                    <TierPill tier={tier} />
+                    <span className={`font-display text-[13px] ${isOwned ? "text-ok font-bold" : ""}`}>
+                      {tier}
+                      {isOwned ? " · you're here" : ""}
+                      {isTarget && !isOwned ? " · target" : ""}
+                    </span>
+                    <span className="flex-1" />
+                    <span className="font-mono text-[11.5px] tabular-nums text-muted-alt">
+                      {i === 0 ? "—" : stepCost == null ? "?" : `+${formatChipCost(stepCost)}`}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="flex items-baseline justify-between rounded-[10px] border border-holo-dim/50 bg-holo/5 px-3 py-2.5">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-muted-alt">
+                Chips left to {entry.targetTier}
+              </span>
+              <span className="font-display font-bold text-lg text-holo">
+                {entry.ownedTier && satisfies(entry.targetTier, entry.ownedTier)
+                  ? "0 · done"
+                  : formatChipCost(totalLeft)}
+              </span>
+            </div>
+            {entry.ownedTier ? null : (
+              <p className="font-mono text-[10px] text-muted-alt mt-2">
+                You don't own this droid yet — total assumes starting from DEFAULT.
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
 }

@@ -158,6 +158,21 @@ describe("migrate", () => {
     expect(state.cards[0]).toMatchObject({ working: 5, lounge: 2 });
   });
 
+  it("v8 → v9: remaps FLAWLESS-tier cards to BESKAR and defaults companion", () => {
+    const v8 = {
+      schemaVersion: 8,
+      cards: [
+        { name: "MOUSE", tier: "FLAWLESS", owned: true, working: 1, lounge: 0 },
+        { name: "PIT", tier: "GOLD", owned: true, working: 0, lounge: 2 },
+      ],
+    };
+    const state = migrate(v8);
+    const mouse = state.cards.find((c) => c.name === "MOUSE")!;
+    expect(mouse.tier).toBe("BESKAR"); // FLAWLESS is no longer a tier
+    expect(mouse.companion).toBe(0);
+    expect(state.cards.find((c) => c.name === "PIT")!.companion).toBe(0);
+  });
+
   it("v7 → v8: remaps the Home tab to Base and defaults loungeCreditSlots", () => {
     const v7 = {
       schemaVersion: 7,

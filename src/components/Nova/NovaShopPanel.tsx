@@ -16,7 +16,7 @@ import type { NovaUpgrade } from "../../types";
  * next-level cost (with "?" when unknown), and affordability.
  */
 export function NovaShopPanel() {
-  const { core, workshop } = useNovaShop();
+  const { featured, core, workshop } = useNovaShop();
   const levels = useNovaLevels();
   const balance = useNovaBalance();
   const iconicOwned = useIconicPurchases();
@@ -37,6 +37,16 @@ export function NovaShopPanel() {
         </p>
       </section>
 
+      <Tree
+        title="Featured Upgrades"
+        items={featured}
+        levels={levels}
+        balance={balance.balance}
+        onLevel={(id, lvl) => {
+          haptic("light");
+          setLevel(id, lvl);
+        }}
+      />
       <Tree
         title="Core Upgrades"
         items={core}

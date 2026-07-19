@@ -1,4 +1,5 @@
 import { SQUAD_DEFS } from "../data/squads.seed";
+import { companionBuffLabel } from "../data/companionBuffs.seed";
 import { getMaxSlots } from "./squads";
 import { isDroidSafeToSell } from "./cycleStrategy";
 import { parseCredits, formatCredits } from "./credits";
@@ -76,9 +77,18 @@ export interface SellCandidate {
   count: number;
 }
 
+export interface CompanionSlot {
+  /** Droids marked as companion (capacity 1; >1 = over-capacity). */
+  droids: DeployedDroid[];
+  /** The active companion's buff label, or null when none / unknown. */
+  bonus: string | null;
+  deployed: number;
+}
+
 export interface BaseView {
   squads: SquadFill[];
   lounge: LoungeFill;
+  companion: CompanionSlot;
   sellCandidates: SellCandidate[];
   /** Formatted sum of sell-candidate values, e.g. "1.24B". */
   sellTotal: string;
@@ -159,6 +169,27 @@ export function buildBaseView({
     droids: loungeDroids,
   };
 
+  // Companion slot (capacity 1): cards marked as companion. The buff comes
+  // from the droid's ICONIC companionEffect, or the class/rarity/tier table.
+  const companionDroids: DeployedDroid[] = [];
+  let companionDeployed = 0;
+  let companionBonus: string | null = null;
+  for (const c of cards) {
+    if (c.companion <= 0) continue;
+    companionDeployed += c.companion;
+    companionDroids.push({ name: c.name, tier: c.tier, count: c.companion });
+    if (companionBonus === null) {
+      const def = resolve(c.name);
+      companionBonus =
+        def?.companionEffect ?? companionBuffLabel(def?.class ?? "UNKNOWN", def?.rarity ?? "COMMON", c.tier);
+    }
+  }
+  const companion: CompanionSlot = {
+    droids: companionDroids,
+    bonus: companionBonus,
+    deployed: companionDeployed,
+  };
+
   // Sell candidates: DEPLOYED cards (working or lounge — actually
   // occupying a base slot) whose droid isn't needed later this cycle.
   // A card merely flagged "owned" in the Droidex isn't taking a slot, so
@@ -186,6 +217,7 @@ export function buildBaseView({
   return {
     squads,
     lounge,
+    companion,
     sellCandidates,
     sellTotal: formatCredits(sellTotalCredits),
   };
