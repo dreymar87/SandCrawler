@@ -31,6 +31,7 @@ export function DroidexGrid() {
   const collectedFilter = useAppStore((s) => s.ui.collectedFilter ?? "ALL");
   const strategyFilter = useAppStore((s) => s.ui.strategyFilter ?? "ALL");
   const rbcFilter = useAppStore((s) => s.ui.rbcFilter ?? "ALL");
+  const rbcMissingOnly = useAppStore((s) => s.ui.rbcMissingOnly ?? false);
   const currentLevel = useAppStore((s) => s.profile.standardRebirth);
   const activeCycle = useActiveCycle();
   const completion = useDroidexCompletion();
@@ -73,9 +74,15 @@ export function DroidexGrid() {
       const effectiveRbc =
         rbcFilter === "ALL" ? null : rbcFilter === "SMART" ? activeCycle : rbcFilter;
       if (effectiveRbc !== null && !droidCycles(d.canonical).includes(effectiveRbc)) return false;
+      // "Missing" sub-toggle (only meaningful with an RBC active): drop droids
+      // already collected in the Droidex.
+      if (rbcMissingOnly && effectiveRbc !== null) {
+        const owned = d.tiers.some((t) => cardIndex.get(cardKey(d.canonical, t))?.owned);
+        if (owned) return false;
+      }
       return true;
     });
-  }, [dict, cardIndex, search, rarityFilter, classFilter, collectedFilter, strategyFilter, rbcFilter, activeCycle, currentLevel]);
+  }, [dict, cardIndex, search, rarityFilter, classFilter, collectedFilter, strategyFilter, rbcFilter, rbcMissingOnly, activeCycle, currentLevel]);
 
   return (
     <div>
@@ -161,10 +168,28 @@ export function DroidexGrid() {
               )
             }
           />
+          <button
+            type="button"
+            disabled={rbcFilter === "ALL"}
+            onClick={() => setUiPref("rbcMissingOnly", !rbcMissingOnly)}
+            className={`font-mono text-[10px] uppercase tracking-wider px-2 py-1 rounded-md border ${
+              rbcFilter === "ALL"
+                ? "border-line-alt text-muted-alt opacity-40 cursor-not-allowed"
+                : rbcMissingOnly
+                  ? "border-warn text-warn bg-warn/10"
+                  : "border-line-alt text-muted hover:text-ink"
+            }`}
+          >
+            Missing
+          </button>
           <span className="font-mono text-[9.5px] text-muted-alt">
-            {rbcFilter === "SMART"
-              ? `= your current cycle (RBC${activeCycle})`
-              : "filter by rebirth cycle that needs the droid"}
+            {rbcFilter === "ALL"
+              ? "filter by rebirth cycle that needs the droid"
+              : rbcMissingOnly
+                ? `not-yet-collected droids ${rbcFilter === "SMART" ? `RBC${activeCycle} (smart)` : `RBC${rbcFilter}`} needs`
+                : rbcFilter === "SMART"
+                  ? `= your current cycle (RBC${activeCycle})`
+                  : "toggle Missing to hide ones you own"}
           </span>
         </div>
       </section>

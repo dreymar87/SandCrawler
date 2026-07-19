@@ -270,6 +270,11 @@ export interface UiPrefs {
    * "SMART" auto-tracks the player's current active cycle.
    */
   rbcFilter?: RebirthCycle | "ALL" | "SMART";
+  /**
+   * When an RBC filter is active, restrict further to droids you haven't
+   * collected yet (the cycle needs them, but they're not in your Droidex).
+   */
+  rbcMissingOnly?: boolean;
   /** Set once the first-run intro has been dismissed. */
   hasOnboarded?: boolean;
   /** Hide rebirth rows below the player's current level. */

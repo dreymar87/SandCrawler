@@ -12,6 +12,7 @@ import { Stepper } from "../common/Stepper";
 import { TierPill } from "../common/TierPill";
 import { SearchInput } from "../common/SearchInput";
 import { DroidActionMenu } from "./DroidActionMenu";
+import { AddToBaseModal } from "./AddToBaseModal";
 import { ActiveBonuses } from "./ActiveBonuses";
 import type { CompanionSlot, DeployedDroid, LoungeFill, SellCandidate, SquadFill } from "../../lib/baseView";
 
@@ -38,6 +39,7 @@ export function BasePanel() {
   const [search, setSearch] = useState("");
   const [openMenu, setOpenMenu] = useState<OpenMenu | null>(null);
   const [sellConfirm, setSellConfirm] = useState<SellConfirm | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
 
   // Apply the search to the roster + sell list.
   const filteredSquads = useMemo(
@@ -131,7 +133,17 @@ export function BasePanel() {
 
       {/* My base — squad fill; tap a droid to act on it */}
       <section className="card p-4">
-        <h2 className="font-display font-bold text-base mb-3">My base</h2>
+        <div className="flex items-center gap-2 mb-3">
+          <h2 className="font-display font-bold text-base">My base</h2>
+          <span className="flex-1" />
+          <button
+            type="button"
+            className="font-mono text-[10px] uppercase tracking-wider text-holo border border-holo/50 rounded-md px-2 py-1 hover:bg-holo/10"
+            onClick={() => setShowAdd(true)}
+          >
+            + Add
+          </button>
+        </div>
         <div className="space-y-2.5">
           {filteredSquads.map((sq) => (
             <SquadFillCard
@@ -197,6 +209,8 @@ export function BasePanel() {
           ICONIC event droids are never listed.
         </p>
       </section>
+
+      {showAdd ? <AddToBaseModal onClose={() => setShowAdd(false)} /> : null}
 
       {openMenu ? (
         <DroidActionMenu

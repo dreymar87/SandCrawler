@@ -32,9 +32,12 @@ export function DroidActionMenu({
   const moveDeployed = useAppStore((s) => s.moveDeployed);
   const removeDeployed = useAppStore((s) => s.removeDeployed);
   const upgradeDeployed = useAppStore((s) => s.upgradeDeployed);
+  const moveToCompanion = useAppStore((s) => s.moveToCompanion);
 
   // When "Upgrade" is tapped, reveal the redeploy chooser instead of acting immediately.
   const [choosingRedeploy, setChoosingRedeploy] = useState(false);
+  // When "Remove" is tapped, ask where the droid goes (lounge / companion / sold).
+  const [choosingRemove, setChoosingRemove] = useState(false);
 
   const tierIdx = (TIERS as readonly string[]).indexOf(droid.tier);
   const atTop = tierIdx < 0 || tierIdx >= TIERS.length - 1;
@@ -53,16 +56,19 @@ export function DroidActionMenu({
   };
 
   const doMove = (to: Slot) => {
-    moveDeployed(droid.name, droid.tier, slot, to);
+    // Companion is a single slot — route through the swap so any current
+    // companion is dropped out cleanly.
+    if (to === "companion") moveToCompanion(droid.name, droid.tier, slot);
+    else moveDeployed(droid.name, droid.tier, slot, to);
     haptic("light");
-    toast(`${droid.name} moved to ${SLOT_LABEL[to]}`);
+    toast(`${droid.name} moved to ${SLOT_LABEL[to]}${to === "companion" ? " (swap)" : ""}`);
     onClose();
   };
 
-  const doRemove = () => {
+  const doSell = () => {
     removeDeployed(droid.name, droid.tier, slot);
     haptic("light");
-    toast(`${droid.name} removed from ${SLOT_LABEL[slot]}`);
+    toast(`${droid.name} sold / off base`);
     onClose();
   };
 
@@ -93,7 +99,40 @@ export function DroidActionMenu({
           {multiple ? ` · you have ×${droid.count} here — actions affect 1 copy` : ""}.
         </p>
 
-        {choosingRedeploy && nextTier ? (
+        {choosingRemove ? (
+          <div>
+            <p className="text-[13px] text-ink mb-3">
+              Take {droid.name} out of {SLOT_LABEL[slot]} — where to?
+            </p>
+            <div className="space-y-2 mb-2">
+              {ALL_SLOTS.filter((s) => s !== slot).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="btn btn-ghost btn-block"
+                  onClick={() => doMove(s)}
+                >
+                  Move to {SLOT_LABEL[s]}
+                  {s === "companion" ? " (swap)" : ""}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="btn btn-block border border-danger/50 text-danger hover:bg-danger/10"
+                onClick={doSell}
+              >
+                Sold / off base
+              </button>
+            </div>
+            <button
+              type="button"
+              className="font-mono text-[10.5px] uppercase tracking-wider text-muted-alt"
+              onClick={() => setChoosingRemove(false)}
+            >
+              ← Back
+            </button>
+          </div>
+        ) : choosingRedeploy && nextTier ? (
           <div>
             <p className="text-[13px] text-ink mb-3">
               Upgraded to <b className="text-tier-galactic">{nextTier}</b>. Put it back as:
@@ -163,13 +202,13 @@ export function DroidActionMenu({
               </div>
             </div>
 
-            {/* Remove */}
+            {/* Remove → asks where it goes (lounge / companion / sold) */}
             <button
               type="button"
               className="w-full rounded-[10px] border border-danger/40 text-danger px-3 py-2.5 text-[13px] hover:bg-danger/10"
-              onClick={doRemove}
+              onClick={() => setChoosingRemove(true)}
             >
-              Remove from {SLOT_LABEL[slot]}
+              Remove from {SLOT_LABEL[slot]}…
             </button>
           </div>
         )}

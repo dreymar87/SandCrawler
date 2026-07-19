@@ -49,6 +49,14 @@ interface Actions {
    * No-op at the top tier.
    */
   upgradeDeployed(name: string, fromTier: Tier, from: Slot, to: Slot | null): void;
+  /** Add 1 copy of (name, tier) to a slot, creating the card if needed. */
+  addDeployed(name: string, tier: Tier, slot: Slot): void;
+  /**
+   * Install (name, tier) as the single Companion, swapping out whoever is
+   * currently set (their card stays owned). `from` decrements that slot;
+   * `null` just marks it companion (used by "add").
+   */
+  moveToCompanion(name: string, tier: Tier, from: Slot | null): void;
 
   // ── Profile ───────────────────────────────────────────────────────────
   setBaseName(name: string): void;
@@ -204,6 +212,38 @@ export const useAppStore = create<AppStore>()(
         } else {
           get().setCardCounts(name, nextTier, { owned: true });
         }
+      },
+
+      addDeployed(name, tier, slot) {
+        // Companion adds route through the swap path so the single slot stays single.
+        if (slot === "companion") {
+          get().moveToCompanion(name, tier, null);
+          return;
+        }
+        const card = get().cards.find(
+          (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase() && c.tier === tier,
+        );
+        get().setCardCounts(name, tier, { [slot]: (card?.[slot] ?? 0) + 1 });
+      },
+
+      moveToCompanion(name, tier, from) {
+        const key = name.trim().toLowerCase();
+        const match = (c: CollectionCard) => c.name.trim().toLowerCase() === key && c.tier === tier;
+        const card = get().cards.find(match);
+        // Guard before mutating anything (no-op if the source slot is empty).
+        if (from && (!card || card[from] <= 0)) return;
+        // Clear the (single) existing companion — swap it out.
+        for (const c of get().cards) {
+          if (c.companion > 0 && !match(c)) {
+            get().setCardCounts(c.name, c.tier, { companion: 0 });
+          }
+        }
+        const cur = get().cards.find(match);
+        get().setCardCounts(
+          name,
+          tier,
+          from ? { [from]: (cur?.[from] ?? 0) - 1, companion: 1 } : { companion: 1 },
+        );
       },
 
       addCustomDroid(def) {

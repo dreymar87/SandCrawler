@@ -215,6 +215,38 @@ describe("deployed-droid actions", () => {
     // No higher tier was created.
     expect(useAppStore.getState().cards).toHaveLength(1);
   });
+
+  it("addDeployed adds one copy to a slot, creating the card + owned", () => {
+    seedState({ cards: [] });
+    useAppStore.getState().addDeployed("MOUSE", "GOLD", "working");
+    expect(find("MOUSE", "GOLD")!.working).toBe(1);
+    expect(find("MOUSE", "GOLD")!.owned).toBe(true);
+    useAppStore.getState().addDeployed("MOUSE", "GOLD", "working");
+    expect(find("MOUSE", "GOLD")!.working).toBe(2);
+  });
+
+  it("moveToCompanion installs a single companion, swapping out the previous one", () => {
+    seedState({
+      cards: [
+        { name: "MOUSE", tier: "DEFAULT", owned: true, working: 0, lounge: 0, companion: 1 },
+        { name: "R2", tier: "DEFAULT", owned: true, working: 1, lounge: 0, companion: 0 },
+      ],
+    });
+    useAppStore.getState().moveToCompanion("R2", "DEFAULT", "working");
+    expect(find("R2", "DEFAULT")!.companion).toBe(1);
+    expect(find("R2", "DEFAULT")!.working).toBe(0);
+    expect(find("MOUSE", "DEFAULT")!.companion).toBe(0); // swapped out, stays owned
+    expect(find("MOUSE", "DEFAULT")!.owned).toBe(true);
+  });
+
+  it("addDeployed to companion routes through the swap (single slot preserved)", () => {
+    seedState({
+      cards: [{ name: "MOUSE", tier: "DEFAULT", owned: true, working: 0, lounge: 0, companion: 1 }],
+    });
+    useAppStore.getState().addDeployed("R2", "DEFAULT", "companion");
+    expect(find("R2", "DEFAULT")!.companion).toBe(1);
+    expect(find("MOUSE", "DEFAULT")!.companion).toBe(0);
+  });
 });
 
 describe("setLoungeCreditSlots", () => {
