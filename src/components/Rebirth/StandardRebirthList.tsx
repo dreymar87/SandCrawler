@@ -1,19 +1,20 @@
+import { useState } from "react";
 import { SUPER_REBIRTH_BONUSES } from "../../data/superRebirthBonuses.seed";
 import { useStandardRebirths, useStandardReadiness, useActiveCycle, useNextUnlock } from "../../store/selectors";
-import { rosterCovers } from "../../lib/readiness";
 import { srbBonusAt } from "../../lib/novaCrystals";
 import { cycleLabel } from "../../lib/rebirthCycles";
 import { useAppStore } from "../../store/useAppStore";
 import { GapList } from "../NextUnlock/GapList";
 import { ProgressBar } from "../common/ProgressBar";
-import { TierPill } from "../common/TierPill";
 import { CycleStrategySection } from "./CycleStrategySection";
+import { RebirthDetailModal } from "./RebirthDetailModal";
 import type { StandardRebirth } from "../../types";
 
 /**
- * The Rebirths tab: shows the 23 levels of the active cycle. The active
- * cycle derives from the player's Super Rebirth count (or a manual
- * override set on the Profile tab).
+ * The Rebirths tab: a compact grid of the active cycle's rebirth levels.
+ * Tapping a level opens a detail window (RebirthDetailModal). The active
+ * cycle derives from the player's Super Rebirth count (or a manual override
+ * set on the Profile tab).
  */
 export function StandardRebirthList() {
   const fullList = useStandardRebirths();
@@ -24,14 +25,21 @@ export function StandardRebirthList() {
   const setCredits = useAppStore((s) => s.setCreditsCurrent);
   const currentLevel = useAppStore((s) => s.profile.standardRebirth);
   const hidePastRebirths = useAppStore((s) => s.ui.hidePastRebirths ?? false);
-  const compactRebirths = useAppStore((s) => s.ui.compactRebirths ?? false);
   const setUiPref = useAppStore((s) => s.setUiPref);
+
+  const [openLevel, setOpenLevel] = useState<number | null>(null);
 
   // Optionally hide RBs strictly below the current level (keeps current).
   const list = hidePastRebirths
     ? fullList.filter((rb) => rb.level >= currentLevel)
     : fullList;
   const hiddenCount = fullList.length - list.length;
+
+  // Resolve the open level + its neighbours (for prev/next).
+  const openIdx = openLevel != null ? list.findIndex((r) => r.level === openLevel) : -1;
+  const openRb = openIdx >= 0 ? list[openIdx]! : null;
+  const prevRb = openIdx > 0 ? list[openIdx - 1] : undefined;
+  const nextRb = openIdx >= 0 && openIdx < list.length - 1 ? list[openIdx + 1] : undefined;
 
   return (
     <div>
@@ -76,22 +84,86 @@ export function StandardRebirthList() {
       {list.length === 0 ? (
         <EmptyState />
       ) : (
-        list.map((rb) => (
-          <RebirthRow
-            key={`${rb.cycle}-${rb.level}`}
-            rb={rb}
-            cards={cards}
-            credits={credits}
-            isReady={ready.get(rb.level) ?? false}
-            isCurrent={rb.level === currentLevel}
-            isPast={rb.level <= currentLevel}
-            compact={compactRebirths}
-          />
-        ))
+        <RebirthGrid list={list} ready={ready} currentLevel={currentLevel} onOpen={setOpenLevel} />
       )}
 
       <SrbBonusesSection currentLevel={currentLevel} />
+
+      {openRb ? (
+        <RebirthDetailModal
+          rb={openRb}
+          cards={cards}
+          credits={credits}
+          isReady={ready.get(openRb.level) ?? false}
+          isCurrent={openRb.level === currentLevel}
+          onClose={() => setOpenLevel(null)}
+          onPrev={prevRb ? () => setOpenLevel(prevRb.level) : undefined}
+          onNext={nextRb ? () => setOpenLevel(nextRb.level) : undefined}
+        />
+      ) : null}
     </div>
+  );
+}
+
+/** Compact grid of the cycle's rebirth levels — tap a chip to open its detail. */
+function RebirthGrid({
+  list,
+  ready,
+  currentLevel,
+  onOpen,
+}: {
+  list: StandardRebirth[];
+  ready: Map<number, boolean>;
+  currentLevel: number;
+  onOpen: (level: number) => void;
+}) {
+  return (
+    <section className="card p-4 mb-3">
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="font-display font-bold text-base">Rebirth levels</h2>
+        <span className="flex-1" />
+        <span className="font-mono text-[9px] uppercase tracking-wider flex items-center gap-2.5">
+          <span className="text-ok">ready</span>
+          <span className="text-holo">here</span>
+          <span className="text-muted-alt">past</span>
+        </span>
+      </div>
+      <div className="grid grid-cols-5 gap-1.5">
+        {list.map((rb) => {
+          const isReady = ready.get(rb.level) ?? false;
+          const isCurrent = rb.level === currentLevel;
+          const isPast = rb.level < currentLevel;
+          const hasSrb = !!srbBonusAt(rb.level);
+          const state = isCurrent ? "current" : isReady ? "ready" : isPast ? "past" : "upcoming";
+          const cls = isCurrent
+            ? "border-holo bg-holo/10 text-holo ring-2 ring-holo/40"
+            : isReady
+              ? "border-ok bg-ok/10 text-ok"
+              : isPast
+                ? "border-line text-muted opacity-60"
+                : "border-line-alt text-sun";
+          return (
+            <button
+              key={`${rb.cycle}-${rb.level}`}
+              type="button"
+              onClick={() => onOpen(rb.level)}
+              aria-label={`Rebirth ${rb.level} — ${state}`}
+              title={`Rebirth ${rb.level}${rb.credits ? ` · ${rb.credits}` : ""} — ${state}`}
+              className={`relative aspect-square rounded-md border-2 grid place-items-center font-display font-bold text-[15px] transition hover:border-holo/60 ${cls}`}
+            >
+              {rb.level}
+              {hasSrb ? (
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-sun" aria-hidden />
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+      <p className="font-mono text-[10px] text-muted-alt mt-3 leading-snug">
+        Tap a level for its droid requirements, credit cost, sell guidance, and Super Rebirth bonus.
+        <span className="text-sun"> ●</span> marks levels with a Super Rebirth bonus (RB12+).
+      </p>
+    </section>
   );
 }
 
@@ -131,14 +203,10 @@ function SrbBonusesSection({ currentLevel }: { currentLevel: number }) {
                   return (
                     <tr
                       key={b.rbLevel}
-                      className={`border-t border-line ${
-                        isCurrent ? "bg-holo/10 text-holo" : ""
-                      }`}
+                      className={`border-t border-line ${isCurrent ? "bg-holo/10 text-holo" : ""}`}
                     >
                       <td className="px-3 py-1.5 font-display font-bold">RB{b.rbLevel}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">
-                        {b.crystals}
-                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono">{b.crystals}</td>
                       <td className="px-2 py-1.5 text-right font-mono">
                         {Math.round(b.creditMult * 100)}%
                       </td>
@@ -163,128 +231,6 @@ function SrbBonusesSection({ currentLevel }: { currentLevel: number }) {
         </div>
       </details>
     </section>
-  );
-}
-
-function RebirthRow({
-  rb,
-  cards,
-  credits,
-  isReady,
-  isCurrent,
-  isPast,
-  compact = false,
-}: {
-  rb: StandardRebirth;
-  cards: ReturnType<typeof useAppStore.getState>["cards"];
-  credits: string;
-  isReady: boolean;
-  isCurrent: boolean;
-  isPast: boolean;
-  compact?: boolean;
-}) {
-  const sell = rb.sellList;
-  const dnsell = sell.includes("DO_NOT_SELL");
-  const slot = rb.slotUnlock;
-  const srb = srbBonusAt(rb.level);
-  return (
-    <div
-      className={`card mb-3 ${isReady ? "card-ready" : ""} ${isPast && !isCurrent ? "opacity-60" : ""}`}
-    >
-      <header
-        className={`flex items-center gap-2.5 px-4 border-b border-line ${
-          compact ? "py-1.5" : "py-3"
-        }`}
-      >
-        <span
-          className={`font-display font-bold ${compact ? "text-[13.5px]" : "text-[15px]"} ${
-            isReady ? "text-ok" : isCurrent ? "text-holo" : "text-sun"
-          }`}
-        >
-          Rebirth {rb.level}
-        </span>
-        {isCurrent ? (
-          <span className="font-mono font-bold text-[9px] tracking-wider uppercase px-2 py-0.5 rounded-md bg-holo text-[#04222B]">
-            You're here
-          </span>
-        ) : null}
-        {isReady && !isCurrent ? (
-          <span className="font-mono font-bold text-[9px] tracking-wider uppercase px-2 py-0.5 rounded-md bg-ok text-[#04241a]">
-            Ready
-          </span>
-        ) : null}
-        <span className="flex-1" />
-        <span
-          className={`font-display font-bold text-sun ${compact ? "text-[13.5px]" : "text-[15px]"}`}
-        >
-          {rb.credits || "—"}
-        </span>
-      </header>
-      <div className={compact ? "px-4 py-1.5" : "px-4 py-3"}>
-        {compact ? null : (
-          <div className="mb-3">
-            <ProgressBar required={rb.credits || "0"} current={credits} />
-          </div>
-        )}
-        {compact ? null : <div className="section-label mb-2">Droids needed</div>}
-        {rb.needs.map((req, i) => {
-          const cov = rosterCovers(req, cards);
-          return (
-            <div
-              key={`${req.name}-${i}`}
-              className={`flex items-center gap-2.5 px-3 rounded-[10px] bg-panel-alt border border-line mb-1.5 last:mb-0 ${
-                compact ? "py-1" : "py-2"
-              }`}
-            >
-              <span className="flex-1 truncate">{req.name}</span>
-              <TierPill tier={req.tier} />
-              <span className={`status-tag ${cov ? "ok" : "miss"}`}>
-                {cov ? "In base" : "Need it"}
-              </span>
-            </div>
-          );
-        })}
-
-        {/* Per-rebirth reward: slot unlock */}
-        {slot ? (
-          <div className={`flex flex-wrap gap-1.5 ${compact ? "mt-1.5" : "mt-3"}`}>
-            <RewardChip label="Slot" value={slot} />
-          </div>
-        ) : null}
-
-        {/* Super Rebirth bonus hint — what you'd earn if you SR'd at this level. Hidden in compact mode. */}
-        {srb && !compact ? (
-          <div className="mt-3 pl-3 py-2 border-l-2 border-sun/40 bg-sun/5 rounded-r-md text-[12px] text-muted">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-sun">
-              SRB bonus here:
-            </span>{" "}
-            {srb.crystals} crystals · {Math.round(srb.creditMult * 100)}% credit mult ·{" "}
-            {Math.round(srb.xpMult * 100)}% XP mult
-          </div>
-        ) : null}
-
-        {/* Sell guidance */}
-        {sell.length > 0 ? (
-          <div
-            className={`mt-3 pl-3 py-2 border-l-2 rounded-r-md text-[12px] whitespace-pre-wrap ${
-              dnsell
-                ? "border-warn bg-warn/5 text-warn"
-                : "border-holo-dim bg-panel-alt text-muted"
-            }`}
-          >
-            {dnsell
-              ? "Do not sell anything yet — droids are needed for upcoming rebirths."
-              : `Safe to sell: ${sell.join(", ")}`}
-          </div>
-        ) : null}
-
-        {rb.notes ? (
-          <div className="mt-3 pl-3 py-2 border-l-2 border-holo-dim bg-panel-alt rounded-r-md text-[13px] text-muted whitespace-pre-wrap">
-            {rb.notes}
-          </div>
-        ) : null}
-      </div>
-    </div>
   );
 }
 
@@ -327,14 +273,6 @@ function ClosestSection({ credits }: { credits: string }) {
         </div>
       ))}
     </section>
-  );
-}
-
-function RewardChip({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-md bg-panel-alt border border-line text-muted">
-      {label} <b className="text-ink font-bold">{value}</b>
-    </span>
   );
 }
 

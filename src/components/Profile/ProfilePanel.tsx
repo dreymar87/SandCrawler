@@ -41,7 +41,6 @@ export function ProfilePanel() {
   const resetOnboarding = useAppStore((s) => s.resetOnboarding);
   const setUiPref = useAppStore((s) => s.setUiPref);
   const hidePastRebirths = useAppStore((s) => s.ui.hidePastRebirths ?? false);
-  const compactRebirths = useAppStore((s) => s.ui.compactRebirths ?? false);
   const hapticsEnabled = useAppStore((s) => s.ui.hapticsEnabled ?? true);
 
   const [confirmingSrb, setConfirmingSrb] = useState(false);
@@ -321,15 +320,9 @@ export function ProfilePanel() {
           <div className="mt-3 space-y-3">
             <ToggleRow
               label="Hide past rebirths"
-              hint="Skip rebirth rows below your current level"
+              hint="Hide rebirth levels below your current one"
               value={hidePastRebirths}
               onChange={(v) => setUiPref("hidePastRebirths", v)}
-            />
-            <ToggleRow
-              label="Compact rebirths"
-              hint="Denser rebirth list — hide credit bar & SRB hint"
-              value={compactRebirths}
-              onChange={(v) => setUiPref("compactRebirths", v)}
             />
             <ToggleRow
               label="Haptic feedback"
