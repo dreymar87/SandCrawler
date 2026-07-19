@@ -1,18 +1,31 @@
 import { createPortal } from "react-dom";
 import { TIERS } from "../../constants";
-import { cycleLabel } from "../../lib/rebirthCycles";
 import { droidCycles } from "../../lib/droidCycles";
 import { tierStatsFor } from "../../lib/droidStats";
 import { TierPill } from "../common/TierPill";
-import type { DroidDef } from "../../types";
+import type { DroidDef, RebirthCycle, Tier } from "../../types";
 
 /**
  * Read-only droid reference card, opened by tapping a droid's name in the
  * Droidex. Shows buy cost / sell value / credit mining-per-second by tier,
  * plus which rebirth cycle(s) require the droid. Portaled to <body> so the
  * fixed overlay escapes the Droidex row's `view-enter` transform.
+ *
+ * Personalized: tiers the player has deployed (working/lounge) get a green
+ * row, and the "Needed in" cycle matching the current cycle is highlighted.
  */
-export function DroidDetailModal({ def, onClose }: { def: DroidDef; onClose: () => void }) {
+export function DroidDetailModal({
+  def,
+  deployed,
+  activeCycle,
+  onClose,
+}: {
+  def: DroidDef;
+  /** Per-tier deployment (working/lounge) for tiers currently on the base. */
+  deployed?: Partial<Record<Tier, { working: number; lounge: number }>>;
+  activeCycle?: RebirthCycle;
+  onClose: () => void;
+}) {
   const stats = tierStatsFor(def);
   const rows = TIERS.map((tier) => ({ tier, stat: stats?.[tier] })).filter((r) => r.stat);
   const cycles = droidCycles(def.canonical);
@@ -60,21 +73,34 @@ export function DroidDetailModal({ def, onClose }: { def: DroidDef; onClose: () 
           </div>
         ) : null}
 
-        {/* Needed in which rebirth cycles */}
-        <div className="flex items-baseline gap-2 mb-3">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-alt">
+        {/* Needed in which rebirth cycles — the current cycle is highlighted. */}
+        <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-alt mr-1">
             Needed in
           </span>
           {cycles.length === 0 ? (
             <span className="font-mono text-[11px] text-muted-alt">no rebirth cycle</span>
           ) : (
-            <span className="font-mono text-[11px] text-holo">
-              {cycles.map((c) => cycleLabel(c).replace(/\s*\(.*\)$/, "")).join(" · ")}
-            </span>
+            cycles.map((c) => {
+              const isNow = c === activeCycle;
+              return (
+                <span
+                  key={c}
+                  className={`font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                    isNow
+                      ? "bg-holo text-[#04222B] font-bold"
+                      : "border border-holo/40 text-holo"
+                  }`}
+                >
+                  RBC{c}
+                  {isNow ? " · now" : ""}
+                </span>
+              );
+            })
           )}
         </div>
 
-        {/* Per-tier economy table */}
+        {/* Per-tier economy table — green rows = deployed on your base. */}
         {rows.length === 0 ? (
           <p className="text-[13px] text-muted">No economy stats recorded for this droid.</p>
         ) : (
@@ -85,28 +111,43 @@ export function DroidDetailModal({ def, onClose }: { def: DroidDef; onClose: () 
               <span className="text-right">Sell</span>
               <span className="text-right">Mining/s</span>
             </div>
-            {rows.map(({ tier, stat }) => (
-              <div
-                key={tier}
-                className="grid grid-cols-[3.2rem_1fr_1fr_1fr] gap-x-2 items-center px-3 py-1.5 border-t border-line"
-              >
-                <TierPill tier={tier} />
-                <span className="text-right font-mono text-[11px] tabular-nums">
-                  {stat!.cost ?? "—"}
-                </span>
-                <span className="text-right font-mono text-[11px] tabular-nums text-sun">
-                  {stat!.value ?? "—"}
-                </span>
-                <span className="text-right font-mono text-[11px] tabular-nums text-holo">
-                  {stat!.income}
-                </span>
-              </div>
-            ))}
+            {rows.map(({ tier, stat }) => {
+              const dep = deployed?.[tier];
+              return (
+                <div
+                  key={tier}
+                  className={`grid grid-cols-[3.2rem_1fr_1fr_1fr] gap-x-2 items-center px-3 py-1.5 border-t border-line ${
+                    dep ? "bg-ok/10 border-l-2 border-l-ok/70" : ""
+                  }`}
+                >
+                  <span className="flex items-center gap-1">
+                    <TierPill tier={tier} />
+                    {dep ? (
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-ok shrink-0"
+                        aria-hidden
+                        title={`On base: ${dep.working} working · ${dep.lounge} lounge`}
+                      />
+                    ) : null}
+                  </span>
+                  <span className="text-right font-mono text-[11px] tabular-nums">
+                    {stat!.cost ?? "—"}
+                  </span>
+                  <span className="text-right font-mono text-[11px] tabular-nums text-sun">
+                    {stat!.value ?? "—"}
+                  </span>
+                  <span className="text-right font-mono text-[11px] tabular-nums text-holo">
+                    {stat!.income}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
         <p className="font-mono text-[10px] text-muted-alt mt-3 leading-snug">
           Buy = upgrade cost at that tier · Sell = its value · Mining/s = credits per second
-          (Working). "%/s" = a percentage income booster.
+          (Working). <span className="text-ok">Green</span> = on your base. "%/s" = a percentage
+          income booster.
         </p>
       </div>
     </div>,

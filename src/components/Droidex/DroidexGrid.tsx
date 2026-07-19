@@ -69,7 +69,10 @@ export function DroidexGrid() {
         if (strategyFilter === "KEEP" && safe) return false;
         if (strategyFilter === "SELL" && !safe) return false;
       }
-      if (rbcFilter !== "ALL" && !droidCycles(d.canonical).includes(rbcFilter)) return false;
+      // "SMART" resolves to the player's current active cycle.
+      const effectiveRbc =
+        rbcFilter === "ALL" ? null : rbcFilter === "SMART" ? activeCycle : rbcFilter;
+      if (effectiveRbc !== null && !droidCycles(d.canonical).includes(effectiveRbc)) return false;
       return true;
     });
   }, [dict, cardIndex, search, rarityFilter, classFilter, collectedFilter, strategyFilter, rbcFilter, activeCycle, currentLevel]);
@@ -149,14 +152,19 @@ export function DroidexGrid() {
         <div className="flex flex-wrap gap-x-3 gap-y-1.5 items-center">
           <FilterRow
             label="RBC"
-            value={rbcFilter === "ALL" ? "ALL" : String(rbcFilter)}
-            options={["ALL", "1", "2", "3", "4"] as const}
+            value={rbcFilter === "ALL" ? "ALL" : rbcFilter === "SMART" ? "SMART" : String(rbcFilter)}
+            options={["ALL", "SMART", "1", "2", "3", "4"] as const}
             onChange={(v) =>
-              setUiPref("rbcFilter", v === "ALL" ? "ALL" : (Number(v) as RebirthCycle))
+              setUiPref(
+                "rbcFilter",
+                v === "ALL" ? "ALL" : v === "SMART" ? "SMART" : (Number(v) as RebirthCycle),
+              )
             }
           />
           <span className="font-mono text-[9.5px] text-muted-alt">
-            filter by rebirth cycle that needs the droid
+            {rbcFilter === "SMART"
+              ? `= your current cycle (RBC${activeCycle})`
+              : "filter by rebirth cycle that needs the droid"}
           </span>
         </div>
       </section>
@@ -208,9 +216,23 @@ export function DroidexGrid() {
       {openDetail
         ? (() => {
             const detailDef = dict.find((d) => d.canonical === openDetail);
-            return detailDef ? (
-              <DroidDetailModal def={detailDef} onClose={() => setOpenDetail(null)} />
-            ) : null;
+            if (!detailDef) return null;
+            // Which tiers of this droid are on the base (working / lounge).
+            const deployed: Partial<Record<Tier, { working: number; lounge: number }>> = {};
+            for (const t of TIERS) {
+              const c = cardIndex.get(cardKey(detailDef.canonical, t));
+              if (c && (c.working > 0 || c.lounge > 0)) {
+                deployed[t] = { working: c.working, lounge: c.lounge };
+              }
+            }
+            return (
+              <DroidDetailModal
+                def={detailDef}
+                deployed={deployed}
+                activeCycle={activeCycle}
+                onClose={() => setOpenDetail(null)}
+              />
+            );
           })()
         : null}
     </div>

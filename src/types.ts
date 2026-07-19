@@ -265,8 +265,11 @@ export interface UiPrefs {
    * the active cycle. SELL: droids safe to sell now. ALL: no filter.
    */
   strategyFilter?: "ALL" | "KEEP" | "SELL";
-  /** Droidex rebirth-cycle filter: show only droids some RB in cycle N needs. */
-  rbcFilter?: RebirthCycle | "ALL";
+  /**
+   * Droidex rebirth-cycle filter: show only droids some RB in cycle N needs.
+   * "SMART" auto-tracks the player's current active cycle.
+   */
+  rbcFilter?: RebirthCycle | "ALL" | "SMART";
   /** Set once the first-run intro has been dismissed. */
   hasOnboarded?: boolean;
   /** Hide rebirth rows below the player's current level. */

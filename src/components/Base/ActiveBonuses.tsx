@@ -9,6 +9,13 @@ import {
 } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
 
+/** Nova upgrade trees, in Shop order — column headers for the bonuses grid. */
+const NOVA_TREES = [
+  { key: "FEATURED", label: "Featured" },
+  { key: "CORE", label: "Core" },
+  { key: "WORKSHOP", label: "Workshop" },
+] as const;
+
 /**
  * One place for "what bonuses do I have right now" — production, the
  * companion buff, every owned Nova-shop upgrade, and the Super Rebirth
@@ -23,7 +30,7 @@ export function ActiveBonuses() {
 
   const ownedUpgrades = useMemo(
     () =>
-      NOVA_UPGRADES.map((u) => ({ name: u.name, level: novaLevels.get(u.id) ?? 0 }))
+      NOVA_UPGRADES.map((u) => ({ name: u.name, tree: u.tree, level: novaLevels.get(u.id) ?? 0 }))
         .filter((u) => u.level > 0)
         .sort((a, b) => a.name.localeCompare(b.name)),
     [novaLevels],
@@ -74,7 +81,7 @@ export function ActiveBonuses() {
             )}
           </BonusRow>
 
-          {/* Nova upgrades owned */}
+          {/* Nova upgrades owned — grouped into the Shop's three trees. */}
           <div>
             <div className="font-mono text-[10px] uppercase tracking-wider text-muted-alt mb-1.5">
               Nova upgrades
@@ -84,16 +91,36 @@ export function ActiveBonuses() {
                 None yet — buy some on the Shop tab.
               </p>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {ownedUpgrades.map((u) => (
-                  <span
-                    key={u.name}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-line bg-panel-alt px-2 py-1"
-                  >
-                    <span className="font-mono text-[10.5px]">{u.name}</span>
-                    <span className="font-mono text-[10px] text-holo font-bold">L{u.level}</span>
-                  </span>
-                ))}
+              <div className="grid grid-cols-3 gap-2">
+                {NOVA_TREES.map(({ key, label }) => {
+                  const items = ownedUpgrades.filter((u) => u.tree === key);
+                  return (
+                    <div
+                      key={key}
+                      className="rounded-md border border-line bg-panel-alt/40 overflow-hidden"
+                    >
+                      <div className="px-2 py-1 bg-panel-alt border-b border-line font-mono text-[9px] uppercase tracking-wider text-muted-alt">
+                        {label}
+                      </div>
+                      {items.length === 0 ? (
+                        <p className="px-2 py-1.5 font-mono text-[10px] text-muted-alt">—</p>
+                      ) : (
+                        <ul className="divide-y divide-line/50">
+                          {items.map((u) => (
+                            <li key={u.name} className="flex items-baseline gap-1 px-2 py-1">
+                              <span className="flex-1 min-w-0 font-mono text-[10px] leading-tight break-words">
+                                {u.name}
+                              </span>
+                              <span className="font-mono text-[10px] text-holo font-bold shrink-0">
+                                L{u.level}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
