@@ -549,6 +549,8 @@ function ChipBreakdownModal({ entry, onClose }: { entry: EnrichedEntry; onClose:
                 // steps[i-1] is the cost to reach UPGRADE_TIERS[i] from the prior tier.
                 const stepCost = i === 0 ? null : row.steps[i - 1];
                 const beyondTarget = i > targetRank;
+                // RB levels in this cycle that require the droid at exactly this tier.
+                const reqLevels = entry.tierLevels[tier];
                 return (
                   <li
                     key={tier}
@@ -557,11 +559,18 @@ function ChipBreakdownModal({ entry, onClose }: { entry: EnrichedEntry; onClose:
                     }`}
                   >
                     <TierPill tier={tier} />
-                    <span className={`font-display text-[13px] ${isOwned ? "text-ok font-bold" : ""}`}>
-                      {tier}
-                      {isOwned ? " · you're here" : ""}
-                      {isTarget && !isOwned ? " · target" : ""}
-                    </span>
+                    <div className="min-w-0">
+                      <span className={`font-display text-[13px] ${isOwned ? "text-ok font-bold" : ""}`}>
+                        {tier}
+                        {isOwned ? " · you're here" : ""}
+                        {isTarget && !isOwned ? " · target" : ""}
+                      </span>
+                      {reqLevels && reqLevels.length > 0 ? (
+                        <div className="font-mono text-[9.5px] text-sun leading-tight">
+                          needed: {reqLevels.map((n) => `RB${n}`).join(", ")}
+                        </div>
+                      ) : null}
+                    </div>
                     <span className="flex-1" />
                     <span className="font-mono text-[11.5px] tabular-nums text-muted-alt">
                       {i === 0 ? "—" : stepCost == null ? "?" : `+${formatChipCost(stepCost)}`}

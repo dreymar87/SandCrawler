@@ -5,6 +5,7 @@ import { idbStorage } from "../lib/idbStorage";
 import { defaultProfile, emptyState, migrate } from "../lib/migrate";
 import { srbBonusAt } from "../lib/novaCrystals";
 import { normalizeTier } from "../lib/tiers";
+import { TIERS } from "../constants";
 import type {
   CollectionCard,
   CosmeticState,
@@ -23,6 +24,9 @@ function bootstrapState(): PersistedState {
   return emptyState();
 }
 
+/** A deployment slot for a droid card. */
+export type Slot = "working" | "lounge" | "companion";
+
 interface Actions {
   // ── Droidex collection ────────────────────────────────────────────────
   setCardCounts(
@@ -33,6 +37,18 @@ interface Actions {
   /** Bump this card's Working count by 1 (used by "I have it" shortcuts). */
   bumpWorking(name: string, tier: Tier): void;
   addCustomDroid(def: DroidDef): void;
+
+  // ── Base-tab deployment actions (operate on exactly ONE copy) ─────────
+  /** Move 1 copy of (name, tier) from slot `from` to slot `to`. */
+  moveDeployed(name: string, tier: Tier, from: Slot, to: Slot): void;
+  /** Remove 1 copy of (name, tier) from slot `from` (card stays owned). */
+  removeDeployed(name: string, tier: Tier, from: Slot): void;
+  /**
+   * Upgrade 1 copy of (name, fromTier) in slot `from` to the next tier,
+   * redeployed into slot `to` — or `null` to leave it out (owned only).
+   * No-op at the top tier.
+   */
+  upgradeDeployed(name: string, fromTier: Tier, from: Slot, to: Slot | null): void;
 
   // ── Profile ───────────────────────────────────────────────────────────
   setBaseName(name: string): void;
@@ -144,6 +160,48 @@ export const useAppStore = create<AppStore>()(
           }
           return { cards: list };
         });
+      },
+
+      moveDeployed(name, tier, from, to) {
+        if (from === to) return;
+        const card = get().cards.find(
+          (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase() && c.tier === tier,
+        );
+        if (!card || card[from] <= 0) return;
+        get().setCardCounts(name, tier, {
+          [from]: card[from] - 1,
+          [to]: (card[to] ?? 0) + 1,
+        });
+      },
+
+      removeDeployed(name, tier, from) {
+        const card = get().cards.find(
+          (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase() && c.tier === tier,
+        );
+        if (!card || card[from] <= 0) return;
+        get().setCardCounts(name, tier, { [from]: card[from] - 1 });
+      },
+
+      upgradeDeployed(name, fromTier, from, to) {
+        const s = get();
+        const card = s.cards.find(
+          (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase() && c.tier === fromTier,
+        );
+        if (!card || card[from] <= 0) return;
+        const fromIdx = (TIERS as readonly string[]).indexOf(fromTier);
+        if (fromIdx < 0 || fromIdx >= TIERS.length - 1) return; // already top tier
+        const nextTier = TIERS[fromIdx + 1]!;
+        // Remove 1 from the old tier's slot.
+        s.setCardCounts(name, fromTier, { [from]: card[from] - 1 });
+        // Add 1 to the new tier — into a slot, or just mark owned ("leave out").
+        const nextCard = get().cards.find(
+          (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase() && c.tier === nextTier,
+        );
+        if (to) {
+          get().setCardCounts(name, nextTier, { [to]: (nextCard?.[to] ?? 0) + 1 });
+        } else {
+          get().setCardCounts(name, nextTier, { owned: true });
+        }
       },
 
       addCustomDroid(def) {

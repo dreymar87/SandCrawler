@@ -115,6 +115,84 @@ describe("performSuperRebirth", () => {
   });
 });
 
+describe("deployed-droid actions", () => {
+  beforeEach(() => useAppStore.getState().resetAll());
+
+  const find = (name: string, tier: CollectionCard["tier"]) =>
+    useAppStore.getState().cards.find((c) => c.name === name && c.tier === tier);
+
+  it("moveDeployed shifts exactly one copy between slots, same tier", () => {
+    seedState({
+      cards: [{ name: "MOUSE", tier: "GOLD", owned: true, working: 3, lounge: 0, companion: 0 }],
+    });
+    useAppStore.getState().moveDeployed("MOUSE", "GOLD", "working", "lounge");
+    const c = find("MOUSE", "GOLD")!;
+    expect(c.working).toBe(2);
+    expect(c.lounge).toBe(1);
+  });
+
+  it("moveDeployed is a no-op when the source slot is empty", () => {
+    seedState({
+      cards: [{ name: "MOUSE", tier: "GOLD", owned: true, working: 0, lounge: 1, companion: 0 }],
+    });
+    useAppStore.getState().moveDeployed("MOUSE", "GOLD", "working", "lounge");
+    const c = find("MOUSE", "GOLD")!;
+    expect(c.working).toBe(0);
+    expect(c.lounge).toBe(1);
+  });
+
+  it("removeDeployed decrements one copy from a slot, card stays owned", () => {
+    seedState({
+      cards: [{ name: "MOUSE", tier: "GOLD", owned: true, working: 2, lounge: 0, companion: 0 }],
+    });
+    useAppStore.getState().removeDeployed("MOUSE", "GOLD", "working");
+    const c = find("MOUSE", "GOLD")!;
+    expect(c.working).toBe(1);
+    expect(c.owned).toBe(true);
+  });
+
+  it("upgradeDeployed moves ONE copy up a tier and back into a chosen slot", () => {
+    seedState({
+      cards: [{ name: "MOUSE", tier: "GOLD", owned: true, working: 2, lounge: 0, companion: 0 }],
+    });
+    // Redeploy back into Working: GOLD working -1, DIAMOND working +1.
+    useAppStore.getState().upgradeDeployed("MOUSE", "GOLD", "working", "working");
+    expect(find("MOUSE", "GOLD")!.working).toBe(1);
+    expect(find("MOUSE", "DIAMOND")!.working).toBe(1);
+  });
+
+  it("upgradeDeployed can redeploy the upgraded copy to a different slot", () => {
+    seedState({
+      cards: [{ name: "MOUSE", tier: "GOLD", owned: true, working: 1, lounge: 0, companion: 0 }],
+    });
+    useAppStore.getState().upgradeDeployed("MOUSE", "GOLD", "working", "lounge");
+    expect(find("MOUSE", "GOLD")!.working).toBe(0);
+    expect(find("MOUSE", "DIAMOND")!.lounge).toBe(1);
+  });
+
+  it("upgradeDeployed with to=null (leave out) marks the higher tier owned only", () => {
+    seedState({
+      cards: [{ name: "MOUSE", tier: "GOLD", owned: true, working: 1, lounge: 0, companion: 0 }],
+    });
+    useAppStore.getState().upgradeDeployed("MOUSE", "GOLD", "working", null);
+    expect(find("MOUSE", "GOLD")!.working).toBe(0);
+    const diamond = find("MOUSE", "DIAMOND")!;
+    expect(diamond.owned).toBe(true);
+    expect(diamond.working).toBe(0);
+    expect(diamond.lounge).toBe(0);
+  });
+
+  it("upgradeDeployed is a no-op at the top tier (GALACTIC)", () => {
+    seedState({
+      cards: [{ name: "MOUSE", tier: "GALACTIC", owned: true, working: 1, lounge: 0, companion: 0 }],
+    });
+    useAppStore.getState().upgradeDeployed("MOUSE", "GALACTIC", "working", "working");
+    expect(find("MOUSE", "GALACTIC")!.working).toBe(1);
+    // No higher tier was created.
+    expect(useAppStore.getState().cards).toHaveLength(1);
+  });
+});
+
 describe("setLoungeCreditSlots", () => {
   beforeEach(() => useAppStore.getState().resetAll());
 

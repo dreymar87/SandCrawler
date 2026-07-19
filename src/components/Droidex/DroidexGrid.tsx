@@ -4,10 +4,12 @@ import { DROID_DICT } from "../../data/droids.seed";
 import { haptic } from "../../lib/native";
 import { isDroidSafeToSell } from "../../lib/cycleStrategy";
 import { companionBuffLabel } from "../../data/companionBuffs.seed";
+import { normalizeName } from "../../lib/normalize";
 import { useAppStore } from "../../store/useAppStore";
 import { useActiveCycle, useDroidexCompletion } from "../../store/selectors";
 import type { CollectionCard, DroidClass, DroidDef, Rarity, Tier } from "../../types";
 import { Stepper } from "../common/Stepper";
+import { SearchInput } from "../common/SearchInput";
 
 /**
  * The Droidex grid: every known droid × every tier as a tappable cell.
@@ -32,6 +34,7 @@ export function DroidexGrid() {
 
   // Which (droid, tier) cell is being edited. Only one open at a time.
   const [openCell, setOpenCell] = useState<{ droid: string; tier: Tier } | null>(null);
+  const [search, setSearch] = useState("");
 
   const dict = useMemo(() => [...DROID_DICT, ...customDroids], [customDroids]);
 
@@ -42,7 +45,13 @@ export function DroidexGrid() {
   }, [cards]);
 
   const rows = useMemo(() => {
+    const q = normalizeName(search);
     return dict.filter((d) => {
+      if (q) {
+        const nameHit = normalizeName(d.canonical).includes(q);
+        const aliasHit = (d.aliases ?? []).some((a) => normalizeName(a).includes(q));
+        if (!nameHit && !aliasHit) return false;
+      }
       if (rarityFilter !== "ALL" && d.rarity !== rarityFilter) return false;
       if (classFilter !== "ALL" && d.class !== classFilter) return false;
       if (collectedFilter !== "ALL") {
@@ -57,7 +66,7 @@ export function DroidexGrid() {
       }
       return true;
     });
-  }, [dict, cardIndex, rarityFilter, classFilter, collectedFilter, strategyFilter, activeCycle, currentLevel]);
+  }, [dict, cardIndex, search, rarityFilter, classFilter, collectedFilter, strategyFilter, activeCycle, currentLevel]);
 
   return (
     <div>
@@ -85,6 +94,7 @@ export function DroidexGrid() {
       </section>
 
       <section className="card p-3 mb-4 space-y-2.5">
+        <SearchInput value={search} onChange={setSearch} placeholder="Search the Droidex…" />
         <div className="flex flex-wrap gap-x-3 gap-y-1.5 items-center">
           <FilterRow
             label="Rarity"

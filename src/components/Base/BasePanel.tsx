@@ -1,24 +1,78 @@
+import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { formatPerSecond } from "../../lib/production";
 import { cycleLabel } from "../../lib/rebirthCycles";
+import { formatCredits, parseCredits } from "../../lib/credits";
+import { normalizeName } from "../../lib/normalize";
+import { haptic } from "../../lib/native";
+import { toast } from "../../lib/toast";
 import { useBaseView, useHomeSummary } from "../../store/selectors";
-import { useAppStore } from "../../store/useAppStore";
+import { useAppStore, type Slot } from "../../store/useAppStore";
 import { Stepper } from "../common/Stepper";
 import { TierPill } from "../common/TierPill";
+import { SearchInput } from "../common/SearchInput";
+import { DroidActionMenu } from "./DroidActionMenu";
+import { ActiveBonuses } from "./ActiveBonuses";
 import type { CompanionSlot, DeployedDroid, LoungeFill, SellCandidate, SquadFill } from "../../lib/baseView";
 
+type OpenMenu = { droid: DeployedDroid; slot: Slot };
+type SellConfirm = { mode: "one"; candidate: SellCandidate } | { mode: "all" };
+
+const matches = (name: string, q: string) => !q || normalizeName(name).includes(normalizeName(q));
+
 /**
- * The Base tab — replaces Home. Folds Home's headline stats (rebirth,
- * production, crystals) into the top, then shows what's deployed by squad
- * and what's safe to sell this cycle.
+ * The Base tab — headline stats up top, then active bonuses, the deployed
+ * roster (tap a droid to act on it), and a safe-to-sell list. A search
+ * box filters the roster + sell list by name.
  */
 export function BasePanel() {
   const s = useHomeSummary();
   const base = useBaseView();
   const setTab = useAppStore((s) => s.setActiveTab);
   const setLoungeCreditSlots = useAppStore((st) => st.setLoungeCreditSlots);
+  const setCardCounts = useAppStore((st) => st.setCardCounts);
   const droidexPct = Math.round(
     (s.completion.ownedCards / Math.max(1, s.completion.totalCards)) * 100,
   );
+
+  const [search, setSearch] = useState("");
+  const [openMenu, setOpenMenu] = useState<OpenMenu | null>(null);
+  const [sellConfirm, setSellConfirm] = useState<SellConfirm | null>(null);
+
+  // Apply the search to the roster + sell list.
+  const filteredSquads = useMemo(
+    () => base.squads.map((sq) => ({ ...sq, droids: sq.droids.filter((d) => matches(d.name, search)) })),
+    [base.squads, search],
+  );
+  const filteredLounge = useMemo(
+    () => ({ ...base.lounge, droids: base.lounge.droids.filter((d) => matches(d.name, search)) }),
+    [base.lounge, search],
+  );
+  const filteredCompanion = useMemo(
+    () => ({ ...base.companion, droids: base.companion.droids.filter((d) => matches(d.name, search)) }),
+    [base.companion, search],
+  );
+  const filteredSell = useMemo(
+    () => base.sellCandidates.filter((c) => matches(c.name, search)),
+    [base.sellCandidates, search],
+  );
+
+  const sellCard = (c: SellCandidate) => {
+    setCardCounts(c.name, c.tier, { working: 0, lounge: 0, companion: 0 });
+  };
+  const confirmSell = () => {
+    if (!sellConfirm) return;
+    if (sellConfirm.mode === "one") {
+      sellCard(sellConfirm.candidate);
+      toast(`${sellConfirm.candidate.name} removed from base`);
+    } else {
+      const n = base.sellCandidates.length;
+      base.sellCandidates.forEach(sellCard);
+      toast(`Removed ${n} droid${n === 1 ? "" : "s"} from base`);
+    }
+    haptic("medium");
+    setSellConfirm(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -69,18 +123,36 @@ export function BasePanel() {
         </button>
       </section>
 
-      {/* My base — squad fill */}
+      {/* Active bonuses */}
+      <ActiveBonuses />
+
+      {/* Search */}
+      <SearchInput value={search} onChange={setSearch} placeholder="Find a droid on your base…" />
+
+      {/* My base — squad fill; tap a droid to act on it */}
       <section className="card p-4">
         <h2 className="font-display font-bold text-base mb-3">My base</h2>
         <div className="space-y-2.5">
-          {base.squads.map((sq) => (
-            <SquadFillCard key={sq.type} squad={sq} />
+          {filteredSquads.map((sq) => (
+            <SquadFillCard
+              key={sq.type}
+              squad={sq}
+              onOpenDroid={(d) => setOpenMenu({ droid: d, slot: "working" })}
+            />
           ))}
-          <LoungeCard lounge={base.lounge} onSetCredit={setLoungeCreditSlots} />
-          <CompanionCard companion={base.companion} />
+          <LoungeCard
+            lounge={filteredLounge}
+            onSetCredit={setLoungeCreditSlots}
+            onOpenDroid={(d) => setOpenMenu({ droid: d, slot: "lounge" })}
+          />
+          <CompanionCard
+            companion={filteredCompanion}
+            onOpenDroid={(d) => setOpenMenu({ droid: d, slot: "companion" })}
+          />
         </div>
         <p className="font-mono text-[10px] text-muted-alt mt-3 leading-snug">
-          Deployed counts come from the working / lounge / companion numbers you set on the Droidex.
+          Tap a droid to upgrade it, move it between slots, or remove it. Counts come from the
+          working / lounge / companion numbers on the Droidex.
         </p>
       </section>
 
@@ -93,31 +165,67 @@ export function BasePanel() {
           </span>
           <span className="flex-1" />
           {base.sellCandidates.length > 0 ? (
-            <span className="font-mono text-[10.5px] text-sun">≈ {base.sellTotal}</span>
+            <button
+              type="button"
+              className="font-mono text-[10px] uppercase tracking-wider text-danger border border-danger/40 rounded-md px-2 py-1 hover:bg-danger/10"
+              onClick={() => setSellConfirm({ mode: "all" })}
+            >
+              Sell all · {base.sellTotal}
+            </button>
           ) : null}
         </div>
-        {base.sellCandidates.length === 0 ? (
+        {filteredSell.length === 0 ? (
           <p className="text-muted text-[13px]">
-            Nothing deployed is safe to sell — every droid you have working or in the lounge is
-            still needed later this cycle.
+            {base.sellCandidates.length === 0
+              ? "Nothing deployed is safe to sell — every droid you have working or in the lounge is still needed later this cycle."
+              : "No matches for your search."}
           </p>
         ) : (
           <ul className="divide-y divide-line">
-            {base.sellCandidates.map((c) => (
-              <SellRow key={`${c.name}-${c.tier}`} candidate={c} />
+            {filteredSell.map((c) => (
+              <SellRow
+                key={`${c.name}-${c.tier}`}
+                candidate={c}
+                onSell={() => setSellConfirm({ mode: "one", candidate: c })}
+              />
             ))}
           </ul>
         )}
         <p className="font-mono text-[10px] text-muted-alt mt-3 leading-snug">
-          Droids you have deployed (working or lounge) that no rebirth above RB{s.standardRebirth}{" "}
-          in {cycleLabel(s.cycle)} needs.
+          Deployed droids (working or lounge) that no rebirth above RB{s.standardRebirth} in{" "}
+          {cycleLabel(s.cycle)} needs. Selling frees the slot; the droid stays in your Droidex.
+          ICONIC event droids are never listed.
         </p>
       </section>
+
+      {openMenu ? (
+        <DroidActionMenu
+          droid={openMenu.droid}
+          slot={openMenu.slot}
+          onClose={() => setOpenMenu(null)}
+        />
+      ) : null}
+
+      {sellConfirm ? (
+        <SellConfirmDialog
+          confirm={sellConfirm}
+          count={base.sellCandidates.length}
+          total={base.sellTotal}
+          onCancel={() => setSellConfirm(null)}
+          onConfirm={confirmSell}
+        />
+      ) : null}
     </div>
   );
 }
 
-function SquadFillCard({ squad }: { squad: SquadFill }) {
+function SquadFillCard({
+  squad,
+  onOpenDroid,
+}: {
+  squad: SquadFill;
+  onOpenDroid: (d: DeployedDroid) => void;
+}) {
   const pct = squad.capacity > 0 ? Math.min(100, (squad.deployed / squad.capacity) * 100) : 0;
   const over = squad.deployed > squad.capacity;
   return (
@@ -138,7 +246,7 @@ function SquadFillCard({ squad }: { squad: SquadFill }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <DroidChips droids={squad.droids} empty="No droids deployed here." />
+      <DroidChips droids={squad.droids} empty="No droids deployed here." onDroid={onOpenDroid} />
     </div>
   );
 }
@@ -146,9 +254,11 @@ function SquadFillCard({ squad }: { squad: SquadFill }) {
 function LoungeCard({
   lounge,
   onSetCredit,
+  onOpenDroid,
 }: {
   lounge: LoungeFill;
   onSetCredit: (n: number) => void;
+  onOpenDroid: (d: DeployedDroid) => void;
 }) {
   const pct = lounge.capacity > 0 ? Math.min(100, (lounge.deployed / lounge.capacity) * 100) : 0;
   const over = lounge.deployed > lounge.capacity;
@@ -188,12 +298,18 @@ function LoungeCard({
         {lounge.nextUnlock !== null ? ` · next unlock at RB${lounge.nextUnlock}` : ""}
       </p>
 
-      <DroidChips droids={lounge.droids} empty="No droids parked in the lounge." />
+      <DroidChips droids={lounge.droids} empty="No droids parked in the lounge." onDroid={onOpenDroid} />
     </div>
   );
 }
 
-function CompanionCard({ companion }: { companion: CompanionSlot }) {
+function CompanionCard({
+  companion,
+  onOpenDroid,
+}: {
+  companion: CompanionSlot;
+  onOpenDroid: (d: DeployedDroid) => void;
+}) {
   const over = companion.deployed > 1;
   return (
     <div className="rounded-[10px] border border-line bg-panel-alt p-3">
@@ -211,7 +327,7 @@ function CompanionCard({ companion }: { companion: CompanionSlot }) {
         </p>
       ) : (
         <>
-          <DroidChips droids={companion.droids} empty="" />
+          <DroidChips droids={companion.droids} empty="" onDroid={onOpenDroid} />
           {companion.bonus ? (
             <p className="font-mono text-[10.5px] text-tier-galactic mt-2">{companion.bonus}</p>
           ) : null}
@@ -226,29 +342,39 @@ function CompanionCard({ companion }: { companion: CompanionSlot }) {
   );
 }
 
-function DroidChips({ droids, empty }: { droids: DeployedDroid[]; empty: string }) {
+function DroidChips({
+  droids,
+  empty,
+  onDroid,
+}: {
+  droids: DeployedDroid[];
+  empty: string;
+  onDroid: (d: DeployedDroid) => void;
+}) {
   if (droids.length === 0) {
-    return <p className="font-mono text-[10px] text-muted-alt italic">{empty}</p>;
+    return empty ? <p className="font-mono text-[10px] text-muted-alt italic">{empty}</p> : null;
   }
   return (
     <div className="flex flex-wrap gap-1.5">
       {droids.map((d) => (
-        <span
+        <button
           key={`${d.name}-${d.tier}`}
-          className="inline-flex items-center gap-1.5 rounded-md border border-line bg-bg-alt px-2 py-1"
+          type="button"
+          onClick={() => onDroid(d)}
+          className="inline-flex items-center gap-1.5 rounded-md border border-line bg-bg-alt px-2 py-1 hover:border-holo/50 transition"
         >
           <span className="font-mono text-[10.5px] truncate max-w-[8rem]">{d.name}</span>
           <TierPill tier={d.tier} />
           {d.count > 1 ? (
             <span className="font-mono text-[10px] text-holo font-bold">×{d.count}</span>
           ) : null}
-        </span>
+        </button>
       ))}
     </div>
   );
 }
 
-function SellRow({ candidate }: { candidate: SellCandidate }) {
+function SellRow({ candidate, onSell }: { candidate: SellCandidate; onSell: () => void }) {
   return (
     <li className="flex items-center gap-2.5 py-2">
       <div className="flex-1 min-w-0">
@@ -266,7 +392,83 @@ function SellRow({ candidate }: { candidate: SellCandidate }) {
       <span className="font-mono text-[11.5px] text-sun tabular-nums w-16 text-right">
         {candidate.value ?? "—"}
       </span>
+      <button
+        type="button"
+        className="font-mono text-[10px] uppercase tracking-wider text-danger border border-danger/40 rounded-md px-2 py-1 hover:bg-danger/10"
+        onClick={onSell}
+      >
+        Sell
+      </button>
     </li>
+  );
+}
+
+function SellConfirmDialog({
+  confirm,
+  count,
+  total,
+  onCancel,
+  onConfirm,
+}: {
+  confirm: SellConfirm;
+  count: number;
+  total: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const isAll = confirm.mode === "all";
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} aria-hidden />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Confirm sell"
+        className="relative w-full max-w-[400px] card p-5 m-3 view-enter"
+        style={{ marginBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+      >
+        <h2 className="font-display font-bold text-lg mb-2">
+          {isAll ? "Sell all safe droids?" : `Sell ${confirm.candidate.name}?`}
+        </h2>
+        <p className="text-[13px] text-muted mb-4">
+          {isAll ? (
+            <>
+              Removes <b className="text-ink">{count}</b> droid{count === 1 ? "" : "s"} from your base
+              (≈ <span className="text-sun">{total}</span> recovered). They stay in your Droidex —
+              only the base slots free up.
+            </>
+          ) : (
+            <>
+              Removes {confirm.candidate.count > 1 ? `all ×${confirm.candidate.count} ` : "it "}
+              from your base
+              {confirm.candidate.value ? (
+                <>
+                  {" "}(≈{" "}
+                  <span className="text-sun">
+                    {formatCredits(parseCredits(confirm.candidate.value) * BigInt(confirm.candidate.count))}
+                  </span>{" "}
+                  recovered)
+                </>
+              ) : null}
+              . It stays in your Droidex — only the slot frees up.
+            </>
+          )}
+        </p>
+        <div className="flex gap-2.5">
+          <button type="button" className="btn btn-ghost flex-1" onClick={onCancel}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn flex-1 border-danger/50 text-danger hover:bg-danger/10"
+            onClick={onConfirm}
+          >
+            {isAll ? "Sell all" : "Sell"}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 

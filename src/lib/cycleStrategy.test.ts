@@ -65,6 +65,33 @@ describe("computeCycleStrategy", () => {
     }
   });
 
+  it("tierLevels maps each required tier to the RB levels that need it", () => {
+    const s = computeCycleStrategy(1);
+    const rows = rebirthsForCycle(1);
+    for (const k of s.keepers) {
+      // Rebuild the expected tier→levels map straight from the seed data.
+      const expected: Record<string, number[]> = {};
+      for (const rb of rows) {
+        for (const n of rb.needs) {
+          if (n.name !== k.name) continue;
+          (expected[n.tier] ??= []).push(rb.level);
+        }
+      }
+      for (const t of Object.keys(expected)) expected[t]!.sort((a, b) => a - b);
+
+      // Every tier key present must match, and the values are sorted ascending.
+      expect(Object.keys(k.tierLevels).sort()).toEqual(Object.keys(expected).sort());
+      for (const [tier, levels] of Object.entries(k.tierLevels)) {
+        expect(levels).toEqual(expected[tier]);
+      }
+      // The union of all tier levels equals appearsAt, and the highest tier
+      // present is the keeper's targetTier.
+      const union = [...new Set(Object.values(k.tierLevels).flat())].sort((a, b) => a - b);
+      expect(union).toEqual(k.appearsAt);
+      expect(k.tierLevels[k.targetTier]).toBeDefined();
+    }
+  });
+
   it("chipCost matches the chipCosts helper for the entry's rarity and tier", () => {
     const s = computeCycleStrategy(3);
     for (const k of s.keepers) {

@@ -43,6 +43,7 @@ export interface DeployedDroid {
   name: string;
   tier: Tier;
   count: number;
+  rarity: Rarity;
 }
 
 /** The three production classes that map 1:1 to a squad. */
@@ -135,9 +136,10 @@ export function buildBaseView({
     let deployed = 0;
     for (const c of cards) {
       if (c.working <= 0) continue;
-      if (resolve(c.name)?.class !== cls) continue;
+      const cdef = resolve(c.name);
+      if (cdef?.class !== cls) continue;
       deployed += c.working;
-      droids.push({ name: c.name, tier: c.tier, count: c.working });
+      droids.push({ name: c.name, tier: c.tier, count: c.working, rarity: cdef.rarity });
     }
     droids.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
     return {
@@ -156,7 +158,7 @@ export function buildBaseView({
   for (const c of cards) {
     if (c.lounge <= 0) continue;
     loungeDeployed += c.lounge;
-    loungeDroids.push({ name: c.name, tier: c.tier, count: c.lounge });
+    loungeDroids.push({ name: c.name, tier: c.tier, count: c.lounge, rarity: resolve(c.name)?.rarity ?? "COMMON" });
   }
   loungeDroids.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   const lounge: LoungeFill = {
@@ -176,10 +178,11 @@ export function buildBaseView({
   let companionBonus: string | null = null;
   for (const c of cards) {
     if (c.companion <= 0) continue;
+    const cdef = resolve(c.name);
     companionDeployed += c.companion;
-    companionDroids.push({ name: c.name, tier: c.tier, count: c.companion });
+    companionDroids.push({ name: c.name, tier: c.tier, count: c.companion, rarity: cdef?.rarity ?? "COMMON" });
     if (companionBonus === null) {
-      const def = resolve(c.name);
+      const def = cdef;
       companionBonus =
         def?.companionEffect ?? companionBuffLabel(def?.class ?? "UNKNOWN", def?.rarity ?? "COMMON", c.tier);
     }
@@ -198,8 +201,10 @@ export function buildBaseView({
   let sellTotalCredits = 0n;
   for (const c of cards) {
     if (c.working <= 0 && c.lounge <= 0) continue;
-    if (!isDroidSafeToSell(c.name, cycle, standardRebirth)) continue;
     const def = resolve(c.name);
+    // ICONIC droids are event-locked — you'd never sell them.
+    if (def?.rarity === "ICONIC") continue;
+    if (!isDroidSafeToSell(c.name, cycle, standardRebirth)) continue;
     const value = stats[def?.canonical ?? c.name]?.[c.tier]?.value ?? null;
     const deployed = c.working + c.lounge;
     // Sum value across every deployed copy of this card.

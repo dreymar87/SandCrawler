@@ -13,6 +13,7 @@ const DICT: DroidDef[] = [
   { canonical: "R2", class: "ASTROMECH", rarity: "EPIC", tiers: ["DEFAULT"] },
   { canonical: "2BB", class: "BATTLE", rarity: "RARE", tiers: ["DEFAULT"] },
   { canonical: "PIT", class: "WORKER", rarity: "COMMON", tiers: ["DEFAULT"] },
+  { canonical: "ZZZ-FAKE-ICONIC", class: "ASTROMECH", rarity: "ICONIC", tiers: ["DEFAULT"] },
 ];
 
 const STATS: DroidStats = {
@@ -119,6 +120,16 @@ describe("buildBaseView", () => {
     const names = view.sellCandidates.map((c) => c.name);
     expect(names).toContain("ZZZ-FAKE-DROID");
     expect(names).not.toContain("CB");
+  });
+
+  it("never lists ICONIC droids as safe to sell, even when not required", () => {
+    // ZZZ-FAKE-ICONIC is never required in any cycle, so a non-ICONIC droid
+    // with the same deployment would be listed. Being ICONIC excludes it.
+    const view = base([card("ZZZ-FAKE-ICONIC", "DEFAULT", 2, 0)]);
+    expect(view.sellCandidates.map((c) => c.name)).not.toContain("ZZZ-FAKE-ICONIC");
+    // Sanity: a non-ICONIC never-required droid IS listed under the same setup.
+    const control = base([card("ZZZ-FAKE-DROID", "DEFAULT", 2, 0)]);
+    expect(control.sellCandidates.map((c) => c.name)).toContain("ZZZ-FAKE-DROID");
   });
 
   it("only counts deployed cards — owned-but-not-deployed is not sellable", () => {

@@ -17,8 +17,10 @@ export interface KeeperEntry {
   appearsAt: number[];
   firstNeeded: number;
   lastNeeded: number;
-  /** Chips to upgrade DEFAULT → targetTier. null for ICONIC / FLAWLESS / unknown. */
+  /** Chips to upgrade DEFAULT → targetTier. null for ICONIC / unknown. */
   chipCost: number | null;
+  /** For each tier, the RB levels in the cycle that require this droid at exactly that tier. */
+  tierLevels: Partial<Record<Tier, number[]>>;
 }
 
 export interface CycleStrategy {
@@ -38,22 +40,34 @@ const INDEX = buildDroidIndex(DROID_DICT);
  */
 export function computeCycleStrategy(cycle: RebirthCycle): CycleStrategy {
   const rows = rebirthsForCycle(cycle);
-  const byName = new Map<string, { rarity: Rarity; maxTier: Tier; appearsAt: Set<number> }>();
+  const byName = new Map<
+    string,
+    { rarity: Rarity; maxTier: Tier; appearsAt: Set<number>; tierLevels: Map<Tier, Set<number>> }
+  >();
 
   for (const rb of rows) {
     for (const req of rb.needs) {
       const def = INDEX.resolve(req.name);
       const canonical = def?.canonical ?? req.name.trim();
       const rarity: Rarity = def?.rarity ?? "COMMON";
-      const cur = byName.get(canonical) ?? { rarity, maxTier: "DEFAULT" as Tier, appearsAt: new Set<number>() };
+      const cur =
+        byName.get(canonical) ??
+        { rarity, maxTier: "DEFAULT" as Tier, appearsAt: new Set<number>(), tierLevels: new Map<Tier, Set<number>>() };
       if (tierRank(req.tier) > tierRank(cur.maxTier)) cur.maxTier = req.tier;
       cur.appearsAt.add(rb.level);
+      const tl = cur.tierLevels.get(req.tier) ?? new Set<number>();
+      tl.add(rb.level);
+      cur.tierLevels.set(req.tier, tl);
       byName.set(canonical, cur);
     }
   }
 
   const keepers: KeeperEntry[] = [...byName.entries()].map(([name, v]) => {
     const levels = [...v.appearsAt].sort((a, b) => a - b);
+    const tierLevels: Partial<Record<Tier, number[]>> = {};
+    for (const [tier, set] of v.tierLevels) {
+      tierLevels[tier] = [...set].sort((a, b) => a - b);
+    }
     return {
       name,
       rarity: v.rarity,
@@ -62,6 +76,7 @@ export function computeCycleStrategy(cycle: RebirthCycle): CycleStrategy {
       firstNeeded: levels[0]!,
       lastNeeded: levels[levels.length - 1]!,
       chipCost: chipsFromDefaultTo(v.rarity, v.maxTier),
+      tierLevels,
     };
   });
 
