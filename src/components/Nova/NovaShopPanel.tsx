@@ -1,7 +1,9 @@
-import { NOVA_ICONIC_PURCHASES } from "../../data/novaShop.seed";
+import { ICONIC_MERCHANT_COST, NOVA_ICONIC_PURCHASES } from "../../data/novaShop.seed";
+import { formatCredits } from "../../lib/credits";
 import { haptic } from "../../lib/native";
 import { nextLevelCost } from "../../lib/novaCrystals";
 import {
+  useIconicMerchant,
   useIconicPurchases,
   useNovaBalance,
   useNovaLevels,
@@ -9,6 +11,8 @@ import {
 } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
 import type { NovaUpgrade } from "../../types";
+
+const MERCHANT_PRICE = formatCredits(BigInt(ICONIC_MERCHANT_COST));
 
 /**
  * Nova Shop tab: two upgrade trees (Core / Workshop), plus one-shot
@@ -20,8 +24,13 @@ export function NovaShopPanel() {
   const levels = useNovaLevels();
   const balance = useNovaBalance();
   const iconicOwned = useIconicPurchases();
+  const merchantBought = useIconicMerchant();
   const setLevel = useAppStore((s) => s.setNovaUpgradeLevel);
   const setIconicPurchased = useAppStore((s) => s.setIconicPurchased);
+  const setIconicMerchantBought = useAppStore((s) => s.setIconicMerchantBought);
+  const unlockedIconics = NOVA_ICONIC_PURCHASES.filter((p) =>
+    iconicOwned.get(p.droid.toUpperCase()),
+  );
 
   return (
     <div className="space-y-4">
@@ -71,7 +80,8 @@ export function NovaShopPanel() {
       <section className="card p-4">
         <h2 className="font-display font-bold text-base mb-3">ICONIC Droids</h2>
         <p className="font-mono text-[10.5px] text-muted-alt mb-3">
-          Purchase grants the droid; subsequent spawns / Flawless variants still come from play.
+          Unlock with crystals (permanent). Unlocking enables the droid in the Iconic Droid
+          Merchant below, where each copy costs {MERCHANT_PRICE} credits per cycle.
         </p>
         <div className="space-y-2">
           {NOVA_ICONIC_PURCHASES.map((p) => {
@@ -101,12 +111,56 @@ export function NovaShopPanel() {
                   </div>
                 </div>
                 <span className={`status-tag ${owned ? "ok" : "miss"}`}>
-                  {owned ? "Purchased" : "—"}
+                  {owned ? "Unlocked" : "—"}
                 </span>
               </button>
             );
           })}
         </div>
+      </section>
+
+      <section className="card p-4">
+        <h2 className="font-display font-bold text-base mb-1">Iconic Droid Merchant</h2>
+        <p className="font-mono text-[10.5px] text-muted-alt mb-3">
+          Buy an unlocked iconic here for <span className="text-sun">{MERCHANT_PRICE}</span> credits
+          each. These purchases reset on Super Rebirth.
+        </p>
+        {unlockedIconics.length === 0 ? (
+          <p className="text-muted text-[13px]">
+            Unlock iconic droids above to buy them from the merchant.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {unlockedIconics.map((p) => {
+              const bought = !!merchantBought.get(p.droid.toUpperCase());
+              return (
+                <button
+                  key={p.droid}
+                  type="button"
+                  onClick={() => {
+                    haptic("light");
+                    setIconicMerchantBought(p.droid, !bought);
+                  }}
+                  className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-[10px] border transition ${
+                    bought
+                      ? "border-ok/40 bg-ok/5"
+                      : "border-line bg-panel-alt hover:border-line-alt"
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-display font-semibold text-[14px] truncate">{p.droid}</div>
+                    <div className="font-mono text-[10px] text-muted-alt">
+                      {MERCHANT_PRICE} credits
+                    </div>
+                  </div>
+                  <span className={`status-tag ${bought ? "ok" : "miss"}`}>
+                    {bought ? "Bought" : "Buy"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );

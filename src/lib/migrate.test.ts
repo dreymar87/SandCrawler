@@ -253,4 +253,13 @@ describe("migrate", () => {
     const v4 = { schemaVersion: 4 };
     expect(migrate(v4).novaIconicOwned).toEqual([]);
   });
+
+  it("bootstraps iconicMerchantBought to [] for payloads that lack it (v10 slice)", () => {
+    // Older payloads have no merchant slice — defaulting to [] correctly
+    // resets per-cycle availability.
+    expect(migrate({ schemaVersion: 9 }).iconicMerchantBought).toEqual([]);
+    // A v10 payload round-trips the slice.
+    const v10 = { schemaVersion: 10, iconicMerchantBought: ["BB8", "R2-D2"] };
+    expect(migrate(v10).iconicMerchantBought).toEqual(["BB8", "R2-D2"]);
+  });
 });

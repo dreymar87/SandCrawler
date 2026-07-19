@@ -1,5 +1,6 @@
 import type { CollectionCard, DroidStats } from "../types";
 import { parseIncome, formatCredits } from "./credits";
+import { resolveDroid, statsFromTable } from "./droidStats";
 
 export interface ProductionTotals {
   /** Flat credits per second from all active, non-MYTHIC cards. */
@@ -30,7 +31,9 @@ export function computeProduction(
 
   for (const card of cards) {
     if (card.working <= 0) continue;
-    const stat = stats[card.name]?.[card.tier];
+    // Alias-aware lookup so droids whose stats key differs from their
+    // canonical (e.g. MONO-WALKER → "MONO-WLKR") still resolve.
+    const stat = statsFromTable(stats, resolveDroid(card.name), card.name)?.[card.tier];
     if (!stat) continue;
     const v = parseIncome(stat.income);
     if (v === null) {

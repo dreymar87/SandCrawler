@@ -3,13 +3,15 @@ import { TIERS, RARITIES, CLASSES } from "../../constants";
 import { DROID_DICT } from "../../data/droids.seed";
 import { haptic } from "../../lib/native";
 import { isDroidSafeToSell } from "../../lib/cycleStrategy";
+import { droidCycles } from "../../lib/droidCycles";
 import { companionBuffLabel } from "../../data/companionBuffs.seed";
 import { normalizeName } from "../../lib/normalize";
 import { useAppStore } from "../../store/useAppStore";
 import { useActiveCycle, useDroidexCompletion } from "../../store/selectors";
-import type { CollectionCard, DroidClass, DroidDef, Rarity, Tier } from "../../types";
+import type { CollectionCard, DroidClass, DroidDef, Rarity, RebirthCycle, Tier } from "../../types";
 import { Stepper } from "../common/Stepper";
 import { SearchInput } from "../common/SearchInput";
+import { DroidDetailModal } from "./DroidDetailModal";
 
 /**
  * The Droidex grid: every known droid × every tier as a tappable cell.
@@ -28,12 +30,15 @@ export function DroidexGrid() {
   const tierFilter = useAppStore((s) => s.ui.tierFilter ?? "ALL");
   const collectedFilter = useAppStore((s) => s.ui.collectedFilter ?? "ALL");
   const strategyFilter = useAppStore((s) => s.ui.strategyFilter ?? "ALL");
+  const rbcFilter = useAppStore((s) => s.ui.rbcFilter ?? "ALL");
   const currentLevel = useAppStore((s) => s.profile.standardRebirth);
   const activeCycle = useActiveCycle();
   const completion = useDroidexCompletion();
 
   // Which (droid, tier) cell is being edited. Only one open at a time.
   const [openCell, setOpenCell] = useState<{ droid: string; tier: Tier } | null>(null);
+  // Which droid's read-only detail modal is open (by canonical name).
+  const [openDetail, setOpenDetail] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const dict = useMemo(() => [...DROID_DICT, ...customDroids], [customDroids]);
@@ -64,9 +69,10 @@ export function DroidexGrid() {
         if (strategyFilter === "KEEP" && safe) return false;
         if (strategyFilter === "SELL" && !safe) return false;
       }
+      if (rbcFilter !== "ALL" && !droidCycles(d.canonical).includes(rbcFilter)) return false;
       return true;
     });
-  }, [dict, cardIndex, search, rarityFilter, classFilter, collectedFilter, strategyFilter, activeCycle, currentLevel]);
+  }, [dict, cardIndex, search, rarityFilter, classFilter, collectedFilter, strategyFilter, rbcFilter, activeCycle, currentLevel]);
 
   return (
     <div>
@@ -140,6 +146,19 @@ export function DroidexGrid() {
             </span>
           ) : null}
         </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1.5 items-center">
+          <FilterRow
+            label="RBC"
+            value={rbcFilter === "ALL" ? "ALL" : String(rbcFilter)}
+            options={["ALL", "1", "2", "3", "4"] as const}
+            onChange={(v) =>
+              setUiPref("rbcFilter", v === "ALL" ? "ALL" : (Number(v) as RebirthCycle))
+            }
+          />
+          <span className="font-mono text-[9.5px] text-muted-alt">
+            filter by rebirth cycle that needs the droid
+          </span>
+        </div>
       </section>
 
       <div className="space-y-2">
@@ -165,6 +184,10 @@ export function DroidexGrid() {
                         : { droid: d.canonical, tier },
                     );
                   }}
+                  onOpenDetail={() => {
+                    haptic("light");
+                    setOpenDetail(d.canonical);
+                  }}
                   tierFilter={tierFilter}
                 />
                 {openTier ? (
@@ -181,6 +204,15 @@ export function DroidexGrid() {
           })
         )}
       </div>
+
+      {openDetail
+        ? (() => {
+            const detailDef = dict.find((d) => d.canonical === openDetail);
+            return detailDef ? (
+              <DroidDetailModal def={detailDef} onClose={() => setOpenDetail(null)} />
+            ) : null;
+          })()
+        : null}
     </div>
   );
 }
@@ -223,15 +255,24 @@ interface DroidRowProps {
   cardIndex: Map<string, CollectionCard>;
   openTier: Tier | null;
   onCellTap: (tier: Tier) => void;
+  onOpenDetail: () => void;
   tierFilter: Tier | "ALL";
 }
 
-function DroidRow({ droid, cardIndex, openTier, onCellTap, tierFilter }: DroidRowProps) {
+function DroidRow({ droid, cardIndex, openTier, onCellTap, onOpenDetail, tierFilter }: DroidRowProps) {
+  const cycles = droidCycles(droid.canonical);
   return (
     <div className="card px-3 py-2.5 flex items-center gap-3">
       <div className="flex-1 min-w-0">
-        <div className="font-display font-semibold text-[14.5px] truncate">{droid.canonical}</div>
-        <div className="flex items-center gap-1.5 mt-1">
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          className="font-display font-semibold text-[14.5px] truncate max-w-full text-left hover:text-holo transition-colors"
+          aria-label={`${droid.canonical} details`}
+        >
+          {droid.canonical}
+        </button>
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
           <span className="font-mono text-[9px] uppercase tracking-wide text-muted-alt">
             {droid.rarity}
           </span>
@@ -240,6 +281,11 @@ function DroidRow({ droid, cardIndex, openTier, onCellTap, tierFilter }: DroidRo
           {droid.eventLocked ? (
             <span className="font-mono text-[9px] uppercase tracking-wide text-sun ml-1">
               Event
+            </span>
+          ) : null}
+          {cycles.length > 0 ? (
+            <span className="font-mono text-[9px] uppercase tracking-wide text-holo-dim border border-holo-dim/40 rounded px-1 py-0.5">
+              RBC {cycles.length === 4 ? "all" : cycles.join(",")}
             </span>
           ) : null}
         </div>

@@ -103,13 +103,24 @@ export const NOVA_UPGRADES: readonly NovaUpgrade[] = [
 ];
 
 /**
- * ICONIC droids you can purchase from the Nova Shop. Purchase is a
- * single L0 → L1 toggle (no levels). `droid` matches DROID_DICT.canonical.
+ * ICONIC droids you can unlock from the Nova Shop. Unlock is a single
+ * L0 → L1 crystal purchase (no levels); `droid` matches
+ * DROID_DICT.canonical. Unlocking *enables* the droid in the Iconic Droid
+ * Merchant, where each copy costs `ICONIC_MERCHANT_COST` credits per cycle.
  */
 export const NOVA_ICONIC_PURCHASES: readonly NovaIconicPurchase[] = [
   { droid: "BB8", crystals: 30 },
   { droid: "MISTER BONES", crystals: 30 },
   { droid: "IG-11 MARSHAL", crystals: 30 },
   { droid: "DJ-R3X", crystals: 30 },
+  { droid: "R2-D2", crystals: 30 },
+  { droid: "C-3PO", crystals: 30 },
   { droid: "CB-23", crystals: 75 },
 ];
+
+/**
+ * Credits to buy one unlocked ICONIC droid from the Iconic Droid Merchant.
+ * These purchases reset every Super Rebirth (tracked in
+ * `iconicMerchantBought`).
+ */
+export const ICONIC_MERCHANT_COST = 1_000_000;

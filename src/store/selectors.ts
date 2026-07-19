@@ -215,6 +215,16 @@ export function useIconicPurchases(): Map<string, boolean> {
   }, [owned]);
 }
 
+/** Unlocked ICONIC droids bought from the Iconic Droid Merchant this cycle. */
+export function useIconicMerchant(): Map<string, boolean> {
+  const bought = useAppStore((s) => s.iconicMerchantBought);
+  return useMemo(() => {
+    const m = new Map<string, boolean>();
+    for (const n of bought) m.set(n.trim().toUpperCase(), true);
+    return m;
+  }, [bought]);
+}
+
 export function useCosmeticsByKind(): Record<CosmeticKind, CosmeticItem[]> {
   return useMemo(() => {
     const groups: Record<CosmeticKind, CosmeticItem[]> = { HAT: [], PAINT: [], EFFECT: [] };

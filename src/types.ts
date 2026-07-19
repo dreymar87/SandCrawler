@@ -245,6 +245,11 @@ export interface PersistedState {
   novaUpgrades: NovaUpgradeState[];
   /** Canonical names of ICONIC droids the user has purchased via the Nova Shop. */
   novaIconicOwned: string[];
+  /**
+   * Canonical names of unlocked ICONIC droids re-bought from the Iconic
+   * Droid Merchant this cycle (1M credits each). Resets on Super Rebirth.
+   */
+  iconicMerchantBought: string[];
   ui: UiPrefs;
 }
 
@@ -260,6 +265,8 @@ export interface UiPrefs {
    * the active cycle. SELL: droids safe to sell now. ALL: no filter.
    */
   strategyFilter?: "ALL" | "KEEP" | "SELL";
+  /** Droidex rebirth-cycle filter: show only droids some RB in cycle N needs. */
+  rbcFilter?: RebirthCycle | "ALL";
   /** Set once the first-run intro has been dismissed. */
   hasOnboarded?: boolean;
   /** Hide rebirth rows below the player's current level. */

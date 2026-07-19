@@ -51,6 +51,7 @@ export function emptyState(): PersistedState {
     cosmetics: [],
     novaUpgrades: [],
     novaIconicOwned: [],
+    iconicMerchantBought: [],
     ui: { activeTab: "base" },
   };
 }
@@ -230,6 +231,15 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
         .filter((n) => n.length > 0)
     : [];
 
+  // v10: iconicMerchantBought slice (per-cycle credit re-buys; empty for
+  // older payloads, which resets availability — the correct default).
+  const iconicMerchantBought: string[] = Array.isArray(obj.iconicMerchantBought)
+    ? (obj.iconicMerchantBought as unknown[])
+        .filter((n): n is string => typeof n === "string")
+        .map((n) => n.trim())
+        .filter((n) => n.length > 0)
+    : [];
+
   // v5: lift StandardRebirth.rewards.slotUnlock to top-level, drop the rest.
   // v4 stored slot/crystals/mults nested under `rewards`; v5 keeps only
   // slotUnlock (the genuinely per-RB datum).
@@ -244,6 +254,7 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
     cosmetics,
     novaUpgrades,
     novaIconicOwned,
+    iconicMerchantBought,
     ui: {
       // creditsCurrent intentionally dropped from uiRaw (moved to profile in v6).
       ...stripUiCredits(uiRaw),

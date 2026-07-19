@@ -30,6 +30,7 @@ export function DataPanel() {
       cosmetics: s.cosmetics,
       novaUpgrades: s.novaUpgrades,
       novaIconicOwned: s.novaIconicOwned,
+      iconicMerchantBought: s.iconicMerchantBought,
       ui: s.ui,
     };
   };

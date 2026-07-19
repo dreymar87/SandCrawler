@@ -2,6 +2,7 @@ import { SQUAD_DEFS } from "../data/squads.seed";
 import { companionBuffLabel } from "../data/companionBuffs.seed";
 import { getMaxSlots } from "./squads";
 import { isDroidSafeToSell } from "./cycleStrategy";
+import { statsFromTable } from "./droidStats";
 import { parseCredits, formatCredits } from "./credits";
 import { normalizeName } from "./normalize";
 import type {
@@ -205,7 +206,7 @@ export function buildBaseView({
     // ICONIC droids are event-locked — you'd never sell them.
     if (def?.rarity === "ICONIC") continue;
     if (!isDroidSafeToSell(c.name, cycle, standardRebirth)) continue;
-    const value = stats[def?.canonical ?? c.name]?.[c.tier]?.value ?? null;
+    const value = statsFromTable(stats, def, c.name)?.[c.tier]?.value ?? null;
     const deployed = c.working + c.lounge;
     // Sum value across every deployed copy of this card.
     if (value) sellTotalCredits += parseCredits(value) * BigInt(deployed);

@@ -69,6 +69,8 @@ interface Actions {
   // ── Nova Shop ─────────────────────────────────────────────────────────
   setNovaUpgradeLevel(id: string, level: number): void;
   setIconicPurchased(droidName: string, purchased: boolean): void;
+  /** Toggle an unlocked ICONIC droid as bought this cycle from the Merchant. */
+  setIconicMerchantBought(droidName: string, bought: boolean): void;
 
   // ── Standard Rebirth (user overrides on top of the seed table) ────────
   upsertStandardOverride(rb: StandardRebirth): void;
@@ -306,6 +308,24 @@ export const useAppStore = create<AppStore>()(
         });
       },
 
+      setIconicMerchantBought(droidName, bought) {
+        set((s) => {
+          const key = droidName.trim().toUpperCase();
+          const existing = s.iconicMerchantBought.some((n) => n.trim().toUpperCase() === key);
+          if (bought && !existing) {
+            return { iconicMerchantBought: [...s.iconicMerchantBought, droidName.trim()] };
+          }
+          if (!bought && existing) {
+            return {
+              iconicMerchantBought: s.iconicMerchantBought.filter(
+                (n) => n.trim().toUpperCase() !== key,
+              ),
+            };
+          }
+          return {};
+        });
+      },
+
       setNovaUpgradeLevel(id, level) {
         set((s) => {
           const safe = Math.max(0, Math.floor(level));
@@ -382,6 +402,10 @@ export const useAppStore = create<AppStore>()(
             .filter((c) => c.owned || c.working > 0 || c.lounge > 0 || c.companion > 0);
           return {
             cards,
+            // Iconic Merchant purchases are per-cycle (1M credits each) —
+            // availability resets on Super Rebirth. Unlocks (novaIconicOwned)
+            // persist.
+            iconicMerchantBought: [],
             profile: {
               ...s.profile,
               standardRebirth: 0,
@@ -415,6 +439,7 @@ export const useAppStore = create<AppStore>()(
         cosmetics: state.cosmetics,
         novaUpgrades: state.novaUpgrades,
         novaIconicOwned: state.novaIconicOwned ?? [],
+        iconicMerchantBought: state.iconicMerchantBought ?? [],
         ui: state.ui,
       }),
     },

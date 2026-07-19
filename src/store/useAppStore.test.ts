@@ -113,6 +113,30 @@ describe("performSuperRebirth", () => {
     useAppStore.getState().performSuperRebirth();
     expect(useAppStore.getState().profile.loungeCreditSlots).toBe(0);
   });
+
+  it("clears iconicMerchantBought (per-cycle) but keeps novaIconicOwned (permanent)", () => {
+    useAppStore.getState().setIconicPurchased("BB8", true);
+    useAppStore.getState().setIconicMerchantBought("BB8", true);
+    expect(useAppStore.getState().iconicMerchantBought).toEqual(["BB8"]);
+    useAppStore.getState().performSuperRebirth();
+    expect(useAppStore.getState().iconicMerchantBought).toEqual([]);
+    expect(useAppStore.getState().novaIconicOwned).toEqual(["BB8"]); // unlock persists
+  });
+});
+
+describe("setIconicMerchantBought", () => {
+  beforeEach(() => useAppStore.getState().resetAll());
+
+  it("toggles an iconic droid in/out of the merchant-bought slice (case-insensitive)", () => {
+    useAppStore.getState().setIconicMerchantBought("R2-D2", true);
+    expect(useAppStore.getState().iconicMerchantBought).toEqual(["R2-D2"]);
+    // Idempotent add.
+    useAppStore.getState().setIconicMerchantBought("r2-d2", true);
+    expect(useAppStore.getState().iconicMerchantBought).toEqual(["R2-D2"]);
+    // Remove (case-insensitive).
+    useAppStore.getState().setIconicMerchantBought("R2-D2", false);
+    expect(useAppStore.getState().iconicMerchantBought).toEqual([]);
+  });
 });
 
 describe("deployed-droid actions", () => {

@@ -354,23 +354,26 @@ function DroidChips({
   if (droids.length === 0) {
     return empty ? <p className="font-mono text-[10px] text-muted-alt italic">{empty}</p> : null;
   }
+  // Aligned rows (name column · tier · count) so names line up uniformly
+  // instead of the ragged content-width chips.
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <ul className="rounded-md border border-line bg-bg-alt/40 divide-y divide-line/60 overflow-hidden">
       {droids.map((d) => (
-        <button
-          key={`${d.name}-${d.tier}`}
-          type="button"
-          onClick={() => onDroid(d)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-line bg-bg-alt px-2 py-1 hover:border-holo/50 transition"
-        >
-          <span className="font-mono text-[10.5px] truncate max-w-[8rem]">{d.name}</span>
-          <TierPill tier={d.tier} />
-          {d.count > 1 ? (
-            <span className="font-mono text-[10px] text-holo font-bold">×{d.count}</span>
-          ) : null}
-        </button>
+        <li key={`${d.name}-${d.tier}`}>
+          <button
+            type="button"
+            onClick={() => onDroid(d)}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-holo/5 transition"
+          >
+            <span className="flex-1 min-w-0 font-mono text-[11px] truncate">{d.name}</span>
+            <TierPill tier={d.tier} />
+            <span className="w-8 shrink-0 text-right font-mono text-[10px] text-holo font-bold tabular-nums">
+              {d.count > 1 ? `×${d.count}` : ""}
+            </span>
+          </button>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
