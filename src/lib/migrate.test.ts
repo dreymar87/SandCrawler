@@ -262,4 +262,30 @@ describe("migrate", () => {
     const v10 = { schemaVersion: 10, iconicMerchantBought: ["BB8", "R2-D2"] };
     expect(migrate(v10).iconicMerchantBought).toEqual(["BB8", "R2-D2"]);
   });
+
+  it("bootstraps craftingStations to [] for payloads that lack it (v11 slice)", () => {
+    expect(migrate({ schemaVersion: 10 }).craftingStations).toEqual([]);
+  });
+
+  it("round-trips valid crafting stations and drops malformed / duplicate entries", () => {
+    const v11 = {
+      schemaVersion: 11,
+      craftingStations: [
+        { station: "WORKER", name: "MOUSE", tier: "GOLD", state: "crafting" },
+        // Duplicate WORKER — dedupe keeps the first.
+        { station: "WORKER", name: "PIT", tier: "DEFAULT", state: "ready" },
+        // Invalid station — drop.
+        { station: "LOUNGE", name: "ZZZ", tier: "DEFAULT", state: "ready" },
+        // Empty name — drop.
+        { station: "BATTLE", name: "", tier: "DEFAULT", state: "ready" },
+        // Missing state defaults to "crafting".
+        { station: "ASTROMECH", name: "R2", tier: "DEFAULT" },
+      ],
+    };
+    const result = migrate(v11).craftingStations;
+    expect(result).toEqual([
+      { station: "WORKER", name: "MOUSE", tier: "GOLD", state: "crafting" },
+      { station: "ASTROMECH", name: "R2", tier: "DEFAULT", state: "crafting" },
+    ]);
+  });
 });

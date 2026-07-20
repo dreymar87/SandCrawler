@@ -31,6 +31,7 @@ export function DataPanel() {
       novaUpgrades: s.novaUpgrades,
       novaIconicOwned: s.novaIconicOwned,
       iconicMerchantBought: s.iconicMerchantBought,
+      craftingStations: s.craftingStations,
       ui: s.ui,
     };
   };

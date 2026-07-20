@@ -5,6 +5,7 @@ import {
   loungeRbUnlocksAt,
   maxLoungeCreditSlots,
   nextLoungeUnlock,
+  stationUnlockedAt,
 } from "./baseView";
 import type { CollectionCard, DroidDef, DroidStats } from "../types";
 
@@ -157,5 +158,66 @@ describe("buildBaseView", () => {
     expect(view.sellCandidates).toHaveLength(1);
     expect(view.sellCandidates[0]!.count).toBe(3);
     expect(view.sellTotal).toBe("300"); // 100 × 3 deployed
+  });
+});
+
+describe("crafting stations", () => {
+  it("stationUnlockedAt: Worker RB0, Astromech RB1, Battle RB2", () => {
+    expect(stationUnlockedAt("WORKER", 0)).toBe(true);
+    expect(stationUnlockedAt("ASTROMECH", 0)).toBe(false);
+    expect(stationUnlockedAt("ASTROMECH", 1)).toBe(true);
+    expect(stationUnlockedAt("BATTLE", 1)).toBe(false);
+    expect(stationUnlockedAt("BATTLE", 2)).toBe(true);
+  });
+
+  it("stations reflect craftingStations input and flag class-match", () => {
+    const view = buildBaseView({
+      cards: [],
+      dict: DICT,
+      stats: STATS,
+      standardRebirth: 2,
+      loungeCreditSlots: 5,
+      novaLoungeSlots: 0,
+      cycle: 1,
+      // MOUSE (WORKER class) placed in the WORKER station → type match
+      craftingStations: [{ station: "WORKER", name: "MOUSE", tier: "GOLD", state: "crafting" }],
+    });
+    expect(view.stations).toHaveLength(3);
+    const worker = view.stations.find((s) => s.type === "WORKER")!;
+    expect(worker.unlocked).toBe(true);
+    expect(worker.slot).toMatchObject({ name: "MOUSE", tier: "GOLD", state: "crafting", typeMatch: true });
+    const astro = view.stations.find((s) => s.type === "ASTROMECH")!;
+    expect(astro.unlocked).toBe(true);
+    expect(astro.slot).toBeNull();
+  });
+
+  it("class-mismatch: a WORKER droid in the BATTLE station shows typeMatch=false", () => {
+    const view = buildBaseView({
+      cards: [],
+      dict: DICT,
+      stats: STATS,
+      standardRebirth: 2,
+      loungeCreditSlots: 5,
+      novaLoungeSlots: 0,
+      cycle: 1,
+      craftingStations: [{ station: "BATTLE", name: "MOUSE", tier: "DEFAULT", state: "ready" }],
+    });
+    const battle = view.stations.find((s) => s.type === "BATTLE")!;
+    expect(battle.slot).toMatchObject({ typeMatch: false, state: "ready" });
+  });
+
+  it("locked stations still appear in the view with unlocked=false", () => {
+    const view = buildBaseView({
+      cards: [],
+      dict: DICT,
+      stats: STATS,
+      standardRebirth: 0, // Astromech & Battle locked
+      loungeCreditSlots: 5,
+      novaLoungeSlots: 0,
+      cycle: 1,
+    });
+    expect(view.stations.find((s) => s.type === "WORKER")!.unlocked).toBe(true);
+    expect(view.stations.find((s) => s.type === "ASTROMECH")!.unlocked).toBe(false);
+    expect(view.stations.find((s) => s.type === "BATTLE")!.unlocked).toBe(false);
   });
 });

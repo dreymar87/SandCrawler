@@ -36,5 +36,8 @@ export const SEED_VERSION = 7;
  * v10 — Adds `iconicMerchantBought` slice: unlocked ICONIC droids re-bought
  *      from the Iconic Droid Merchant this cycle (1M credits each), reset on
  *      Super Rebirth. R2-D2 & C-3PO added to the Nova Shop iconic list.
+ * v11 — Adds `craftingStations` slice: single-slot state for Worker/
+ *      Astromech/Battle stations ({state:"crafting"|"ready"}). Reset on
+ *      Super Rebirth. Stations unlock at RB0/1/2 respectively.
  */
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;

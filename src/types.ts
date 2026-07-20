@@ -214,6 +214,28 @@ export interface NovaIconicPurchase {
   crystals: number;
 }
 
+/** The three droid crafting stations. Worker is available at RB0; Astromech unlocks at RB1; Battle at RB2. */
+export type StationType = "WORKER" | "ASTROMECH" | "BATTLE";
+
+/**
+ * A crafting-station slot state.
+ *   crafting = a build is in progress
+ *   ready    = a finished droid sits in the slot, not yet grabbed
+ * Either way the slot is OCCUPIED — you can't start another craft here.
+ */
+export type StationSlotState = "crafting" | "ready";
+
+/**
+ * One droid currently occupying a crafting station's single slot. At most
+ * one entry per station (no entry = empty station).
+ */
+export interface CraftingStationSlot {
+  station: StationType;
+  name: string;
+  tier: Tier;
+  state: StationSlotState;
+}
+
 /** Per-tier economy stats for a droid (from the community stats sheet). */
 export interface DroidTierStat {
   /** Upgrade cost to reach this tier, free-text (null for event droids). */
@@ -250,6 +272,12 @@ export interface PersistedState {
    * Droid Merchant this cycle (1M credits each). Resets on Super Rebirth.
    */
   iconicMerchantBought: string[];
+  /**
+   * Current occupant of each droid crafting station (Worker/Astromech/
+   * Battle). Each station is a single slot: at most one entry per station.
+   * Resets on Super Rebirth.
+   */
+  craftingStations: CraftingStationSlot[];
   ui: UiPrefs;
 }
 

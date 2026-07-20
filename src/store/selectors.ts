@@ -270,6 +270,7 @@ export function useBaseView(): BaseView {
   const standardRebirth = useAppStore((s) => s.profile.standardRebirth);
   const loungeCreditSlots = useAppStore((s) => s.profile.loungeCreditSlots);
   const novaUpgrades = useAppStore((s) => s.novaUpgrades);
+  const craftingStations = useAppStore((s) => s.craftingStations);
   const cycle = useActiveCycle();
   return useMemo(() => {
     const novaLoungeSlots =
@@ -282,8 +283,9 @@ export function useBaseView(): BaseView {
       loungeCreditSlots,
       novaLoungeSlots,
       cycle,
+      craftingStations,
     });
-  }, [cards, customDroids, standardRebirth, loungeCreditSlots, novaUpgrades, cycle]);
+  }, [cards, customDroids, standardRebirth, loungeCreditSlots, novaUpgrades, craftingStations, cycle]);
 }
 
 /** Everything the Home dashboard needs, in one hook. */

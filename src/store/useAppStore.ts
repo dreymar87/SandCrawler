@@ -14,6 +14,8 @@ import type {
   PersistedState,
   RebirthCycle,
   StandardRebirth,
+  StationSlotState,
+  StationType,
   TabKey,
   Tier,
 } from "../types";
@@ -79,6 +81,22 @@ interface Actions {
   setIconicPurchased(droidName: string, purchased: boolean): void;
   /** Toggle an unlocked ICONIC droid as bought this cycle from the Merchant. */
   setIconicMerchantBought(droidName: string, bought: boolean): void;
+
+  // ── Crafting stations (single slot each) ──────────────────────────────
+  /** Occupy an empty station with a new in-progress craft. No-op if occupied. */
+  startCraft(station: StationType, name: string, tier: Tier): void;
+  /** Flip an occupant's state between "crafting" and "ready". */
+  setStationState(station: StationType, state: StationSlotState): void;
+  /** Grab a station's droid → mark it owned in the Droidex + empty the slot. */
+  grabStation(station: StationType): void;
+  /** Empty a station without granting ownership (cancel / eject). */
+  clearStation(station: StationType): void;
+  /**
+   * On a "ready" slot: the finished droid becomes your Companion (owned;
+   * clears any prior companion) and your prior companion parks into the
+   * station as "ready". If no prior companion, the station just empties.
+   */
+  swapCompanionIntoStation(station: StationType): void;
 
   // ── Standard Rebirth (user overrides on top of the seed table) ────────
   upsertStandardOverride(rb: StandardRebirth): void;
@@ -366,6 +384,70 @@ export const useAppStore = create<AppStore>()(
         });
       },
 
+      startCraft(station, name, tier) {
+        set((s) => {
+          // Blocked if the station is already occupied — one slot per station.
+          if (s.craftingStations.some((c) => c.station === station)) return {};
+          return {
+            craftingStations: [
+              ...s.craftingStations,
+              { station, name: name.trim(), tier, state: "crafting" },
+            ],
+          };
+        });
+      },
+
+      setStationState(station, state) {
+        set((s) => ({
+          craftingStations: s.craftingStations.map((c) =>
+            c.station === station ? { ...c, state } : c,
+          ),
+        }));
+      },
+
+      grabStation(station) {
+        const slot = get().craftingStations.find((c) => c.station === station);
+        if (!slot) return;
+        // Mark the crafted droid owned in the Droidex.
+        get().setCardCounts(slot.name, slot.tier, { owned: true });
+        set((s) => ({
+          craftingStations: s.craftingStations.filter((c) => c.station !== station),
+        }));
+      },
+
+      clearStation(station) {
+        set((s) => ({
+          craftingStations: s.craftingStations.filter((c) => c.station !== station),
+        }));
+      },
+
+      swapCompanionIntoStation(station) {
+        const s = get();
+        const slot = s.craftingStations.find((c) => c.station === station);
+        if (!slot || slot.state !== "ready") return;
+        // Capture the current companion (if any and distinct from the slot droid).
+        const prior = s.cards.find(
+          (c) =>
+            c.companion > 0 &&
+            !(c.name.trim().toLowerCase() === slot.name.trim().toLowerCase() && c.tier === slot.tier),
+        );
+        // Install the slot droid as the new companion (owned, single-slot swap).
+        get().moveToCompanion(slot.name, slot.tier, null);
+        // Park the prior companion (if any) back into the station as "ready";
+        // otherwise the station empties.
+        set((cur) => ({
+          craftingStations: cur.craftingStations.filter((c) => c.station !== station),
+        }));
+        if (prior) {
+          set((cur) => ({
+            craftingStations: [
+              ...cur.craftingStations,
+              { station, name: prior.name, tier: prior.tier, state: "ready" },
+            ],
+          }));
+        }
+      },
+
       setNovaUpgradeLevel(id, level) {
         set((s) => {
           const safe = Math.max(0, Math.floor(level));
@@ -446,6 +528,8 @@ export const useAppStore = create<AppStore>()(
             // availability resets on Super Rebirth. Unlocks (novaIconicOwned)
             // persist.
             iconicMerchantBought: [],
+            // Station occupancy clears on SR (Astromech/Battle also re-lock).
+            craftingStations: [],
             profile: {
               ...s.profile,
               standardRebirth: 0,
@@ -480,6 +564,7 @@ export const useAppStore = create<AppStore>()(
         novaUpgrades: state.novaUpgrades,
         novaIconicOwned: state.novaIconicOwned ?? [],
         iconicMerchantBought: state.iconicMerchantBought ?? [],
+        craftingStations: state.craftingStations ?? [],
         ui: state.ui,
       }),
     },

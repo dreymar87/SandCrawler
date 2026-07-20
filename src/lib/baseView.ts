@@ -7,10 +7,13 @@ import { parseCredits, formatCredits } from "./credits";
 import { normalizeName } from "./normalize";
 import type {
   CollectionCard,
+  CraftingStationSlot,
   DroidDef,
   DroidStats,
   Rarity,
   RebirthCycle,
+  StationSlotState,
+  StationType,
   Tier,
 } from "../types";
 
@@ -38,6 +41,18 @@ export function loungeCapacity(creditSlots: number, novaSlots: number): number {
 export function nextLoungeUnlock(rb: number): number | null {
   for (const lvl of LOUNGE_RB_UNLOCKS) if (lvl > rb) return lvl;
   return null;
+}
+
+/** Rebirth level each crafting station becomes available at. */
+export const STATION_UNLOCK_RB: Readonly<Record<StationType, number>> = {
+  WORKER: 0,
+  ASTROMECH: 1,
+  BATTLE: 2,
+};
+
+/** True if the station is available at the given RB. */
+export function stationUnlockedAt(station: StationType, rb: number): boolean {
+  return rb >= STATION_UNLOCK_RB[station];
 }
 
 export interface DeployedDroid {
@@ -87,10 +102,29 @@ export interface CompanionSlot {
   deployed: number;
 }
 
+/** View shape for one droid crafting station (single slot). */
+export interface StationFill {
+  type: StationType;
+  label: string;
+  accent: string;
+  unlocked: boolean;
+  unlockRb: number;
+  /** null when the station is empty; otherwise the current occupant. */
+  slot: {
+    name: string;
+    tier: Tier;
+    state: StationSlotState;
+    rarity: Rarity;
+    /** True when the droid's class matches the station (crafting-speed bonus). */
+    typeMatch: boolean;
+  } | null;
+}
+
 export interface BaseView {
   squads: SquadFill[];
   lounge: LoungeFill;
   companion: CompanionSlot;
+  stations: StationFill[];
   sellCandidates: SellCandidate[];
   /** Formatted sum of sell-candidate values, e.g. "1.24B". */
   sellTotal: string;
@@ -106,6 +140,8 @@ export interface BuildBaseViewArgs {
   loungeCreditSlots: number;
   novaLoungeSlots: number;
   cycle: RebirthCycle;
+  /** Current crafting-station occupancy. Optional — defaults to []. */
+  craftingStations?: readonly CraftingStationSlot[];
 }
 
 /**
@@ -122,6 +158,7 @@ export function buildBaseView({
   loungeCreditSlots,
   novaLoungeSlots,
   cycle,
+  craftingStations = [],
 }: BuildBaseViewArgs): BaseView {
   const byKey = new Map<string, DroidDef>();
   for (const d of dict) {
@@ -194,6 +231,32 @@ export function buildBaseView({
     deployed: companionDeployed,
   };
 
+  // Crafting stations: one single slot per station (WORKER/ASTROMECH/BATTLE).
+  // Placement is class-INDEPENDENT — sum by the station field, not by class.
+  const stations: StationFill[] = PRODUCTION_CLASSES.map((st) => {
+    const def = SQUAD_DEFS[st];
+    const slotRaw = craftingStations.find((c) => c.station === st);
+    let slot: StationFill["slot"] = null;
+    if (slotRaw) {
+      const cdef = resolve(slotRaw.name);
+      slot = {
+        name: slotRaw.name,
+        tier: slotRaw.tier,
+        state: slotRaw.state,
+        rarity: cdef?.rarity ?? "COMMON",
+        typeMatch: cdef?.class === st,
+      };
+    }
+    return {
+      type: st,
+      label: def.label,
+      accent: def.accent,
+      unlocked: stationUnlockedAt(st, standardRebirth),
+      unlockRb: STATION_UNLOCK_RB[st],
+      slot,
+    };
+  });
+
   // Sell candidates: DEPLOYED cards (working or lounge — actually
   // occupying a base slot) whose droid isn't needed later this cycle.
   // A card merely flagged "owned" in the Droidex isn't taking a slot, so
@@ -224,6 +287,7 @@ export function buildBaseView({
     squads,
     lounge,
     companion,
+    stations,
     sellCandidates,
     sellTotal: formatCredits(sellTotalCredits),
   };

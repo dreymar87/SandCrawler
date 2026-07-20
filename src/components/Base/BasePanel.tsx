@@ -14,6 +14,7 @@ import { SearchInput } from "../common/SearchInput";
 import { DroidActionMenu } from "./DroidActionMenu";
 import { AddToBaseModal } from "./AddToBaseModal";
 import { ActiveBonuses } from "./ActiveBonuses";
+import { CraftingStations } from "./CraftingStations";
 import type { CompanionSlot, DeployedDroid, LoungeFill, SellCandidate, SquadFill } from "../../lib/baseView";
 
 type OpenMenu = { droid: DeployedDroid; slot: Slot };
@@ -167,6 +168,9 @@ export function BasePanel() {
           working / lounge / companion numbers on the Droidex.
         </p>
       </section>
+
+      {/* Crafting stations — one droid per station, RB-gated. */}
+      <CraftingStations stations={base.stations} />
 
       {/* Safe to sell */}
       <section className="card p-4">

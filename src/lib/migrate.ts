@@ -3,12 +3,16 @@ import { SCHEMA_VERSION } from "../data/version";
 import type {
   CollectionCard,
   CosmeticState,
+  CraftingStationSlot,
   NovaUpgradeState,
   PersistedState,
   Profile,
   RebirthCycle,
   StandardRebirth,
+  StationSlotState,
+  StationType,
   TabKey,
+  Tier,
 } from "../types";
 import { buildDroidIndex } from "./autocomplete";
 import { LOUNGE_BASE_SLOTS } from "./baseView";
@@ -52,6 +56,7 @@ export function emptyState(): PersistedState {
     novaUpgrades: [],
     novaIconicOwned: [],
     iconicMerchantBought: [],
+    craftingStations: [],
     ui: { activeTab: "base" },
   };
 }
@@ -240,6 +245,29 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
         .filter((n) => n.length > 0)
     : [];
 
+  // v11: craftingStations slice. Keep only well-formed entries and dedupe to
+  // one per station (the game rule — a station holds ≤ 1 droid).
+  const validStations = new Set<StationType>(["WORKER", "ASTROMECH", "BATTLE"]);
+  const validStates = new Set<StationSlotState>(["crafting", "ready"]);
+  const craftingStations: CraftingStationSlot[] = [];
+  if (Array.isArray(obj.craftingStations)) {
+    const seen = new Set<StationType>();
+    for (const raw of obj.craftingStations as unknown[]) {
+      if (!raw || typeof raw !== "object") continue;
+      const r = raw as Record<string, unknown>;
+      const station = r.station as StationType;
+      const name = typeof r.name === "string" ? r.name.trim() : "";
+      const tier = normalizeTier(String(r.tier ?? "")) as Tier;
+      const state = validStates.has(r.state as StationSlotState)
+        ? (r.state as StationSlotState)
+        : "crafting";
+      if (!validStations.has(station) || !name || !tier) continue;
+      if (seen.has(station)) continue;
+      seen.add(station);
+      craftingStations.push({ station, name, tier, state });
+    }
+  }
+
   // v5: lift StandardRebirth.rewards.slotUnlock to top-level, drop the rest.
   // v4 stored slot/crystals/mults nested under `rewards`; v5 keeps only
   // slotUnlock (the genuinely per-RB datum).
@@ -255,6 +283,7 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
     novaUpgrades,
     novaIconicOwned,
     iconicMerchantBought,
+    craftingStations,
     ui: {
       // creditsCurrent intentionally dropped from uiRaw (moved to profile in v6).
       ...stripUiCredits(uiRaw),

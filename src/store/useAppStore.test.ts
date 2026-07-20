@@ -122,6 +122,85 @@ describe("performSuperRebirth", () => {
     expect(useAppStore.getState().iconicMerchantBought).toEqual([]);
     expect(useAppStore.getState().novaIconicOwned).toEqual(["BB8"]); // unlock persists
   });
+
+  it("clears craftingStations on Super Rebirth (Astromech/Battle relock)", () => {
+    useAppStore.getState().startCraft("WORKER", "MOUSE", "DEFAULT");
+    expect(useAppStore.getState().craftingStations).toHaveLength(1);
+    useAppStore.getState().performSuperRebirth();
+    expect(useAppStore.getState().craftingStations).toEqual([]);
+  });
+});
+
+describe("crafting stations", () => {
+  beforeEach(() => useAppStore.getState().resetAll());
+
+  const stationOf = (station: "WORKER" | "ASTROMECH" | "BATTLE") =>
+    useAppStore.getState().craftingStations.find((c) => c.station === station);
+  const card = (name: string, tier: "DEFAULT" | "GOLD" | "DIAMOND" | "RAINBOW" | "BESKAR" | "GALACTIC") =>
+    useAppStore.getState().cards.find((c) => c.name === name && c.tier === tier);
+
+  it("startCraft occupies an empty station; further starts are blocked", () => {
+    useAppStore.getState().startCraft("WORKER", "MOUSE", "GOLD");
+    expect(stationOf("WORKER")).toMatchObject({ name: "MOUSE", tier: "GOLD", state: "crafting" });
+    // A second startCraft on the same station is a no-op (single slot).
+    useAppStore.getState().startCraft("WORKER", "PIT", "DEFAULT");
+    expect(stationOf("WORKER")!.name).toBe("MOUSE");
+  });
+
+  it("setStationState flips crafting → ready", () => {
+    useAppStore.getState().startCraft("ASTROMECH", "R2", "DEFAULT");
+    useAppStore.getState().setStationState("ASTROMECH", "ready");
+    expect(stationOf("ASTROMECH")!.state).toBe("ready");
+  });
+
+  it("grabStation empties the slot AND marks the droid owned in the Droidex", () => {
+    useAppStore.getState().startCraft("WORKER", "MOUSE", "GOLD");
+    useAppStore.getState().setStationState("WORKER", "ready");
+    useAppStore.getState().grabStation("WORKER");
+    expect(stationOf("WORKER")).toBeUndefined();
+    expect(card("MOUSE", "GOLD")!.owned).toBe(true);
+  });
+
+  it("clearStation empties without granting ownership", () => {
+    useAppStore.getState().startCraft("WORKER", "MOUSE", "GOLD");
+    useAppStore.getState().clearStation("WORKER");
+    expect(stationOf("WORKER")).toBeUndefined();
+    expect(card("MOUSE", "GOLD")).toBeUndefined();
+  });
+
+  it("swapCompanionIntoStation: crafted becomes companion, prior companion parks in station", () => {
+    // Seed a current companion (R2) and a ready MOUSE in Worker.
+    useAppStore.setState({
+      cards: [{ name: "R2", tier: "DEFAULT", owned: true, working: 0, lounge: 0, companion: 1 }],
+    });
+    useAppStore.getState().startCraft("WORKER", "MOUSE", "GOLD");
+    useAppStore.getState().setStationState("WORKER", "ready");
+
+    useAppStore.getState().swapCompanionIntoStation("WORKER");
+
+    // MOUSE is the new companion (owned, single slot enforced).
+    expect(card("MOUSE", "GOLD")).toMatchObject({ companion: 1, owned: true });
+    // Old companion R2 no longer holds companion=1.
+    expect(card("R2", "DEFAULT")!.companion).toBe(0);
+    // Station now holds R2, ready.
+    expect(stationOf("WORKER")).toMatchObject({ name: "R2", tier: "DEFAULT", state: "ready" });
+  });
+
+  it("swapCompanionIntoStation with no companion: station empties, crafted becomes companion", () => {
+    useAppStore.getState().startCraft("WORKER", "MOUSE", "GOLD");
+    useAppStore.getState().setStationState("WORKER", "ready");
+    useAppStore.getState().swapCompanionIntoStation("WORKER");
+    expect(card("MOUSE", "GOLD")).toMatchObject({ companion: 1, owned: true });
+    expect(stationOf("WORKER")).toBeUndefined();
+  });
+
+  it("swapCompanionIntoStation is a no-op unless state === ready", () => {
+    useAppStore.getState().startCraft("WORKER", "MOUSE", "GOLD");
+    // still crafting
+    useAppStore.getState().swapCompanionIntoStation("WORKER");
+    expect(card("MOUSE", "GOLD")).toBeUndefined();
+    expect(stationOf("WORKER")!.state).toBe("crafting");
+  });
 });
 
 describe("setIconicMerchantBought", () => {
