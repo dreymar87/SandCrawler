@@ -323,6 +323,8 @@ export interface UiPrefs {
   pendingSetup?: boolean;
   /** Cycle-strategy "hide completed" toggle — persisted across tab nav. */
   hideCompletedKeepers?: boolean;
+  /** Credit-strategy "show all droids" toggle (whole dex vs. owned only). */
+  strategyShowAll?: boolean;
 }
 
 /** The five primary bottom-nav destinations. */
