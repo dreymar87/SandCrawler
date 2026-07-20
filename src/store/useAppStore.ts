@@ -87,8 +87,12 @@ interface Actions {
   startCraft(station: StationType, name: string, tier: Tier): void;
   /** Flip an occupant's state between "crafting" and "ready". */
   setStationState(station: StationType, state: StationSlotState): void;
-  /** Grab a station's droid → mark it owned in the Droidex + empty the slot. */
-  grabStation(station: StationType): void;
+  /**
+   * Grab a station's droid → empty the slot. With a `target` slot the droid is
+   * deployed there (owned + working/lounge/companion); with null/omitted it's
+   * just marked owned in the Droidex.
+   */
+  grabStation(station: StationType, target?: Slot | null): void;
   /** Empty a station without granting ownership (cancel / eject). */
   clearStation(station: StationType): void;
   /**
@@ -405,11 +409,16 @@ export const useAppStore = create<AppStore>()(
         }));
       },
 
-      grabStation(station) {
+      grabStation(station, target) {
         const slot = get().craftingStations.find((c) => c.station === station);
         if (!slot) return;
-        // Mark the crafted droid owned in the Droidex.
-        get().setCardCounts(slot.name, slot.tier, { owned: true });
+        if (target) {
+          // Deploy the finished droid straight into a slot (also marks owned).
+          get().addDeployed(slot.name, slot.tier, target);
+        } else {
+          // Just mark the crafted droid owned in the Droidex.
+          get().setCardCounts(slot.name, slot.tier, { owned: true });
+        }
         set((s) => ({
           craftingStations: s.craftingStations.filter((c) => c.station !== station),
         }));

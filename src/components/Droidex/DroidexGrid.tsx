@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { TIERS, RARITIES, CLASSES } from "../../constants";
+import { TIERS, RARITIES, CLASSES, CLASS_COLOR } from "../../constants";
 import { DROID_DICT } from "../../data/droids.seed";
 import { haptic } from "../../lib/native";
 import { isDroidSafeToSell } from "../../lib/cycleStrategy";
@@ -314,7 +314,7 @@ function DroidRow({ droid, cardIndex, openTier, onCellTap, onOpenDetail, tierFil
         <button
           type="button"
           onClick={onOpenDetail}
-          className="font-display font-semibold text-[14.5px] truncate max-w-full text-left hover:text-holo transition-colors"
+          className={`font-display font-semibold text-[14.5px] truncate max-w-full text-left transition-opacity hover:opacity-70 ${CLASS_COLOR[droid.class]}`}
           aria-label={`${droid.canonical} details`}
         >
           {droid.canonical}

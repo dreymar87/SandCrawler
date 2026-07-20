@@ -6,10 +6,13 @@ import { computeCycleStrategy, type CycleStrategy, type KeeperEntry } from "../.
 import { CHIP_COSTS } from "../../data/chipCosts.seed";
 import { chipsBetween, formatChipCost } from "../../lib/chipCosts";
 import { bestOwnedTier } from "../../lib/readiness";
+import { normalizeName } from "../../lib/normalize";
 import { satisfies, tierRank } from "../../lib/tiers";
 import { cycleLabel } from "../../lib/rebirthCycles";
+import { haptic } from "../../lib/native";
+import { toast } from "../../lib/toast";
 import { useActiveCycle } from "../../store/selectors";
-import { useAppStore } from "../../store/useAppStore";
+import { useAppStore, type Slot } from "../../store/useAppStore";
 import { TierPill } from "../common/TierPill";
 
 /** How many upcoming RBs count as "focus / urgent." */
@@ -125,6 +128,7 @@ export function CycleStrategySection() {
           <GroupedKeepersList
             entries={enriched}
             hideCompleted={hideCompleted}
+            currentLevel={currentLevel}
             onOpen={setOpenEntry}
           />
           <p className="font-mono text-[10.5px] text-muted-alt">
@@ -315,10 +319,12 @@ function HideCompletedToggle({
 function GroupedKeepersList({
   entries,
   hideCompleted,
+  currentLevel,
   onOpen,
 }: {
   entries: EnrichedEntry[];
   hideCompleted: boolean;
+  currentLevel: number;
   onOpen: (entry: EnrichedEntry) => void;
 }) {
   if (entries.length === 0) {
@@ -382,7 +388,7 @@ function GroupedKeepersList({
           </div>
           <ul className="divide-y divide-line">
             {g.rows.map((k) => (
-              <KeeperRow key={k.name} entry={k} onOpen={() => onOpen(k)} />
+              <KeeperRow key={k.name} entry={k} currentLevel={currentLevel} onOpen={() => onOpen(k)} />
             ))}
           </ul>
         </div>
@@ -395,10 +401,22 @@ function sumCounts(c: Record<Status, number>): number {
   return c.HAVE + c.UPGRADE + c.MISSING + c.DONE;
 }
 
-function KeeperRow({ entry, onOpen }: { entry: EnrichedEntry; onOpen: () => void }) {
+function KeeperRow({
+  entry,
+  currentLevel,
+  onOpen,
+}: {
+  entry: EnrichedEntry;
+  currentLevel: number;
+  onOpen: () => void;
+}) {
+  // Needed at the player's current RB → highlight the whole row green.
+  const atLevel = entry.appearsAt.includes(currentLevel);
   return (
     <li
-      className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-0.5 px-3 py-2 cursor-pointer hover:bg-panel-alt/50"
+      className={`grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-0.5 px-3 py-2 cursor-pointer ${
+        atLevel ? "bg-ok/10 hover:bg-ok/15" : "hover:bg-panel-alt/50"
+      }`}
       onClick={onOpen}
       role="button"
       tabIndex={0}
@@ -419,8 +437,25 @@ function KeeperRow({ entry, onOpen }: { entry: EnrichedEntry; onOpen: () => void
         </div>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           <StatusChip status={entry.status} />
-          <span className="font-mono text-[10px] text-muted-alt">
-            RB {entry.appearsAt.join(", ")}
+          <span className="font-mono text-[10px] text-muted-alt flex items-center gap-1">
+            <span className="text-muted">RB</span>
+            {entry.appearsAt.map((n) => (
+              <span
+                key={n}
+                className={
+                  n < currentLevel
+                    ? "line-through text-muted/60" // passed
+                    : n === currentLevel
+                      ? "text-ok font-bold" // needed now
+                      : "text-muted-alt" // upcoming
+                }
+                title={
+                  n < currentLevel ? "passed" : n === currentLevel ? "needed at your current RB" : "upcoming"
+                }
+              >
+                {n}
+              </span>
+            ))}
           </span>
           {entry.status === "UPGRADE" && entry.ownedTier ? (
             <span className="font-mono text-[10px] text-sun">have {entry.ownedTier}</span>
@@ -503,10 +538,40 @@ function rarityAccent(r: Rarity): string {
  * tier marked, and the total chips still needed to reach it.
  */
 function ChipBreakdownModal({ entry, onClose }: { entry: EnrichedEntry; onClose: () => void }) {
+  const cards = useAppStore((s) => s.cards);
+  const upgradeDeployed = useAppStore((s) => s.upgradeDeployed);
   const row = CHIP_COSTS.find((r) => r.rarity === entry.rarity);
-  const ownedRank = entry.ownedTier ? tierRank(entry.ownedTier) : -1;
+  // Derive the owned tier LIVE from cards so committing an upgrade advances
+  // the "you're here" marker in place.
+  const ownedTier = bestOwnedTier(entry.name, cards);
+  const ownedRank = ownedTier ? tierRank(ownedTier) : -1;
   const targetRank = tierRank(entry.targetTier);
-  const totalLeft = chipsBetween(entry.rarity, entry.ownedTier ?? "DEFAULT", entry.targetTier);
+  const totalLeft = chipsBetween(entry.rarity, ownedTier ?? "DEFAULT", entry.targetTier);
+
+  // Which deployed copy an upgrade would advance (working preferred).
+  const ownedCard = ownedTier
+    ? cards.find((c) => normalizeName(c.name) === normalizeName(entry.name) && c.tier === ownedTier)
+    : undefined;
+  const fromSlot: Slot | null = ownedCard
+    ? ownedCard.working > 0
+      ? "working"
+      : ownedCard.lounge > 0
+        ? "lounge"
+        : ownedCard.companion > 0
+          ? "companion"
+          : null
+    : null;
+  const nextRank = ownedRank + 1;
+  // The immediate next tier is committable while still below the target.
+  const canUpgrade =
+    !!row && ownedTier !== null && fromSlot !== null && ownedRank >= 0 && nextRank <= targetRank;
+  const doUpgrade = () => {
+    if (!ownedTier || !fromSlot) return;
+    upgradeDeployed(entry.name, ownedTier, fromSlot, fromSlot); // +1 tier, same slot, 1 copy
+    haptic("medium");
+    toast(`${entry.name} → ${UPGRADE_TIERS[nextRank]} · ${fromSlot}`);
+    // Modal stays open; ownedTier re-derives from the updated cards.
+  };
 
   // Portal to <body> so the fixed overlay escapes any ancestor that
   // creates a containing block (the section's view-enter transform).
@@ -545,6 +610,7 @@ function ChipBreakdownModal({ entry, onClose }: { entry: EnrichedEntry; onClose:
             <ul className="rounded-[10px] border border-line overflow-hidden divide-y divide-line mb-4">
               {UPGRADE_TIERS.map((tier, i) => {
                 const isOwned = i === ownedRank;
+                const isNext = i === nextRank && canUpgrade;
                 const isTarget = tier === entry.targetTier;
                 // steps[i-1] is the cost to reach UPGRADE_TIERS[i] from the prior tier.
                 const stepCost = i === 0 ? null : row.steps[i - 1];
@@ -555,12 +621,35 @@ function ChipBreakdownModal({ entry, onClose }: { entry: EnrichedEntry; onClose:
                   <li
                     key={tier}
                     className={`flex items-center gap-3 px-3 py-2 ${
-                      isOwned ? "bg-ok/10" : beyondTarget ? "opacity-40" : ""
+                      isOwned
+                        ? "bg-ok/10"
+                        : isNext
+                          ? "bg-holo/10 cursor-pointer hover:bg-holo/20"
+                          : beyondTarget
+                            ? "opacity-40"
+                            : ""
                     }`}
+                    role={isNext ? "button" : undefined}
+                    tabIndex={isNext ? 0 : undefined}
+                    onClick={isNext ? doUpgrade : undefined}
+                    onKeyDown={
+                      isNext
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              doUpgrade();
+                            }
+                          }
+                        : undefined
+                    }
                   >
                     <TierPill tier={tier} />
                     <div className="min-w-0">
-                      <span className={`font-display text-[13px] ${isOwned ? "text-ok font-bold" : ""}`}>
+                      <span
+                        className={`font-display text-[13px] ${
+                          isOwned ? "text-ok font-bold" : isNext ? "text-holo font-bold" : ""
+                        }`}
+                      >
                         {tier}
                         {isOwned ? " · you're here" : ""}
                         {isTarget && !isOwned ? " · target" : ""}
@@ -572,9 +661,15 @@ function ChipBreakdownModal({ entry, onClose }: { entry: EnrichedEntry; onClose:
                       ) : null}
                     </div>
                     <span className="flex-1" />
-                    <span className="font-mono text-[11.5px] tabular-nums text-muted-alt">
-                      {i === 0 ? "—" : stepCost == null ? "?" : `+${formatChipCost(stepCost)}`}
-                    </span>
+                    {isNext ? (
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-holo font-bold">
+                        Upgrade →
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[11.5px] tabular-nums text-muted-alt">
+                        {i === 0 ? "—" : stepCost == null ? "?" : `+${formatChipCost(stepCost)}`}
+                      </span>
+                    )}
                   </li>
                 );
               })}
@@ -584,14 +679,16 @@ function ChipBreakdownModal({ entry, onClose }: { entry: EnrichedEntry; onClose:
                 Chips left to {entry.targetTier}
               </span>
               <span className="font-display font-bold text-lg text-holo">
-                {entry.ownedTier && satisfies(entry.targetTier, entry.ownedTier)
-                  ? "0 · done"
-                  : formatChipCost(totalLeft)}
+                {ownedTier && satisfies(entry.targetTier, ownedTier) ? "0 · done" : formatChipCost(totalLeft)}
               </span>
             </div>
-            {entry.ownedTier ? null : (
+            {canUpgrade ? (
+              <p className="font-mono text-[10px] text-holo mt-2">
+                Tap the highlighted tier to upgrade 1 copy in {fromSlot} (spends chips in-game).
+              </p>
+            ) : ownedTier ? null : (
               <p className="font-mono text-[10px] text-muted-alt mt-2">
-                You don't own this droid yet — total assumes starting from DEFAULT.
+                You don't own this droid deployed — total assumes starting from DEFAULT.
               </p>
             )}
           </>

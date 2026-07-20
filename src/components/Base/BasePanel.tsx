@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { CLASS_COLOR } from "../../constants";
+import { incomeAt } from "../../lib/incomeStrategy";
+import { tierStatsFor } from "../../lib/droidStats";
 import { formatPerSecond } from "../../lib/production";
 import { cycleLabel } from "../../lib/rebirthCycles";
 import { formatCredits, parseCredits } from "../../lib/credits";
@@ -376,21 +379,30 @@ function DroidChips({
   // instead of the ragged content-width chips.
   return (
     <ul className="rounded-md border border-line bg-bg-alt/40 divide-y divide-line/60 overflow-hidden">
-      {droids.map((d) => (
-        <li key={`${d.name}-${d.tier}`}>
-          <button
-            type="button"
-            onClick={() => onDroid(d)}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-holo/5 transition"
-          >
-            <span className="flex-1 min-w-0 font-mono text-[11px] truncate">{d.name}</span>
-            <TierPill tier={d.tier} />
-            <span className="w-8 shrink-0 text-right font-mono text-[10px] text-holo font-bold tabular-nums">
-              {d.count > 1 ? `×${d.count}` : ""}
-            </span>
-          </button>
-        </li>
-      ))}
+      {droids.map((d) => {
+        const inc = incomeAt(d.name, d.tier);
+        const incomeLabel = inc !== null ? formatPerSecond(inc) : tierStatsFor(d.name)?.[d.tier]?.income ?? "—";
+        return (
+          <li key={`${d.name}-${d.tier}`}>
+            <button
+              type="button"
+              onClick={() => onDroid(d)}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-holo/5 transition"
+            >
+              <span className={`flex-1 min-w-0 font-mono text-[11px] truncate ${CLASS_COLOR[d.class]}`}>
+                {d.name}
+              </span>
+              <span className="shrink-0 font-mono text-[10px] text-muted-alt tabular-nums">
+                {incomeLabel}
+              </span>
+              <TierPill tier={d.tier} />
+              <span className="w-7 shrink-0 text-right font-mono text-[10px] text-holo font-bold tabular-nums">
+                {d.count > 1 ? `×${d.count}` : ""}
+              </span>
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -400,7 +412,9 @@ function SellRow({ candidate, onSell }: { candidate: SellCandidate; onSell: () =
     <li className="flex items-center gap-2.5 py-2">
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="font-display font-semibold text-[13.5px] truncate">{candidate.name}</span>
+          <span className={`font-display font-semibold text-[13.5px] truncate ${CLASS_COLOR[candidate.class]}`}>
+            {candidate.name}
+          </span>
           {candidate.count > 1 ? (
             <span className="font-mono text-[10px] text-holo font-bold">×{candidate.count}</span>
           ) : null}

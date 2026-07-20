@@ -161,6 +161,22 @@ describe("crafting stations", () => {
     expect(card("MOUSE", "GOLD")!.owned).toBe(true);
   });
 
+  it("grabStation marks owned even from the crafting state (no mark-ready needed)", () => {
+    useAppStore.getState().startCraft("WORKER", "MOUSE", "GOLD"); // still "crafting"
+    useAppStore.getState().grabStation("WORKER");
+    expect(stationOf("WORKER")).toBeUndefined();
+    expect(card("MOUSE", "GOLD")!.owned).toBe(true);
+  });
+
+  it("grabStation with a target slot deploys the droid (owned + in that slot)", () => {
+    useAppStore.getState().startCraft("WORKER", "MOUSE", "GOLD");
+    useAppStore.getState().grabStation("WORKER", "working");
+    expect(stationOf("WORKER")).toBeUndefined();
+    const c = card("MOUSE", "GOLD")!;
+    expect(c.owned).toBe(true);
+    expect(c.working).toBe(1);
+  });
+
   it("clearStation empties without granting ownership", () => {
     useAppStore.getState().startCraft("WORKER", "MOUSE", "GOLD");
     useAppStore.getState().clearStation("WORKER");

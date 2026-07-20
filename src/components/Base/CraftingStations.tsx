@@ -2,11 +2,17 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { haptic } from "../../lib/native";
 import { toast } from "../../lib/toast";
-import { useAppStore } from "../../store/useAppStore";
+import { useAppStore, type Slot } from "../../store/useAppStore";
 import { TierPill } from "../common/TierPill";
 import { StartCraftModal } from "./StartCraftModal";
 import type { StationFill } from "../../lib/baseView";
 import type { StationType } from "../../types";
+
+const GRAB_SLOTS: { slot: Slot; label: string }[] = [
+  { slot: "working", label: "Working" },
+  { slot: "lounge", label: "Lounge" },
+  { slot: "companion", label: "Companion" },
+];
 
 /**
  * Base-tab section for the three droid crafting stations (Worker/Astromech/
@@ -137,16 +143,23 @@ function StationSlotMenu({ station, onClose }: { station: StationFill; onClose: 
   const currentCompanion = useAppStore((s) => s.cards.find((c) => c.companion > 0));
   const slot = station.slot!;
 
+  // When "Grab" is tapped, reveal a destination chooser (deploy vs just own).
+  const [choosingGrab, setChoosingGrab] = useState(false);
+
   const doMarkReady = () => {
     setStationState(station.type, "ready");
     haptic("light");
     toast(`${slot.name} ${slot.tier} is ready`);
     onClose();
   };
-  const doGrab = () => {
-    grabStation(station.type);
+  const doGrab = (target: Slot | null) => {
+    grabStation(station.type, target);
     haptic("medium");
-    toast(`Grabbed ${slot.name} ${slot.tier} → owned in Droidex`);
+    toast(
+      target
+        ? `${slot.name} ${slot.tier} → ${GRAB_SLOTS.find((g) => g.slot === target)!.label}`
+        : `Grabbed ${slot.name} ${slot.tier} → owned in Droidex`,
+    );
     onClose();
   };
   const doClear = () => {
@@ -193,24 +206,56 @@ function StationSlotMenu({ station, onClose }: { station: StationFill; onClose: 
           {slot.typeMatch ? " · ⚡ type match" : ""}
         </p>
 
-        <div className="space-y-2">
-          {slot.state === "crafting" ? (
-            <button type="button" className="btn btn-block btn-ghost" onClick={doMarkReady}>
-              Mark ready (finished crafting)
+        {choosingGrab ? (
+          <div>
+            <p className="text-[13px] text-ink mb-3">
+              Collect <b>{slot.name}</b> — put it where?
+            </p>
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              {GRAB_SLOTS.map((g) => (
+                <button
+                  key={g.slot}
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => doGrab(g.slot)}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-block btn-sm"
+              onClick={() => doGrab(null)}
+            >
+              Just mark owned (Droidex only)
             </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="w-full flex items-center gap-3 rounded-[10px] border border-ok/50 bg-ok/5 px-3 py-2.5 text-left hover:bg-ok/10"
-                onClick={doGrab}
-              >
-                <span className="font-display font-semibold text-[13.5px] text-ok">
-                  Grab → mark owned
-                </span>
-                <span className="flex-1" />
-                <span className="font-mono text-[10px] text-muted-alt">into Droidex</span>
+            <button
+              type="button"
+              className="font-mono text-[10.5px] uppercase tracking-wider text-muted-alt mt-3"
+              onClick={() => setChoosingGrab(false)}
+            >
+              ← Back
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {/* Grab — available whether still crafting or ready */}
+            <button
+              type="button"
+              className="w-full flex items-center gap-3 rounded-[10px] border border-ok/50 bg-ok/5 px-3 py-2.5 text-left hover:bg-ok/10"
+              onClick={() => setChoosingGrab(true)}
+            >
+              <span className="font-display font-semibold text-[13.5px] text-ok">Grab / collect</span>
+              <span className="flex-1" />
+              <span className="font-mono text-[10px] text-muted-alt">own or deploy</span>
+            </button>
+
+            {slot.state === "crafting" ? (
+              <button type="button" className="btn btn-block btn-ghost" onClick={doMarkReady}>
+                Mark ready (finished crafting)
               </button>
+            ) : (
               <button
                 type="button"
                 className="w-full flex items-center gap-3 rounded-[10px] border border-tier-galactic/50 bg-tier-galactic/5 px-3 py-2.5 text-left hover:bg-tier-galactic/10"
@@ -221,21 +266,22 @@ function StationSlotMenu({ station, onClose }: { station: StationFill; onClose: 
                 </span>
                 <span className="flex-1" />
                 <span className="font-mono text-[10px] text-muted-alt">
-                  {currentCompanion
-                    ? `${currentCompanion.name} → station`
-                    : "no companion set"}
+                  {currentCompanion ? `${currentCompanion.name} → station` : "no companion set"}
                 </span>
               </button>
-            </>
-          )}
-          <button
-            type="button"
-            className="w-full rounded-[10px] border border-danger/40 text-danger px-3 py-2.5 text-[13px] hover:bg-danger/10"
-            onClick={doClear}
-          >
-            Clear station (no ownership)
-          </button>
-        </div>
+            )}
+
+            <div className="pt-2 mt-1 border-t border-line">
+              <button
+                type="button"
+                className="w-full rounded-[10px] border border-danger/40 text-danger px-3 py-2 text-[12px] hover:bg-danger/10"
+                onClick={doClear}
+              >
+                Discard — don't keep this droid
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body,

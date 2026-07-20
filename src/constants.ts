@@ -22,6 +22,19 @@ export const CLASSES = ["WORKER", "ASTROMECH", "BATTLE", "UNKNOWN"] as const sat
 
 export const RARITIES = ["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "ICONIC"] as const satisfies readonly Rarity[];
 
+/**
+ * Text-color token per droid class — used to color droid names across the
+ * Droidex, My base, and Safe-to-sell so classes pop at a glance.
+ * Worker = green, Astromech = purple, Battle = red. (Astromech uses the
+ * galactic/violet token, not tier-diamond which is blue.)
+ */
+export const CLASS_COLOR: Record<DroidClass, string> = {
+  WORKER: "text-ok",
+  ASTROMECH: "text-tier-galactic",
+  BATTLE: "text-danger",
+  UNKNOWN: "text-muted",
+};
+
 /** The highest Standard Rebirth level we track SRB bonuses for. */
 export const MAX_STANDARD_REBIRTH = 29;
 
