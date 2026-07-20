@@ -25,6 +25,7 @@ export function DroidexGrid() {
   const customDroids = useAppStore((s) => s.customDroids);
   const setCardCounts = useAppStore((s) => s.setCardCounts);
   const setUiPref = useAppStore((s) => s.setUiPref);
+  const setActiveTab = useAppStore((s) => s.setActiveTab);
   const rarityFilter = useAppStore((s) => s.ui.rarityFilter ?? "ALL");
   const classFilter = useAppStore((s) => s.ui.classFilter ?? "ALL");
   const tierFilter = useAppStore((s) => s.ui.tierFilter ?? "ALL");
@@ -191,6 +192,15 @@ export function DroidexGrid() {
                   ? `= your current cycle (RBC${activeCycle})`
                   : "toggle Missing to hide ones you own"}
           </span>
+          {rbcFilter !== "ALL" ? (
+            <button
+              type="button"
+              className="font-mono text-[9.5px] uppercase tracking-wider text-holo underline"
+              onClick={() => setActiveTab("rebirths")}
+            >
+              full plan →
+            </button>
+          ) : null}
         </div>
       </section>
 

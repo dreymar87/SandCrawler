@@ -1,6 +1,9 @@
 import { createPortal } from "react-dom";
 import { rosterCovers } from "../../lib/readiness";
 import { srbBonusAt } from "../../lib/novaCrystals";
+import { haptic } from "../../lib/native";
+import { toast } from "../../lib/toast";
+import { useAppStore } from "../../store/useAppStore";
 import { ProgressBar } from "../common/ProgressBar";
 import { TierPill } from "../common/TierPill";
 import type { CollectionCard, StandardRebirth } from "../../types";
@@ -32,6 +35,7 @@ export function RebirthDetailModal({
   onPrev?: () => void;
   onNext?: () => void;
 }) {
+  const bumpWorking = useAppStore((s) => s.bumpWorking);
   const sell = rb.sellList;
   const dnsell = sell.includes("DO_NOT_SELL");
   const slot = rb.slotUnlock;
@@ -87,7 +91,21 @@ export function RebirthDetailModal({
               >
                 <span className="flex-1 truncate">{req.name}</span>
                 <TierPill tier={req.tier} />
-                <span className={`status-tag ${cov ? "ok" : "miss"}`}>{cov ? "In base" : "Need it"}</span>
+                {cov ? (
+                  <span className="status-tag ok">In base</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="font-mono text-[9px] uppercase tracking-wider text-holo border border-holo/50 rounded-md px-2 py-1 hover:bg-holo/10"
+                    onClick={() => {
+                      bumpWorking(req.name, req.tier);
+                      haptic("light");
+                      toast(`${req.name} ${req.tier} → Working`);
+                    }}
+                  >
+                    I have it
+                  </button>
+                )}
               </div>
             );
           })

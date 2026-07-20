@@ -1,7 +1,7 @@
 import { DROID_DICT } from "../data/droids.seed";
 import { RARITIES } from "../constants";
 import { buildDroidIndex } from "./autocomplete";
-import { rebirthsForCycle } from "./sellGuidance";
+import { rebirthsForCycle, sellHint } from "./sellGuidance";
 import { chipsFromDefaultTo } from "./chipCosts";
 import { tierRank } from "./tiers";
 import { normalizeName } from "./normalize";
@@ -114,6 +114,11 @@ export function isDroidSafeToSell(
   cycle: RebirthCycle,
   currentLevel: number,
 ): boolean {
+  // Respect the community sheet's "do not sell" guard: when the current
+  // rebirth row is flagged DO_NOT_SELL, nothing is safe to sell at this level.
+  // (This is the single sell brain shared by Base, the Droidex filter, and the
+  // credit-strategy badges — so they all agree with the per-RB modal.)
+  if (sellHint(canonicalName, cycle, currentLevel).kind === "DO_NOT_SELL") return false;
   const target = normalizeName(canonicalName);
   const rows = rebirthsForCycle(cycle);
   let lastNeeded = -1;

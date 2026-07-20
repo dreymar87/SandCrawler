@@ -2,6 +2,9 @@ import { createPortal } from "react-dom";
 import { TIERS } from "../../constants";
 import { droidCycles } from "../../lib/droidCycles";
 import { tierStatsFor } from "../../lib/droidStats";
+import { isDroidSafeToSell } from "../../lib/cycleStrategy";
+import { sellHint } from "../../lib/sellGuidance";
+import { useAppStore } from "../../store/useAppStore";
 import { TierPill } from "../common/TierPill";
 import type { DroidDef, RebirthCycle, Tier } from "../../types";
 
@@ -26,9 +29,23 @@ export function DroidDetailModal({
   activeCycle?: RebirthCycle;
   onClose: () => void;
 }) {
+  const currentLevel = useAppStore((s) => s.profile.standardRebirth);
+  const setActiveTab = useAppStore((s) => s.setActiveTab);
   const stats = tierStatsFor(def);
   const rows = TIERS.map((tier) => ({ tier, stat: stats?.[tier] })).filter((r) => r.stat);
   const cycles = droidCycles(def.canonical);
+
+  // Sell verdict — the SAME brain (isDroidSafeToSell/sellHint) Base uses.
+  const isIconic = def.rarity === "ICONIC";
+  const hint = activeCycle ? sellHint(def.canonical, activeCycle, currentLevel) : null;
+  const safe = activeCycle ? isDroidSafeToSell(def.canonical, activeCycle, currentLevel) : false;
+  const isDeployed =
+    !!deployed && Object.values(deployed).some((d) => (d?.working ?? 0) + (d?.lounge ?? 0) > 0);
+
+  const goto = (tab: "base" | "rebirths") => {
+    setActiveTab(tab);
+    onClose();
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -81,24 +98,61 @@ export function DroidDetailModal({
           {cycles.length === 0 ? (
             <span className="font-mono text-[11px] text-muted-alt">no rebirth cycle</span>
           ) : (
-            cycles.map((c) => {
-              const isNow = c === activeCycle;
-              return (
-                <span
-                  key={c}
-                  className={`font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                    isNow
-                      ? "bg-holo text-[#04222B] font-bold"
-                      : "border border-holo/40 text-holo"
-                  }`}
-                >
-                  RBC{c}
-                  {isNow ? " · now" : ""}
-                </span>
-              );
-            })
+            <>
+              {cycles.map((c) => {
+                const isNow = c === activeCycle;
+                return (
+                  <span
+                    key={c}
+                    className={`font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                      isNow
+                        ? "bg-holo text-[#04222B] font-bold"
+                        : "border border-holo/40 text-holo"
+                    }`}
+                  >
+                    RBC{c}
+                    {isNow ? " · now" : ""}
+                  </span>
+                );
+              })}
+              <button
+                type="button"
+                className="font-mono text-[10px] uppercase tracking-wider text-holo underline ml-1"
+                onClick={() => goto("rebirths")}
+              >
+                See plan →
+              </button>
+            </>
           )}
         </div>
+
+        {/* Sell verdict — matches Base's Safe-to-sell brain, with a shortcut. */}
+        {activeCycle ? (
+          <div className="mb-3 flex items-center gap-2 flex-wrap rounded-[10px] border border-line bg-panel-alt/40 px-3 py-2">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-alt">Sell</span>
+            {isIconic ? (
+              <span className="text-[12px] text-tier-galactic">Keep — event droid, never sell</span>
+            ) : safe ? (
+              <span className="text-[12px] text-ok">Safe to sell now</span>
+            ) : hint?.kind === "DO_NOT_SELL" ? (
+              <span className="text-[12px] text-warn">Do not sell — locked this rebirth</span>
+            ) : hint?.kind === "KEEP" ? (
+              <span className="text-[12px] text-sun">Keep — needed at RB{hint.nextLevel}</span>
+            ) : (
+              <span className="text-[12px] text-sun">Keep — needed later this cycle</span>
+            )}
+            <span className="flex-1" />
+            {isDeployed && safe && !isIconic ? (
+              <button
+                type="button"
+                className="font-mono text-[10px] uppercase tracking-wider text-holo underline"
+                onClick={() => goto("base")}
+              >
+                Sell on Base →
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         {/* Per-tier economy table — green rows = deployed on your base. */}
         {rows.length === 0 ? (

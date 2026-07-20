@@ -105,6 +105,11 @@ describe("isDroidSafeToSell", () => {
     expect(isDroidSafeToSell("SOME-NONEXISTENT-DROID", 1, 5)).toBe(true);
   });
 
+  it("returns false at a DO_NOT_SELL rebirth, even for an unneeded droid", () => {
+    // Cycle 1, RB3 is flagged DO_NOT_SELL in the seed → nothing is safe here.
+    expect(isDroidSafeToSell("SOME-NONEXISTENT-DROID", 1, 3)).toBe(false);
+  });
+
   it("returns true once currentLevel reaches the last required RB", () => {
     const s = computeCycleStrategy(1);
     // Pick the first keeper and check "at or past" its lastNeeded → safe
