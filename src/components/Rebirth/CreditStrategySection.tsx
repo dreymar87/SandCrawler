@@ -256,7 +256,7 @@ function ActiveRow({ row }: { row: IncomeRow }) {
           </span>
           <span className="text-[11px] text-ink">
             {row.moveHint.swapWith
-              ? `swap in for ${row.moveHint.swapWith}`
+              ? `swap out ${row.moveHint.swapWith.name} (${row.moveHint.swapWith.tier} · ${formatPerSecond(row.moveHint.swapWith.income)})`
               : "move to a free working slot"}{" "}
             · <span className="text-ok font-bold">+{formatPerSecond(row.moveHint.gain)}</span>
           </span>

@@ -74,8 +74,22 @@ describe("deployedByClass", () => {
     const r = deployedByClass({ cards, cycle: 1, currentLevel: 0, rebirthLevel: 0 });
     expect(r.BATTLE.find((x) => x.name === "B1 SECURITY")!.moveHint).toEqual({
       gain: 61n, // 66 − 5
-      swapWith: "B1 BATTLE",
+      swapWith: { name: "B1 BATTLE", tier: "DEFAULT", income: 5n },
     });
+  });
+
+  it("scores each slot at its own tier (working DEFAULT vs lounge GOLD)", () => {
+    const cards = [
+      card({ name: "MOUSE", tier: "DEFAULT", working: 1 }), // working @ DEFAULT = 2/s
+      card({ name: "MOUSE", tier: "GOLD", lounge: 1 }), // lounge @ GOLD = 4/s
+    ];
+    const r = deployedByClass({ cards, cycle: 1, currentLevel: 0, rebirthLevel: 17 });
+    const mouse = r.WORKER.find((x) => x.name === "MOUSE")!;
+    expect(mouse.working).toBe(1);
+    expect(mouse.lounge).toBe(1);
+    expect(mouse.tier).toBe("DEFAULT"); // primary slot = working tier
+    expect(mouse.income).toBe(2n); // working-tier income, NOT the GOLD lounge copy
+    expect(mouse.moveHint).toEqual({ gain: 4n, swapWith: null }); // lounge-tier income
   });
 
   it("gives no move hint when full and the lounge droid can't beat the weakest worker", () => {
