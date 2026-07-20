@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { chipsBetween } from "./chipCosts";
 import { isDroidSafeToSell } from "./cycleStrategy";
 import {
-  bestOwnedTier2,
+  deployedByClass,
+  dexLeaderboard,
   incomeAt,
-  rankIncome,
   upgradePayoffs,
 } from "./incomeStrategy";
 import type { CollectionCard } from "../types";
@@ -29,58 +29,82 @@ describe("incomeAt", () => {
   });
 });
 
-describe("bestOwnedTier2", () => {
-  it("returns the highest OWNED tier", () => {
+describe("deployedByClass", () => {
+  it("ignores Droidex-owned droids that aren't actually deployed", () => {
+    const cards = [card({ name: "MOUSE", tier: "GOLD", owned: true })]; // owned only, 0 deployed
+    const r = deployedByClass({ cards, cycle: 1, currentLevel: 0, rebirthLevel: 17 });
+    expect(r.WORKER).toHaveLength(0);
+    expect(r.ASTROMECH).toHaveLength(0);
+    expect(r.BATTLE).toHaveLength(0);
+  });
+
+  it("lists active droids under their class, ranked by income, with slot counts", () => {
     const cards = [
-      card({ name: "MOUSE", tier: "GOLD" }),
-      card({ name: "MOUSE", tier: "DIAMOND" }),
-      card({ name: "MOUSE", tier: "RAINBOW", owned: false }), // not owned → ignored
+      card({ name: "MOUSE", tier: "GOLD", working: 2 }), // 4/s
+      card({ name: "GROUNDMECH", tier: "GOLD", lounge: 1 }), // 240/s
     ];
-    expect(bestOwnedTier2("MOUSE", cards)).toBe("DIAMOND");
+    const r = deployedByClass({ cards, cycle: 1, currentLevel: 0, rebirthLevel: 17 });
+    expect(r.WORKER.map((x) => x.name)).toEqual(["GROUNDMECH", "MOUSE"]); // 240 > 4
+    const mouse = r.WORKER.find((x) => x.name === "MOUSE")!;
+    expect(mouse.working).toBe(2);
+    expect(mouse.income).toBe(4n);
+    expect(r.WORKER.find((x) => x.name === "GROUNDMECH")!.lounge).toBe(1);
   });
 
-  it("returns null when unowned", () => {
-    expect(bestOwnedTier2("MOUSE", [])).toBeNull();
-  });
-});
-
-describe("rankIncome", () => {
-  const cards = [
-    card({ name: "MOUSE", tier: "GOLD", working: 1 }), // 4/s
-    card({ name: "B-U4D", tier: "DEFAULT" }), // 58/s
-  ];
-
-  it("ranks owned droids by income desc within a class", () => {
-    const ranked = rankIncome({ cards, cycle: 1, currentLevel: 0, includeAll: false });
-    const worker = ranked.WORKER.map((r) => r.name);
-    expect(worker).toEqual(["B-U4D", "MOUSE"]); // 58 > 4
-    expect(ranked.WORKER[0]!.income).toBe(58n);
-    expect(ranked.WORKER[1]!.tier).toBe("GOLD"); // MOUSE shown at best-owned tier
-    expect(ranked.WORKER[1]!.working).toBe(1);
+  it("flags a lounge droid that would fill a free working slot", () => {
+    const cards = [
+      card({ name: "MOUSE", tier: "GOLD", working: 1 }),
+      card({ name: "GROUNDMECH", tier: "GOLD", lounge: 1 }), // 240/s, WORKER has free slots
+    ];
+    const r = deployedByClass({ cards, cycle: 1, currentLevel: 0, rebirthLevel: 17 });
+    expect(r.WORKER.find((x) => x.name === "GROUNDMECH")!.moveHint).toEqual({
+      gain: 240n,
+      swapWith: null,
+    });
+    expect(r.WORKER.find((x) => x.name === "MOUSE")!.moveHint).toBeNull();
   });
 
-  it("excludes unowned droids unless includeAll", () => {
-    const ownedOnly = rankIncome({ cards, cycle: 1, currentLevel: 0, includeAll: false });
-    const all = rankIncome({ cards, cycle: 1, currentLevel: 0, includeAll: true });
-    expect(all.WORKER.length).toBeGreaterThan(ownedOnly.WORKER.length);
-    // The whole-dex list surfaces high MYTHIC earners not owned here.
-    const snow = all.WORKER.find((r) => r.name === "SNOW MOUSE");
-    expect(snow).toBeTruthy();
-    expect(snow!.owned).toBe(false);
-    expect(snow!.tier).toBe("BESKAR"); // max flat-income tier (no GALACTIC data)
+  it("suggests swapping out the weakest worker when the class is full", () => {
+    const cards = [
+      card({ name: "IMPERIAL PROBE", tier: "DEFAULT", working: 1 }), // 6/s
+      card({ name: "B1 BATTLE", tier: "DEFAULT", working: 1 }), // 5/s (weakest)
+      card({ name: "B1 SECURITY", tier: "DEFAULT", lounge: 1 }), // 66/s
+    ];
+    // BATTLE capacity at RB0 = 2 → full with the two workers.
+    const r = deployedByClass({ cards, cycle: 1, currentLevel: 0, rebirthLevel: 0 });
+    expect(r.BATTLE.find((x) => x.name === "B1 SECURITY")!.moveHint).toEqual({
+      gain: 61n, // 66 − 5
+      swapWith: "B1 BATTLE",
+    });
+  });
+
+  it("gives no move hint when full and the lounge droid can't beat the weakest worker", () => {
+    const cards = [
+      card({ name: "B1 SECURITY", tier: "DEFAULT", working: 2 }), // fills BATTLE cap 2, 66/s
+      card({ name: "IMPERIAL PROBE", tier: "DEFAULT", lounge: 1 }), // 6/s < 66
+    ];
+    const r = deployedByClass({ cards, cycle: 1, currentLevel: 0, rebirthLevel: 0 });
+    expect(r.BATTLE.find((x) => x.name === "IMPERIAL PROBE")!.moveHint).toBeNull();
   });
 
   it("flags rebirth-needed droids consistent with isDroidSafeToSell", () => {
-    const ranked = rankIncome({ cards, cycle: 1, currentLevel: 0, includeAll: true });
-    for (const r of ranked.WORKER) {
-      expect(r.needed).toBe(!isDroidSafeToSell(r.name, 1, 0));
-    }
+    const cards = [card({ name: "MOUSE", tier: "GOLD", working: 1 })];
+    const r = deployedByClass({ cards, cycle: 1, currentLevel: 0, rebirthLevel: 17 });
+    const mouse = r.WORKER.find((x) => x.name === "MOUSE")!;
+    expect(mouse.needed).toBe(!isDroidSafeToSell("MOUSE", 1, 0));
   });
+});
 
-  it("excludes ICONIC (%/s) from the flat ranking", () => {
-    const all = rankIncome({ cards, cycle: 1, currentLevel: 0, includeAll: true });
-    const iconic = [...all.WORKER, ...all.ASTROMECH, ...all.BATTLE].find((r) => r.name === "BB8");
-    expect(iconic).toBeUndefined();
+describe("dexLeaderboard", () => {
+  it("ranks by income desc, flags active droids, excludes ICONIC", () => {
+    const cards = [card({ name: "MOUSE", tier: "GOLD", working: 1 })];
+    const lb = dexLeaderboard({ cards, cycle: 1, currentLevel: 0 });
+    for (let i = 1; i < lb.length; i++) {
+      expect(lb[i - 1]!.income >= lb[i]!.income).toBe(true);
+    }
+    expect(lb.find((e) => e.name === "MOUSE")!.active).toBe(true);
+    expect(lb.find((e) => e.name === "SNOW MOUSE")!.active).toBe(false);
+    expect(lb.find((e) => e.name === "BB8")).toBeUndefined(); // %/s booster excluded
   });
 });
 

@@ -5,6 +5,7 @@ import { chipsBetween } from "./chipCosts";
 import { computeCycleStrategy, isDroidSafeToSell, type KeeperEntry } from "./cycleStrategy";
 import { resolveDroid, tierStatsFor } from "./droidStats";
 import { normalizeName } from "./normalize";
+import { getMaxSlots } from "./squads";
 import { tierRank } from "./tiers";
 import type { CollectionCard, Rarity, RebirthCycle, Tier } from "../types";
 import type { ProductionClass } from "./baseView";
@@ -23,18 +24,6 @@ export function incomeAt(name: string, tier: Tier): bigint | null {
   return parseIncome(stat.income);
 }
 
-/** Highest tier at which the player OWNS this droid (owned flag), or null. */
-export function bestOwnedTier2(name: string, cards: CollectionCard[]): Tier | null {
-  const key = normalizeName(name);
-  let best: Tier | null = null;
-  for (const c of cards) {
-    if (!c.owned) continue;
-    if (normalizeName(c.name) !== key) continue;
-    if (best === null || tierRank(c.tier) > tierRank(best)) best = c.tier;
-  }
-  return best;
-}
-
 /** The best flat-income tier a droid can reach (highest tier with real /s data). */
 function maxIncomeTier(name: string): { tier: Tier; income: bigint } | null {
   let best: { tier: Tier; income: bigint } | null = null;
@@ -50,96 +39,191 @@ export interface IncomeRow {
   /** Canonical droid name. */
   name: string;
   class: ProductionClass;
-  /** Tier the income figure is for (best-owned tier, or max tier for unowned). */
+  /** Best tier this droid is currently deployed at. */
   tier: Tier;
-  /** Credits/sec at `tier`. */
-  income: bigint;
+  /** Credits/sec per copy at `tier` — null for ICONIC %/s boosters. */
+  income: bigint | null;
   /** Raw stat string, e.g. "1.92k/s" — the game's own notation. */
   incomeLabel: string;
-  owned: boolean;
-  /** Total copies currently working (any tier). */
   working: number;
+  lounge: number;
+  companion: number;
   /** True if some RB above `currentLevel` in the cycle needs this droid. */
   needed: boolean;
-  /** Last RB level in the cycle that needs it (when `needed`). */
   neededThru: number | null;
+  /**
+   * Set when the droid has Lounge copies that would earn more in a working
+   * slot of its class: `gain` is the credits/s improvement, `swapWith` names
+   * the weakest current worker to replace (null when there's a free slot).
+   */
+  moveHint: { gain: bigint; swapWith: string | null } | null;
 }
 
-export interface RankIncomeArgs {
-  cards: CollectionCard[];
-  cycle: RebirthCycle;
-  currentLevel: number;
-  /** When true, append droids you don't own (ranked at their max tier). */
-  includeAll: boolean;
+/** Aggregated active deployment for one droid. */
+interface Agg {
+  canonical: string;
+  cls: ProductionClass;
+  working: number;
+  lounge: number;
+  companion: number;
+  bestTier: Tier | null;
+}
+
+function keeperMap(cycle: RebirthCycle): Map<string, KeeperEntry> {
+  const m = new Map<string, KeeperEntry>();
+  for (const k of computeCycleStrategy(cycle).keepers) m.set(normalizeName(k.name), k);
+  return m;
 }
 
 /**
- * Rank credit-earning droids by income, grouped by the squad class whose
- * slots they fill. Owned droids are ranked at their best-owned tier; when
- * `includeAll`, unowned droids are appended at their max flat-income tier.
- * ICONIC (%/s boosters) and UNKNOWN-class droids are excluded.
+ * The player's ACTIVELY DEPLOYED droids (working/lounge/companion counts > 0),
+ * grouped by production class and ranked by income. The Droidex `owned` flag
+ * is deliberately ignored — it persists through Super Rebirths and sells, so
+ * it doesn't mean the droid is actually on the base.
+ *
+ * For a droid sitting in Lounge that would earn more in a working slot, a
+ * `moveHint` is attached (fill a free slot, or swap out the weakest worker).
  */
-export function rankIncome(args: RankIncomeArgs): Record<ProductionClass, IncomeRow[]> {
-  const { cards, cycle, currentLevel, includeAll } = args;
+export function deployedByClass(args: {
+  cards: CollectionCard[];
+  cycle: RebirthCycle;
+  currentLevel: number;
+  rebirthLevel: number;
+}): Record<ProductionClass, IncomeRow[]> {
+  const { cards, cycle, currentLevel, rebirthLevel } = args;
+  const keepers = keeperMap(cycle);
 
-  const keeperByName = new Map<string, KeeperEntry>();
-  for (const k of computeCycleStrategy(cycle).keepers) keeperByName.set(normalizeName(k.name), k);
+  const byName = new Map<string, Agg>();
+  for (const c of cards) {
+    if (c.working + c.lounge + c.companion <= 0) continue;
+    const def = resolveDroid(c.name);
+    const cls = def?.class;
+    if (cls !== "WORKER" && cls !== "ASTROMECH" && cls !== "BATTLE") continue;
+    const canonical = def!.canonical;
+    const key = normalizeName(canonical);
+    const agg =
+      byName.get(key) ?? { canonical, cls, working: 0, lounge: 0, companion: 0, bestTier: null };
+    agg.working += c.working;
+    agg.lounge += c.lounge;
+    agg.companion += c.companion;
+    if (agg.bestTier === null || tierRank(c.tier) > tierRank(agg.bestTier)) agg.bestTier = c.tier;
+    byName.set(key, agg);
+  }
 
   const result: Record<ProductionClass, IncomeRow[]> = { WORKER: [], ASTROMECH: [], BATTLE: [] };
-
-  for (const def of DROID_DICT) {
-    const cls = def.class;
-    if (cls !== "WORKER" && cls !== "ASTROMECH" && cls !== "BATTLE") continue;
-
-    const ownedTier = bestOwnedTier2(def.canonical, cards);
-    let tier: Tier;
-    let income: bigint;
-    if (ownedTier !== null) {
-      const atOwned = incomeAt(def.canonical, ownedTier);
-      if (atOwned !== null && atOwned > 0n) {
-        tier = ownedTier;
-        income = atOwned;
-      } else {
-        // Owned tier has no flat income (booster / missing) — fall back to max.
-        const mx = maxIncomeTier(def.canonical);
-        if (!mx) continue;
-        tier = mx.tier;
-        income = mx.income;
-      }
-    } else {
-      if (!includeAll) continue;
-      const mx = maxIncomeTier(def.canonical);
-      if (!mx) continue; // no flat income at all (e.g. ICONIC) — skip
-      tier = mx.tier;
-      income = mx.income;
-    }
-
-    const working = cards.reduce(
-      (sum, c) => (normalizeName(c.name) === normalizeName(def.canonical) ? sum + c.working : sum),
-      0,
-    );
-    const keeper = keeperByName.get(normalizeName(def.canonical));
-    const needed = keeper ? !isDroidSafeToSell(def.canonical, cycle, currentLevel) : false;
-
-    result[cls].push({
-      name: def.canonical,
-      class: cls,
+  for (const agg of byName.values()) {
+    const tier = agg.bestTier!;
+    const income = incomeAt(agg.canonical, tier);
+    const keeper = keepers.get(normalizeName(agg.canonical));
+    const needed = keeper ? !isDroidSafeToSell(agg.canonical, cycle, currentLevel) : false;
+    result[agg.cls].push({
+      name: agg.canonical,
+      class: agg.cls,
       tier,
       income,
-      incomeLabel: tierStatsFor(def.canonical)?.[tier]?.income ?? "",
-      owned: ownedTier !== null,
-      working,
+      incomeLabel: tierStatsFor(agg.canonical)?.[tier]?.income ?? "",
+      working: agg.working,
+      lounge: agg.lounge,
+      companion: agg.companion,
       needed,
       neededThru: needed && keeper ? keeper.lastNeeded : null,
+      moveHint: null,
     });
   }
 
   for (const cls of PRODUCTION_CLASSES) {
-    result[cls].sort((a, b) =>
-      b.income > a.income ? 1 : b.income < a.income ? -1 : a.name.localeCompare(b.name),
-    );
+    const rows = result[cls];
+    const totalWorking = rows.reduce((s, r) => s + r.working, 0);
+    const freeSlots = Math.max(0, getMaxSlots(cls, rebirthLevel) - totalWorking);
+
+    // Weakest current worker (lowest flat income) — the swap-out candidate.
+    let minWorkingIncome: bigint | null = null;
+    let minWorkingName: string | null = null;
+    for (const r of rows) {
+      if (r.working > 0 && r.income !== null) {
+        if (minWorkingIncome === null || r.income < minWorkingIncome) {
+          minWorkingIncome = r.income;
+          minWorkingName = r.name;
+        }
+      }
+    }
+
+    for (const r of rows) {
+      if (r.lounge <= 0 || r.income === null || r.income <= 0n) continue;
+      if (freeSlots > 0) {
+        r.moveHint = { gain: r.income, swapWith: null };
+      } else if (
+        minWorkingIncome !== null &&
+        minWorkingName !== r.name &&
+        r.income > minWorkingIncome
+      ) {
+        r.moveHint = { gain: r.income - minWorkingIncome, swapWith: minWorkingName };
+      }
+    }
+
+    rows.sort((a, b) => {
+      if (a.income === null && b.income === null) return a.name.localeCompare(b.name);
+      if (a.income === null) return 1;
+      if (b.income === null) return -1;
+      return b.income > a.income ? 1 : b.income < a.income ? -1 : a.name.localeCompare(b.name);
+    });
   }
   return result;
+}
+
+export interface DexEarner {
+  name: string;
+  class: ProductionClass;
+  tier: Tier;
+  income: bigint;
+  incomeLabel: string;
+  /** True if the player has any copy of this droid deployed right now. */
+  active: boolean;
+  needed: boolean;
+  neededThru: number | null;
+}
+
+/**
+ * Whole-dex flat-income leaderboard (production classes only), ranked at each
+ * droid's max flat-income tier, with an `active` flag for droids the player
+ * currently has deployed. Feeds the "Show all" acquisition view.
+ */
+export function dexLeaderboard(args: {
+  cards: CollectionCard[];
+  cycle: RebirthCycle;
+  currentLevel: number;
+}): DexEarner[] {
+  const { cards, cycle, currentLevel } = args;
+  const keepers = keeperMap(cycle);
+
+  const activeNames = new Set<string>();
+  for (const c of cards) {
+    if (c.working + c.lounge + c.companion <= 0) continue;
+    const def = resolveDroid(c.name);
+    activeNames.add(normalizeName(def?.canonical ?? c.name));
+  }
+
+  const out: DexEarner[] = [];
+  for (const def of DROID_DICT) {
+    const cls = def.class;
+    if (cls !== "WORKER" && cls !== "ASTROMECH" && cls !== "BATTLE") continue;
+    const mx = maxIncomeTier(def.canonical);
+    if (!mx) continue; // ICONIC / no flat income
+    const keeper = keepers.get(normalizeName(def.canonical));
+    const needed = keeper ? !isDroidSafeToSell(def.canonical, cycle, currentLevel) : false;
+    out.push({
+      name: def.canonical,
+      class: cls,
+      tier: mx.tier,
+      income: mx.income,
+      incomeLabel: tierStatsFor(def.canonical)?.[mx.tier]?.income ?? "",
+      active: activeNames.has(normalizeName(def.canonical)),
+      needed,
+      neededThru: needed && keeper ? keeper.lastNeeded : null,
+    });
+  }
+  out.sort((a, b) => (b.income > a.income ? 1 : b.income < a.income ? -1 : a.name.localeCompare(b.name)));
+  return out;
 }
 
 export interface UpgradePayoff {

@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { formatChipCost } from "../../lib/chipCosts";
 import {
   PRODUCTION_CLASSES,
-  rankIncome,
+  deployedByClass,
+  dexLeaderboard,
   upgradePayoffs,
   type IncomeRow,
 } from "../../lib/incomeStrategy";
@@ -16,15 +17,12 @@ import {
 import { useAppStore } from "../../store/useAppStore";
 import { TierPill } from "../common/TierPill";
 
-/** How many rows to show per class before a "+N more" note. */
-const PER_CLASS = 8;
-
 /**
- * Credit strategy: ranks your best credit-earning droids per squad class,
- * flags which are also needed for upcoming rebirths (double-duty in a working
- * slot), and lists the highest-payoff tier upgrades. Collapsible; lives on the
- * Rebirths tab beside the cycle strategy since income is what gates the next
- * rebirth.
+ * Credit strategy: ranks the droids you actually have DEPLOYED (working /
+ * lounge / companion) per squad class, flags idle Lounge droids that would
+ * earn more in a working slot, and lists the biggest tier-upgrade payoffs.
+ * Sits on the Rebirths tab beside the cycle strategy since income is what
+ * gates the next rebirth.
  */
 export function CreditStrategySection() {
   const cards = useAppStore((s) => s.cards);
@@ -36,9 +34,13 @@ export function CreditStrategySection() {
   const base = useBaseView();
   const rebirths = useStandardRebirths();
 
-  const ranked = useMemo(
-    () => rankIncome({ cards, cycle, currentLevel, includeAll: showAll }),
-    [cards, cycle, currentLevel, showAll],
+  const byClass = useMemo(
+    () => deployedByClass({ cards, cycle, currentLevel, rebirthLevel: currentLevel }),
+    [cards, cycle, currentLevel],
+  );
+  const leaderboard = useMemo(
+    () => (showAll ? dexLeaderboard({ cards, cycle, currentLevel }) : []),
+    [showAll, cards, cycle, currentLevel],
   );
   const upgrades = useMemo(
     () => upgradePayoffs({ cards, cycle, currentLevel }),
@@ -47,20 +49,17 @@ export function CreditStrategySection() {
 
   const nextRb = rebirths.find((r) => r.level === currentLevel + 1);
 
-  // Summary metric: best owned earner + count of upgrade opportunities.
-  const topOwned = useMemo(() => {
-    let top: IncomeRow | null = null;
-    for (const cls of PRODUCTION_CLASSES) {
-      for (const r of ranked[cls]) {
-        if (r.owned && (!top || r.income > top.income)) top = r;
-      }
-    }
-    return top;
-  }, [ranked]);
+  const allRows = [...byClass.WORKER, ...byClass.ASTROMECH, ...byClass.BATTLE];
+  const moveCount = allRows.filter((r) => r.moveHint).length;
+  const summary =
+    moveCount > 0
+      ? `${moveCount} lounge droid${moveCount === 1 ? "" : "s"} to work`
+      : allRows.length > 0
+        ? `${allRows.length} deployed`
+        : "nothing deployed";
 
-  const summary = `${topOwned ? `best ${topOwned.incomeLabel}` : "no earners yet"} · ${
-    upgrades.length
-  } upgrade${upgrades.length === 1 ? "" : "s"}`;
+  const accentFor = (cls: string) =>
+    base.squads.find((s) => s.type === cls)?.accent ?? "text-muted-alt";
 
   return (
     <section className="card p-0 mb-4">
@@ -94,6 +93,11 @@ export function CreditStrategySection() {
             ) : null}
           </div>
 
+          <p className="font-mono text-[10px] text-muted-alt leading-snug">
+            Ranked by what you have deployed now (not the Droidex). Lounge droids earn nothing
+            until worked.
+          </p>
+
           {/* Show-all toggle */}
           <div className="flex items-center gap-2">
             <button
@@ -112,19 +116,18 @@ export function CreditStrategySection() {
               />
             </button>
             <span className="font-mono text-[10.5px] uppercase tracking-wider text-muted-alt">
-              Show all droids (not just owned)
+              Show all droids (top earners to acquire)
             </span>
           </div>
 
-          {/* Best income by class */}
+          {/* Deployed droids by class */}
           {PRODUCTION_CLASSES.map((cls) => {
-            const rows = ranked[cls];
+            const rows = byClass[cls];
             const squad = base.squads.find((s) => s.type === cls);
-            const shown = rows.slice(0, PER_CLASS);
             return (
               <div key={cls}>
                 <div className="flex items-baseline gap-2 mb-1.5">
-                  <span className={`font-mono text-[10px] uppercase tracking-wider ${squad?.accent ?? "text-muted-alt"}`}>
+                  <span className={`font-mono text-[10px] uppercase tracking-wider ${accentFor(cls)}`}>
                     {squad?.label ?? cls}
                   </span>
                   {squad ? (
@@ -135,24 +138,48 @@ export function CreditStrategySection() {
                 </div>
                 {rows.length === 0 ? (
                   <p className="font-mono text-[11px] text-muted-alt">
-                    No owned {(squad?.label ?? cls).toLowerCase()} droids
-                    {showAll ? "" : " — flip “Show all” to see top earners"}.
+                    No {(squad?.label ?? cls).toLowerCase()} droids deployed
+                    {showAll ? "" : " — flip Show all for top earners"}.
                   </p>
                 ) : (
                   <div className="space-y-1">
-                    {shown.map((row) => (
-                      <IncomeRowView key={`${row.name}-${row.tier}`} row={row} />
+                    {rows.map((row) => (
+                      <ActiveRow key={row.name} row={row} />
                     ))}
-                    {rows.length > shown.length ? (
-                      <p className="font-mono text-[10px] text-muted-alt pl-1">
-                        +{rows.length - shown.length} more
-                      </p>
-                    ) : null}
                   </div>
                 )}
               </div>
             );
           })}
+
+          {/* Top earners you don't have deployed (acquire targets) */}
+          {showAll ? (
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-wider text-muted-alt mb-1.5">
+                Top earners not on your base
+              </div>
+              <ul className="space-y-1">
+                {leaderboard
+                  .filter((e) => !e.active)
+                  .slice(0, 10)
+                  .map((e) => (
+                    <li
+                      key={e.name}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-[10px] bg-panel-alt/30 border border-line/50"
+                    >
+                      <span className="flex-1 truncate text-[13px] text-muted">{e.name}</span>
+                      <span className={`font-mono text-[9px] uppercase ${accentFor(e.class)}`}>
+                        {e.class[0]}
+                      </span>
+                      <TierPill tier={e.tier} />
+                      <span className="font-display font-bold text-[13px] text-muted tabular-nums shrink-0">
+                        {e.incomeLabel}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          ) : null}
 
           {/* Upgrade payoffs */}
           <div>
@@ -161,7 +188,7 @@ export function CreditStrategySection() {
             </div>
             {upgrades.length === 0 ? (
               <p className="font-mono text-[11px] text-muted-alt">
-                Nothing working to upgrade — deploy some droids first.
+                Nothing working to upgrade — put some droids to work first.
               </p>
             ) : (
               <ul className="space-y-1">
@@ -191,29 +218,50 @@ export function CreditStrategySection() {
   );
 }
 
-function IncomeRowView({ row }: { row: IncomeRow }) {
+function ActiveRow({ row }: { row: IncomeRow }) {
+  const working = row.working > 0;
   return (
     <div
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-[10px] border ${
-        row.owned ? "bg-panel-alt border-line" : "bg-panel-alt/30 border-line/50"
+      className={`rounded-[10px] border px-3 py-1.5 ${
+        row.moveHint ? "bg-sun/5 border-sun/40" : "bg-panel-alt border-line"
       }`}
     >
-      <span className={`flex-1 truncate text-[13px] ${row.owned ? "" : "text-muted"}`}>
-        {row.name}
-      </span>
-      {row.working > 0 ? (
-        <span className="font-mono text-[9px] text-holo shrink-0">×{row.working} working</span>
+      <div className="flex items-center gap-2">
+        <span className="flex-1 truncate text-[13px]">{row.name}</span>
+        {row.working > 0 ? (
+          <span className="font-mono text-[9px] text-holo shrink-0">×{row.working} working</span>
+        ) : null}
+        {row.lounge > 0 ? (
+          <span className="font-mono text-[9px] text-sun shrink-0">×{row.lounge} lounge</span>
+        ) : null}
+        {row.companion > 0 ? (
+          <span className="font-mono text-[9px] text-tier-galactic shrink-0">companion</span>
+        ) : null}
+        {row.needed ? (
+          <span className="font-mono text-[9px] text-ok shrink-0">need→RB{row.neededThru}</span>
+        ) : null}
+        <TierPill tier={row.tier} />
+        <span
+          className={`font-display font-bold text-[13px] tabular-nums shrink-0 ${
+            working ? "text-holo" : "text-muted"
+          }`}
+        >
+          {row.incomeLabel || "—"}
+        </span>
+      </div>
+      {row.moveHint ? (
+        <div className="mt-1 flex items-center gap-1.5">
+          <span className="font-mono text-[9px] uppercase tracking-wider text-sun font-bold shrink-0">
+            ↑ work it
+          </span>
+          <span className="text-[11px] text-ink">
+            {row.moveHint.swapWith
+              ? `swap in for ${row.moveHint.swapWith}`
+              : "move to a free working slot"}{" "}
+            · <span className="text-ok font-bold">+{formatPerSecond(row.moveHint.gain)}</span>
+          </span>
+        </div>
       ) : null}
-      {row.needed ? (
-        <span className="font-mono text-[9px] text-ok shrink-0">need→RB{row.neededThru}</span>
-      ) : null}
-      {!row.owned ? (
-        <span className="font-mono text-[9px] uppercase tracking-wider text-muted-alt shrink-0">acquire</span>
-      ) : null}
-      <TierPill tier={row.tier} />
-      <span className="font-display font-bold text-[13px] text-holo tabular-nums shrink-0">
-        {row.incomeLabel || formatPerSecond(row.income)}
-      </span>
     </div>
   );
 }
