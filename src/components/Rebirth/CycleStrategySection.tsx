@@ -410,12 +410,14 @@ function KeeperRow({
   currentLevel: number;
   onOpen: () => void;
 }) {
-  // Needed at the player's current RB → highlight the whole row green.
-  const atLevel = entry.appearsAt.includes(currentLevel);
+  // Needed for the UPCOMING rebirth (currentLevel + 1) → highlight green.
+  // currentLevel is the rebirth you've already done, so its needs are past.
+  const nextLevel = currentLevel + 1;
+  const atNext = entry.appearsAt.includes(nextLevel);
   return (
     <li
       className={`grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-0.5 px-3 py-2 cursor-pointer ${
-        atLevel ? "bg-ok/10 hover:bg-ok/15" : "hover:bg-panel-alt/50"
+        atNext ? "bg-ok/10 hover:bg-ok/15" : "hover:bg-panel-alt/50"
       }`}
       onClick={onOpen}
       role="button"
@@ -443,14 +445,18 @@ function KeeperRow({
               <span
                 key={n}
                 className={
-                  n < currentLevel
-                    ? "line-through text-muted/60" // passed
-                    : n === currentLevel
-                      ? "text-ok font-bold" // needed now
-                      : "text-muted-alt" // upcoming
+                  n <= currentLevel
+                    ? "line-through text-muted/60" // done — you've rebirthed through it
+                    : n === nextLevel
+                      ? "text-ok font-bold" // your next rebirth
+                      : "text-muted-alt" // future
                 }
                 title={
-                  n < currentLevel ? "passed" : n === currentLevel ? "needed at your current RB" : "upcoming"
+                  n <= currentLevel
+                    ? "done"
+                    : n === nextLevel
+                      ? "needed for your next rebirth"
+                      : "upcoming"
                 }
               >
                 {n}
@@ -662,8 +668,13 @@ function ChipBreakdownModal({ entry, onClose }: { entry: EnrichedEntry; onClose:
                     </div>
                     <span className="flex-1" />
                     {isNext ? (
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-holo font-bold">
-                        Upgrade →
+                      <span className="flex items-baseline gap-2 shrink-0">
+                        <span className="font-mono text-[11.5px] tabular-nums text-holo">
+                          {stepCost == null ? "?" : `+${formatChipCost(stepCost)}`}
+                        </span>
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-holo font-bold">
+                          Upgrade →
+                        </span>
                       </span>
                     ) : (
                       <span className="font-mono text-[11.5px] tabular-nums text-muted-alt">
