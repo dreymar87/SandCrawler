@@ -144,7 +144,7 @@ export function CreditStrategySection() {
                 ) : (
                   <div className="space-y-1">
                     {rows.map((row) => (
-                      <ActiveRow key={row.name} row={row} />
+                      <ActiveRow key={`${row.name}-${row.tier}`} row={row} />
                     ))}
                   </div>
                 )}

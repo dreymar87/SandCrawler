@@ -78,18 +78,37 @@ describe("deployedByClass", () => {
     });
   });
 
-  it("scores each slot at its own tier (working DEFAULT vs lounge GOLD)", () => {
+  it("keeps a droid's tiers as separate rows (working DEFAULT vs lounge GOLD)", () => {
     const cards = [
-      card({ name: "MOUSE", tier: "DEFAULT", working: 1 }), // working @ DEFAULT = 2/s
-      card({ name: "MOUSE", tier: "GOLD", lounge: 1 }), // lounge @ GOLD = 4/s
+      card({ name: "MOUSE", tier: "DEFAULT", working: 1 }), // 2/s working
+      card({ name: "MOUSE", tier: "GOLD", lounge: 1 }), // 4/s lounge
     ];
     const r = deployedByClass({ cards, cycle: 1, currentLevel: 0, rebirthLevel: 17 });
-    const mouse = r.WORKER.find((x) => x.name === "MOUSE")!;
-    expect(mouse.working).toBe(1);
-    expect(mouse.lounge).toBe(1);
-    expect(mouse.tier).toBe("DEFAULT"); // primary slot = working tier
-    expect(mouse.income).toBe(2n); // working-tier income, NOT the GOLD lounge copy
-    expect(mouse.moveHint).toEqual({ gain: 4n, swapWith: null }); // lounge-tier income
+    const rows = r.WORKER.filter((x) => x.name === "MOUSE");
+    expect(rows).toHaveLength(2); // one per (name, tier), like the Base tab
+    const def = rows.find((x) => x.tier === "DEFAULT")!;
+    const gold = rows.find((x) => x.tier === "GOLD")!;
+    expect(def.working).toBe(1);
+    expect(def.income).toBe(2n);
+    expect(gold.lounge).toBe(1);
+    expect(gold.income).toBe(4n);
+    // Free WORKER slots → the GOLD lounge copy can just move in for +4/s.
+    expect(gold.moveHint).toEqual({ gain: 4n, swapWith: null });
+  });
+
+  it("swaps out the weakest working COPY, not the highest tier of that droid", () => {
+    // Two HOV-R working: DEFAULT (62/s) and GOLD (124/s); BATTLE full (cap 2).
+    const cards = [
+      card({ name: "HOV-R", tier: "DEFAULT", working: 1 }), // 62/s (weakest copy)
+      card({ name: "HOV-R", tier: "GOLD", working: 1 }), // 124/s
+      card({ name: "B1 SECURITY", tier: "DIAMOND", lounge: 1 }), // 264/s parked
+    ];
+    const r = deployedByClass({ cards, cycle: 1, currentLevel: 0, rebirthLevel: 0 });
+    // Displace the DEFAULT copy (keep the GOLD) → +202/s, not +140 vs the GOLD.
+    expect(r.BATTLE.find((x) => x.name === "B1 SECURITY")!.moveHint).toEqual({
+      gain: 202n, // 264 − 62
+      swapWith: { name: "HOV-R", tier: "DEFAULT", income: 62n },
+    });
   });
 
   it("gives no move hint when full and the lounge droid can't beat the weakest worker", () => {

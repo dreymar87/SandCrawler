@@ -60,18 +60,6 @@ export interface IncomeRow {
   moveHint: { gain: bigint; swapWith: { name: string; tier: Tier; income: bigint } | null } | null;
 }
 
-/** Aggregated active deployment for one droid, keeping the best tier PER slot. */
-interface Agg {
-  canonical: string;
-  cls: ProductionClass;
-  working: number;
-  lounge: number;
-  companion: number;
-  workingTier: Tier | null;
-  loungeTier: Tier | null;
-  companionTier: Tier | null;
-}
-
 function keeperMap(cycle: RebirthCycle): Map<string, KeeperEntry> {
   const m = new Map<string, KeeperEntry>();
   for (const k of computeCycleStrategy(cycle).keepers) m.set(normalizeName(k.name), k);
@@ -79,13 +67,16 @@ function keeperMap(cycle: RebirthCycle): Map<string, KeeperEntry> {
 }
 
 /**
- * The player's ACTIVELY DEPLOYED droids (working/lounge/companion counts > 0),
- * grouped by production class and ranked by income. The Droidex `owned` flag
- * is deliberately ignored — it persists through Super Rebirths and sells, so
- * it doesn't mean the droid is actually on the base.
+ * The player's ACTIVELY DEPLOYED droids, one row per (name, tier) card — the
+ * same granularity the Base tab shows — grouped by production class and ranked
+ * by income. The Droidex `owned` flag is deliberately ignored (it persists
+ * through Super Rebirths and sells).
  *
- * For a droid sitting in Lounge that would earn more in a working slot, a
- * `moveHint` is attached (fill a free slot, or swap out the weakest worker).
+ * For a Lounge copy that would earn more in a working slot, a `moveHint` is
+ * attached: fill a free slot, or swap out the **weakest working copy**. Because
+ * rows are per (name, tier), a droid deployed at two tiers is compared per
+ * copy — so the cheapest copy is the one displaced, not whichever tier is
+ * highest.
  */
 export function deployedByClass(args: {
   cards: CollectionCard[];
@@ -96,99 +87,58 @@ export function deployedByClass(args: {
   const { cards, cycle, currentLevel, rebirthLevel } = args;
   const keepers = keeperMap(cycle);
 
-  const byName = new Map<string, Agg>();
+  const result: Record<ProductionClass, IncomeRow[]> = { WORKER: [], ASTROMECH: [], BATTLE: [] };
   for (const c of cards) {
     if (c.working + c.lounge + c.companion <= 0) continue;
     const def = resolveDroid(c.name);
     const cls = def?.class;
     if (cls !== "WORKER" && cls !== "ASTROMECH" && cls !== "BATTLE") continue;
     const canonical = def!.canonical;
-    const key = normalizeName(canonical);
-    const agg =
-      byName.get(key) ??
-      {
-        canonical,
-        cls,
-        working: 0,
-        lounge: 0,
-        companion: 0,
-        workingTier: null,
-        loungeTier: null,
-        companionTier: null,
-      };
-    // Track the best tier PER slot — a droid can sit at different tiers in
-    // working vs lounge, and each slot must be scored at its own tier.
-    if (c.working > 0) {
-      agg.working += c.working;
-      if (agg.workingTier === null || tierRank(c.tier) > tierRank(agg.workingTier)) agg.workingTier = c.tier;
-    }
-    if (c.lounge > 0) {
-      agg.lounge += c.lounge;
-      if (agg.loungeTier === null || tierRank(c.tier) > tierRank(agg.loungeTier)) agg.loungeTier = c.tier;
-    }
-    if (c.companion > 0) {
-      agg.companion += c.companion;
-      if (agg.companionTier === null || tierRank(c.tier) > tierRank(agg.companionTier)) agg.companionTier = c.tier;
-    }
-    byName.set(key, agg);
+    const keeper = keepers.get(normalizeName(canonical));
+    const needed = keeper ? !isDroidSafeToSell(canonical, cycle, currentLevel) : false;
+    result[cls].push({
+      name: canonical,
+      class: cls,
+      tier: c.tier,
+      income: incomeAt(canonical, c.tier),
+      incomeLabel: tierStatsFor(canonical)?.[c.tier]?.income ?? "",
+      working: c.working,
+      lounge: c.lounge,
+      companion: c.companion,
+      needed,
+      neededThru: needed && keeper ? keeper.lastNeeded : null,
+      moveHint: null,
+    });
   }
 
-  const aggsByClass: Record<ProductionClass, Agg[]> = { WORKER: [], ASTROMECH: [], BATTLE: [] };
-  for (const agg of byName.values()) aggsByClass[agg.cls].push(agg);
-
-  const result: Record<ProductionClass, IncomeRow[]> = { WORKER: [], ASTROMECH: [], BATTLE: [] };
   for (const cls of PRODUCTION_CLASSES) {
-    const aggs = aggsByClass[cls];
-    const totalWorking = aggs.reduce((s, a) => s + a.working, 0);
+    const rows = result[cls];
+    const totalWorking = rows.reduce((s, r) => s + r.working, 0);
     const freeSlots = Math.max(0, getMaxSlots(cls, rebirthLevel) - totalWorking);
 
-    // Weakest current worker (min income at its WORKING tier) — swap-out target.
+    // Weakest working COPY (per name+tier) — the copy a swap-in would displace.
     let weakest: { name: string; tier: Tier; income: bigint } | null = null;
-    for (const a of aggs) {
-      if (a.working <= 0 || a.workingTier === null) continue;
-      const inc = incomeAt(a.canonical, a.workingTier);
-      if (inc === null) continue;
-      if (weakest === null || inc < weakest.income) {
-        weakest = { name: a.canonical, tier: a.workingTier, income: inc };
+    for (const r of rows) {
+      if (r.working <= 0 || r.income === null) continue;
+      if (weakest === null || r.income < weakest.income) {
+        weakest = { name: r.name, tier: r.tier, income: r.income };
       }
     }
 
-    for (const a of aggs) {
-      // Primary slot drives the row's headline income: what it earns now if
-      // working, else what it would earn (lounge/companion tier).
-      const primaryTier = (a.working > 0 ? a.workingTier : a.lounge > 0 ? a.loungeTier : a.companionTier)!;
-      const income = incomeAt(a.canonical, primaryTier);
-      const keeper = keepers.get(normalizeName(a.canonical));
-      const needed = keeper ? !isDroidSafeToSell(a.canonical, cycle, currentLevel) : false;
-
-      let moveHint: IncomeRow["moveHint"] = null;
-      if (a.lounge > 0 && a.loungeTier !== null) {
-        const loungeIncome = incomeAt(a.canonical, a.loungeTier);
-        if (loungeIncome !== null && loungeIncome > 0n) {
-          if (freeSlots > 0) {
-            moveHint = { gain: loungeIncome, swapWith: null };
-          } else if (weakest !== null && weakest.name !== a.canonical && loungeIncome > weakest.income) {
-            moveHint = { gain: loungeIncome - weakest.income, swapWith: { ...weakest } };
-          }
-        }
+    for (const r of rows) {
+      if (r.lounge <= 0 || r.income === null || r.income <= 0n) continue;
+      if (freeSlots > 0) {
+        r.moveHint = { gain: r.income, swapWith: null };
+      } else if (
+        weakest !== null &&
+        !(weakest.name === r.name && weakest.tier === r.tier) &&
+        r.income > weakest.income
+      ) {
+        r.moveHint = { gain: r.income - weakest.income, swapWith: { ...weakest } };
       }
-
-      result[cls].push({
-        name: a.canonical,
-        class: cls,
-        tier: primaryTier,
-        income,
-        incomeLabel: tierStatsFor(a.canonical)?.[primaryTier]?.income ?? "",
-        working: a.working,
-        lounge: a.lounge,
-        companion: a.companion,
-        needed,
-        neededThru: needed && keeper ? keeper.lastNeeded : null,
-        moveHint,
-      });
     }
 
-    result[cls].sort((a, b) => {
+    rows.sort((a, b) => {
       if (a.income === null && b.income === null) return a.name.localeCompare(b.name);
       if (a.income === null) return 1;
       if (b.income === null) return -1;
