@@ -150,7 +150,9 @@ export function useSquadCapacity(): SquadCapacity[] {
 
 export function useProduction(): ProductionTotals {
   const cards = useAppStore((s) => s.cards);
-  return useMemo(() => computeProduction(cards, DROID_STATS), [cards]);
+  // statOverrides is merged inside statsFromTable; list it so edits recompute.
+  const statOverrides = useAppStore((s) => s.statOverrides);
+  return useMemo(() => computeProduction(cards, DROID_STATS), [cards, statOverrides]);
 }
 
 export function useDroidexCompletion(): {
@@ -271,6 +273,7 @@ export function useBaseView(): BaseView {
   const loungeCreditSlots = useAppStore((s) => s.profile.loungeCreditSlots);
   const novaUpgrades = useAppStore((s) => s.novaUpgrades);
   const craftingStations = useAppStore((s) => s.craftingStations);
+  const statOverrides = useAppStore((s) => s.statOverrides);
   const cycle = useActiveCycle();
   return useMemo(() => {
     const novaLoungeSlots =
@@ -285,7 +288,8 @@ export function useBaseView(): BaseView {
       cycle,
       craftingStations,
     });
-  }, [cards, customDroids, standardRebirth, loungeCreditSlots, novaUpgrades, craftingStations, cycle]);
+    // statOverrides feeds sell values via statsFromTable — recompute on edit.
+  }, [cards, customDroids, standardRebirth, loungeCreditSlots, novaUpgrades, craftingStations, statOverrides, cycle]);
 }
 
 /** Everything the Home dashboard needs, in one hook. */

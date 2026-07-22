@@ -1,9 +1,21 @@
 import { DROID_STATS } from "../data/droidStats.seed";
 import { DROID_DICT } from "../data/droids.seed";
+import { TIERS } from "../constants";
 import { buildDroidIndex } from "./autocomplete";
-import type { DroidDef, DroidStats, DroidTierStat, Tier } from "../types";
+import type { DroidDef, DroidStats, DroidTierStat, StatOverrides, Tier } from "../types";
 
 const INDEX = buildDroidIndex(DROID_DICT);
+
+/**
+ * User stat edits, kept in sync with the persisted `statOverrides` slice by
+ * the store (see useAppStore.ts). Merged inside `statsFromTable` so EVERY stat
+ * consumer — income strategy, sell values, base income — picks them up without
+ * threading a table around. Keyed by canonical droid name.
+ */
+let overrides: StatOverrides = {};
+export function setStatOverrides(next: StatOverrides): void {
+  overrides = next ?? {};
+}
 
 /** Resolve a droid name to its seed definition (canonical or alias). */
 export function resolveDroid(name: string): DroidDef | null {
@@ -11,8 +23,9 @@ export function resolveDroid(name: string): DroidDef | null {
 }
 
 /**
- * Look up a droid's per-tier stats in a stats table. Tries the resolved
- * droid's canonical name first, then each alias, then the raw name.
+ * Look up a droid's per-tier stats in a stats table, with user `statOverrides`
+ * merged over the seed (per tier, per field). Tries the resolved droid's
+ * canonical name first, then each alias, then the raw name.
  *
  * Some `droidStats.json` keys use abbreviated spellings that only appear
  * in a droid's aliases (e.g. key `"MONO-WLKR"` for canonical
@@ -24,16 +37,40 @@ export function statsFromTable(
   def: DroidDef | undefined | null,
   rawName?: string,
 ): Partial<Record<Tier, DroidTierStat>> | undefined {
+  let seed: Partial<Record<Tier, DroidTierStat>> | undefined;
+  let overrideKey: string | undefined;
   if (def) {
-    const hit = table[def.canonical];
-    if (hit) return hit;
-    for (const alias of def.aliases ?? []) {
-      const aliasHit = table[alias];
-      if (aliasHit) return aliasHit;
+    overrideKey = def.canonical;
+    seed = table[def.canonical];
+    if (!seed) {
+      for (const alias of def.aliases ?? []) {
+        if (table[alias]) {
+          seed = table[alias];
+          break;
+        }
+      }
     }
+  } else if (rawName) {
+    overrideKey = rawName;
+    seed = table[rawName];
   }
-  if (rawName && table[rawName]) return table[rawName];
-  return undefined;
+
+  const ov = overrideKey ? overrides[overrideKey] : undefined;
+  if (!ov) return seed; // no override → seed passthrough (unchanged)
+
+  // Merge per tier/field; include tiers present in seed OR the override.
+  const merged: Partial<Record<Tier, DroidTierStat>> = {};
+  for (const tier of TIERS) {
+    const s = seed?.[tier];
+    const o = ov[tier];
+    if (!s && !o) continue;
+    merged[tier] = {
+      cost: o?.cost ?? s?.cost ?? null,
+      income: o?.income ?? s?.income ?? "",
+      value: o?.value ?? s?.value ?? null,
+    };
+  }
+  return merged;
 }
 
 /** Convenience over the seed `DROID_STATS` — resolves name-or-def with alias fallback. */

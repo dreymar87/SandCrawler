@@ -39,5 +39,8 @@ export const SEED_VERSION = 7;
  * v11 — Adds `craftingStations` slice: single-slot state for Worker/
  *      Astromech/Battle stations ({state:"crafting"|"ready"}). Reset on
  *      Super Rebirth. Stations unlock at RB0/1/2 respectively.
+ * v12 — Adds `statOverrides` slice: user edits to per-tier droid economy
+ *      stats (cost/income/value), merged over the seed everywhere via
+ *      statsFromTable. Lets players fill in missing/wrong data.
  */
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;

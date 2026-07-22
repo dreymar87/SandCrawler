@@ -249,6 +249,13 @@ export interface DroidTierStat {
 export type DroidStats = Record<string, Partial<Record<Tier, DroidTierStat>>>;
 
 /**
+ * User edits layered on top of the seed economy stats — partial per tier AND
+ * per field, so a player can fill in just a missing GALACTIC sell value.
+ * Keyed by canonical droid name. An absent field falls back to the seed.
+ */
+export type StatOverrides = Record<string, Partial<Record<Tier, Partial<DroidTierStat>>>>;
+
+/**
  * The full persisted payload. Wrapped with a schemaVersion so exports from
  * older app versions (and the prototype's flat-array format) keep importing.
  */
@@ -278,6 +285,8 @@ export interface PersistedState {
    * Resets on Super Rebirth.
    */
   craftingStations: CraftingStationSlot[];
+  /** User edits to the per-tier economy stats (fill in / correct seed data). */
+  statOverrides: StatOverrides;
   ui: UiPrefs;
 }
 

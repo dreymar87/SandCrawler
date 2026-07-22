@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { SCHEMA_VERSION } from "../data/version";
 import { idbStorage } from "../lib/idbStorage";
+import { setStatOverrides } from "../lib/droidStats";
 import { defaultProfile, emptyState, migrate } from "../lib/migrate";
 import { srbBonusAt } from "../lib/novaCrystals";
 import { normalizeTier } from "../lib/tiers";
@@ -10,6 +11,7 @@ import type {
   CollectionCard,
   CosmeticState,
   DroidDef,
+  DroidTierStat,
   NovaUpgradeState,
   PersistedState,
   RebirthCycle,
@@ -105,6 +107,12 @@ interface Actions {
   // ── Standard Rebirth (user overrides on top of the seed table) ────────
   upsertStandardOverride(rb: StandardRebirth): void;
   removeStandardOverride(level: number, cycle: RebirthCycle): void;
+
+  // ── Droid stat overrides (fill in / correct per-tier economy stats) ───
+  /** Merge a per-field patch for (name, tier). An empty/blank field clears it (falls back to seed). */
+  setStatOverride(name: string, tier: Tier, patch: Partial<DroidTierStat>): void;
+  /** Drop all stat overrides for a droid (reset it to seed). */
+  clearStatOverrides(name: string): void;
 
   // ── UI ─────────────────────────────────────────────────────────────────
   setActiveTab(tab: TabKey): void;
@@ -491,6 +499,38 @@ export const useAppStore = create<AppStore>()(
         }));
       },
 
+      setStatOverride(name, tier, patch) {
+        const key = name.trim();
+        if (!key) return;
+        set((s) => {
+          const droid = { ...(s.statOverrides[key] ?? {}) };
+          const cur: Partial<DroidTierStat> = { ...(droid[tier] ?? {}) };
+          // Apply each field; an empty/blank string clears that field (→ seed).
+          for (const field of ["cost", "income", "value"] as const) {
+            if (!(field in patch)) continue;
+            const v = patch[field];
+            if (typeof v === "string" && v.trim()) cur[field] = v.trim();
+            else delete cur[field];
+          }
+          if (Object.keys(cur).length > 0) droid[tier] = cur;
+          else delete droid[tier];
+          const next = { ...s.statOverrides };
+          if (Object.keys(droid).length > 0) next[key] = droid;
+          else delete next[key];
+          return { statOverrides: next };
+        });
+      },
+
+      clearStatOverrides(name) {
+        const key = name.trim();
+        set((s) => {
+          if (!(key in s.statOverrides)) return {};
+          const next = { ...s.statOverrides };
+          delete next[key];
+          return { statOverrides: next };
+        });
+      },
+
       setActiveTab(tab) {
         set((s) => ({ ui: { ...s.ui, activeTab: tab } }));
       },
@@ -574,10 +614,17 @@ export const useAppStore = create<AppStore>()(
         novaIconicOwned: state.novaIconicOwned ?? [],
         iconicMerchantBought: state.iconicMerchantBought ?? [],
         craftingStations: state.craftingStations ?? [],
+        statOverrides: state.statOverrides ?? {},
         ui: state.ui,
       }),
     },
   ),
 );
+
+// Keep the pure stats layer (droidStats.ts) in sync with the persisted
+// overrides, so `statsFromTable` merges them for EVERY consumer (income
+// strategy, sell values, base income) without threading a table around.
+setStatOverrides(useAppStore.getState().statOverrides ?? {});
+useAppStore.subscribe((state) => setStatOverrides(state.statOverrides ?? {}));
 
 export { defaultProfile };

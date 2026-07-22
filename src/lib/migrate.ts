@@ -4,11 +4,13 @@ import type {
   CollectionCard,
   CosmeticState,
   CraftingStationSlot,
+  DroidTierStat,
   NovaUpgradeState,
   PersistedState,
   Profile,
   RebirthCycle,
   StandardRebirth,
+  StatOverrides,
   StationSlotState,
   StationType,
   TabKey,
@@ -57,6 +59,7 @@ export function emptyState(): PersistedState {
     novaIconicOwned: [],
     iconicMerchantBought: [],
     craftingStations: [],
+    statOverrides: {},
     ui: { activeTab: "base" },
   };
 }
@@ -268,6 +271,28 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
     }
   }
 
+  // v12: statOverrides — user edits to per-tier economy stats. Accept a plain
+  // object { [name]: { [tier]: { cost?, income?, value? } } }; keep string
+  // fields only, drop empties.
+  const validTiers = new Set<Tier>(["DEFAULT", "GOLD", "DIAMOND", "RAINBOW", "BESKAR", "GALACTIC"]);
+  const statOverrides: StatOverrides = {};
+  if (obj.statOverrides && typeof obj.statOverrides === "object" && !Array.isArray(obj.statOverrides)) {
+    for (const [name, tiersRaw] of Object.entries(obj.statOverrides as Record<string, unknown>)) {
+      if (!name.trim() || !tiersRaw || typeof tiersRaw !== "object") continue;
+      const tiers: Partial<Record<Tier, Partial<DroidTierStat>>> = {};
+      for (const [tier, fieldsRaw] of Object.entries(tiersRaw as Record<string, unknown>)) {
+        if (!validTiers.has(tier as Tier) || !fieldsRaw || typeof fieldsRaw !== "object") continue;
+        const f = fieldsRaw as Record<string, unknown>;
+        const patch: Partial<DroidTierStat> = {};
+        if (typeof f.cost === "string" && f.cost.trim()) patch.cost = f.cost.trim();
+        if (typeof f.income === "string" && f.income.trim()) patch.income = f.income.trim();
+        if (typeof f.value === "string" && f.value.trim()) patch.value = f.value.trim();
+        if (Object.keys(patch).length > 0) tiers[tier as Tier] = patch;
+      }
+      if (Object.keys(tiers).length > 0) statOverrides[name.trim()] = tiers;
+    }
+  }
+
   // v5: lift StandardRebirth.rewards.slotUnlock to top-level, drop the rest.
   // v4 stored slot/crystals/mults nested under `rewards`; v5 keeps only
   // slotUnlock (the genuinely per-RB datum).
@@ -284,6 +309,7 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
     novaIconicOwned,
     iconicMerchantBought,
     craftingStations,
+    statOverrides,
     ui: {
       // creditsCurrent intentionally dropped from uiRaw (moved to profile in v6).
       ...stripUiCredits(uiRaw),

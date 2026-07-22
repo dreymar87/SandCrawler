@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { TIERS } from "../../constants";
 import { droidCycles } from "../../lib/droidCycles";
@@ -6,7 +7,7 @@ import { isDroidSafeToSell } from "../../lib/cycleStrategy";
 import { sellHint } from "../../lib/sellGuidance";
 import { useAppStore } from "../../store/useAppStore";
 import { TierPill } from "../common/TierPill";
-import type { DroidDef, RebirthCycle, Tier } from "../../types";
+import type { DroidDef, DroidTierStat, RebirthCycle, Tier } from "../../types";
 
 /**
  * Read-only droid reference card, opened by tapping a droid's name in the
@@ -31,9 +32,15 @@ export function DroidDetailModal({
 }) {
   const currentLevel = useAppStore((s) => s.profile.standardRebirth);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
-  const stats = tierStatsFor(def);
+  // Subscribing to statOverrides re-renders + re-reads the merged stats on edit.
+  const statOverrides = useAppStore((s) => s.statOverrides);
+  const setStatOverride = useAppStore((s) => s.setStatOverride);
+  const clearStatOverrides = useAppStore((s) => s.clearStatOverrides);
+  const [editing, setEditing] = useState(false);
+  const stats = tierStatsFor(def); // seed + user overrides, merged
   const rows = TIERS.map((tier) => ({ tier, stat: stats?.[tier] })).filter((r) => r.stat);
   const cycles = droidCycles(def.canonical);
+  const hasOverride = !!statOverrides[def.canonical];
 
   // Sell verdict — the SAME brain (isDroidSafeToSell/sellHint) Base uses.
   const isIconic = def.rarity === "ICONIC";
@@ -63,6 +70,13 @@ export function DroidDetailModal({
           <button
             type="button"
             className="font-mono text-[10.5px] uppercase tracking-wider text-holo"
+            onClick={() => setEditing((v) => !v)}
+          >
+            {editing ? "Done" : "Edit stats"}
+          </button>
+          <button
+            type="button"
+            className="font-mono text-[10.5px] uppercase tracking-wider text-muted-alt"
             onClick={onClose}
           >
             Close
@@ -154,9 +168,28 @@ export function DroidDetailModal({
           </div>
         ) : null}
 
-        {/* Per-tier economy table — green rows = deployed on your base. */}
-        {rows.length === 0 ? (
-          <p className="text-[13px] text-muted">No economy stats recorded for this droid.</p>
+        {/* Per-tier economy table. "Edit stats" turns it into fillable inputs. */}
+        {editing ? (
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="font-mono text-[10px] text-muted-alt">
+              Enter the in-game values · blank = use seed
+            </span>
+            {hasOverride ? (
+              <button
+                type="button"
+                className="font-mono text-[10px] uppercase tracking-wider text-danger underline"
+                onClick={() => clearStatOverrides(def.canonical)}
+              >
+                Reset to seed
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {!editing && rows.length === 0 ? (
+          <p className="text-[13px] text-muted">
+            No economy stats recorded — tap “Edit stats” to fill them in.
+          </p>
         ) : (
           <div className="rounded-[10px] border border-line overflow-hidden">
             <div className="grid grid-cols-[3.2rem_1fr_1fr_1fr] gap-x-2 px-3 py-1.5 bg-panel-alt font-mono text-[9px] uppercase tracking-wider text-muted-alt">
@@ -165,43 +198,82 @@ export function DroidDetailModal({
               <span className="text-right">Sell</span>
               <span className="text-right">Mining/s</span>
             </div>
-            {rows.map(({ tier, stat }) => {
-              const dep = deployed?.[tier];
-              return (
-                <div
-                  key={tier}
-                  className={`grid grid-cols-[3.2rem_1fr_1fr_1fr] gap-x-2 items-center px-3 py-1.5 border-t border-line ${
-                    dep ? "bg-ok/10 border-l-2 border-l-ok/70" : ""
-                  }`}
-                >
-                  <span className="flex items-center gap-1">
-                    <TierPill tier={tier} />
-                    {dep ? (
-                      <span
-                        className="w-1.5 h-1.5 rounded-full bg-ok shrink-0"
-                        aria-hidden
-                        title={`On base: ${dep.working} working · ${dep.lounge} lounge`}
-                      />
-                    ) : null}
-                  </span>
-                  <span className="text-right font-mono text-[11px] tabular-nums">
-                    {stat!.cost ?? "—"}
-                  </span>
-                  <span className="text-right font-mono text-[11px] tabular-nums text-sun">
-                    {stat!.value ?? "—"}
-                  </span>
-                  <span className="text-right font-mono text-[11px] tabular-nums text-holo">
-                    {stat!.income}
-                  </span>
-                </div>
-              );
-            })}
+            {(editing ? TIERS.filter((t) => def.tiers.includes(t)) : rows.map((r) => r.tier)).map(
+              (tier) => {
+                const stat = stats?.[tier];
+                const dep = deployed?.[tier];
+                const edited = !!statOverrides[def.canonical]?.[tier];
+                if (editing) {
+                  const cell = (f: keyof DroidTierStat, v: string | null | undefined) => (
+                    <input
+                      type="text"
+                      value={v ?? ""}
+                      onChange={(e) =>
+                        setStatOverride(def.canonical, tier, {
+                          [f]: e.target.value,
+                        } as Partial<DroidTierStat>)
+                      }
+                      placeholder="—"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      className="w-full bg-panel border border-line rounded-md px-2 py-1 text-[11px] text-right font-mono outline-none focus:border-holo"
+                    />
+                  );
+                  return (
+                    <div
+                      key={tier}
+                      className="grid grid-cols-[3.2rem_1fr_1fr_1fr] gap-x-2 items-center px-2 py-1 border-t border-line"
+                    >
+                      <TierPill tier={tier} />
+                      {cell("cost", stat?.cost)}
+                      {cell("value", stat?.value)}
+                      {cell("income", stat?.income)}
+                    </div>
+                  );
+                }
+                return (
+                  <div
+                    key={tier}
+                    className={`grid grid-cols-[3.2rem_1fr_1fr_1fr] gap-x-2 items-center px-3 py-1.5 border-t border-line ${
+                      dep ? "bg-ok/10 border-l-2 border-l-ok/70" : ""
+                    }`}
+                  >
+                    <span className="flex items-center gap-1">
+                      <TierPill tier={tier} />
+                      {dep ? (
+                        <span
+                          className="w-1.5 h-1.5 rounded-full bg-ok shrink-0"
+                          aria-hidden
+                          title={`On base: ${dep.working} working · ${dep.lounge} lounge`}
+                        />
+                      ) : edited ? (
+                        <span
+                          className="w-1.5 h-1.5 rounded-full bg-holo shrink-0"
+                          aria-hidden
+                          title="edited"
+                        />
+                      ) : null}
+                    </span>
+                    <span className="text-right font-mono text-[11px] tabular-nums">
+                      {stat?.cost ?? "—"}
+                    </span>
+                    <span className="text-right font-mono text-[11px] tabular-nums text-sun">
+                      {stat?.value ?? "—"}
+                    </span>
+                    <span className="text-right font-mono text-[11px] tabular-nums text-holo">
+                      {stat?.income || "—"}
+                    </span>
+                  </div>
+                );
+              },
+            )}
           </div>
         )}
         <p className="font-mono text-[10px] text-muted-alt mt-3 leading-snug">
-          Buy = upgrade cost at that tier · Sell = its value · Mining/s = credits per second
-          (Working). <span className="text-ok">Green</span> = on your base. "%/s" = a percentage
-          income booster.
+          Buy = upgrade cost · Sell = its value · Mining/s = credits per second (Working).{" "}
+          <span className="text-ok">Green</span> = on your base ·{" "}
+          <span className="text-holo">blue dot</span> = you edited it. "%/s" = a percentage booster.
         </p>
       </div>
     </div>,

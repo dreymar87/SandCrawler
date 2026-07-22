@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { statsFromTable, tierStatsFor } from "./droidStats";
+import { afterEach, describe, expect, it } from "vitest";
+import { setStatOverrides, statsFromTable, tierStatsFor } from "./droidStats";
 import { DROID_STATS } from "../data/droidStats.seed";
 import type { DroidDef, DroidStats } from "../types";
 
@@ -41,5 +41,28 @@ describe("statsFromTable", () => {
     expect(statsFromTable(table, monoWalker)?.DEFAULT?.income).toBe("3/s"); // via alias
     expect(statsFromTable(table, undefined, "MOUSE")?.DEFAULT?.income).toBe("2/s"); // via raw name
     expect(statsFromTable(table, undefined, "NOPE")).toBeUndefined();
+  });
+});
+
+describe("statsFromTable — user overrides", () => {
+  afterEach(() => setStatOverrides({}));
+
+  it("merges an override over the seed, per field", () => {
+    setStatOverrides({ MOUSE: { GOLD: { value: "9.99k" } } });
+    const gold = tierStatsFor("MOUSE")?.GOLD;
+    expect(gold?.value).toBe("9.99k"); // overridden
+    expect(gold?.income).toBe("4/s"); // seed field intact
+    expect(gold?.cost).toBe("3.8k"); // seed field intact
+  });
+
+  it("fills in a tier the seed lacks", () => {
+    expect(tierStatsFor("GONK")?.GALACTIC).toBeUndefined(); // seed gap
+    setStatOverrides({ GONK: { GALACTIC: { income: "999/s" } } });
+    expect(tierStatsFor("GONK")?.GALACTIC?.income).toBe("999/s");
+  });
+
+  it("empty registry is a seed passthrough (no merge object built)", () => {
+    setStatOverrides({});
+    expect(tierStatsFor("MOUSE")).toBe(DROID_STATS["MOUSE"]); // same reference
   });
 });

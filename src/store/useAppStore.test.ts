@@ -384,3 +384,29 @@ describe("onboarding setup flag", () => {
     expect(useAppStore.getState().ui.pendingSetup).toBe(false);
   });
 });
+
+describe("stat overrides", () => {
+  beforeEach(() => useAppStore.getState().resetAll());
+  const ov = () => useAppStore.getState().statOverrides;
+
+  it("stores partial fields; an empty field clears it; last-field-empty drops the droid", () => {
+    useAppStore.getState().setStatOverride("MOUSE", "GALACTIC", { value: "1.2M" });
+    expect(ov().MOUSE?.GALACTIC?.value).toBe("1.2M");
+
+    useAppStore.getState().setStatOverride("MOUSE", "GALACTIC", { income: "48/s" });
+    expect(ov().MOUSE?.GALACTIC).toEqual({ value: "1.2M", income: "48/s" });
+
+    useAppStore.getState().setStatOverride("MOUSE", "GALACTIC", { value: "" }); // clear one field
+    expect(ov().MOUSE?.GALACTIC).toEqual({ income: "48/s" });
+
+    useAppStore.getState().setStatOverride("MOUSE", "GALACTIC", { income: "  " }); // clear last field
+    expect(ov().MOUSE).toBeUndefined();
+  });
+
+  it("clearStatOverrides removes every tier for a droid", () => {
+    useAppStore.getState().setStatOverride("PIT", "GOLD", { value: "5" });
+    useAppStore.getState().setStatOverride("PIT", "DIAMOND", { value: "9" });
+    useAppStore.getState().clearStatOverrides("PIT");
+    expect(ov().PIT).toBeUndefined();
+  });
+});

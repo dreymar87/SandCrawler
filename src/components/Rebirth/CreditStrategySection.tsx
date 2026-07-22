@@ -29,6 +29,8 @@ export function CreditStrategySection() {
   const currentLevel = useAppStore((s) => s.profile.standardRebirth);
   const showAll = useAppStore((s) => s.ui.strategyShowAll ?? false);
   const setUiPref = useAppStore((s) => s.setUiPref);
+  // Merged into income via statsFromTable; a dep so edits recompute the ranking.
+  const statOverrides = useAppStore((s) => s.statOverrides);
   const cycle = useActiveCycle();
   const production = useProduction();
   const base = useBaseView();
@@ -36,15 +38,15 @@ export function CreditStrategySection() {
 
   const byClass = useMemo(
     () => deployedByClass({ cards, cycle, currentLevel, rebirthLevel: currentLevel }),
-    [cards, cycle, currentLevel],
+    [cards, cycle, currentLevel, statOverrides],
   );
   const leaderboard = useMemo(
     () => (showAll ? dexLeaderboard({ cards, cycle, currentLevel }) : []),
-    [showAll, cards, cycle, currentLevel],
+    [showAll, cards, cycle, currentLevel, statOverrides],
   );
   const upgrades = useMemo(
     () => upgradePayoffs({ cards, cycle, currentLevel }),
-    [cards, cycle, currentLevel],
+    [cards, cycle, currentLevel, statOverrides],
   );
 
   const nextRb = rebirths.find((r) => r.level === currentLevel + 1);

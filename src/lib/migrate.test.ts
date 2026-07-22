@@ -288,4 +288,24 @@ describe("migrate", () => {
       { station: "ASTROMECH", name: "R2", tier: "DEFAULT", state: "crafting" },
     ]);
   });
+
+  it("bootstraps statOverrides to {} for payloads that lack it (v12 slice)", () => {
+    expect(migrate({ schemaVersion: 11 }).statOverrides).toEqual({});
+  });
+
+  it("round-trips valid stat overrides and drops malformed fields/tiers", () => {
+    const v12 = {
+      schemaVersion: 12,
+      statOverrides: {
+        MOUSE: {
+          GALACTIC: { value: "1.2M", income: "48/s", cost: 5 /* non-string → drop */ },
+          NOPE: { value: "x" }, // invalid tier → drop
+        },
+        "": { GOLD: { value: "1" } }, // empty name → drop
+      },
+    };
+    expect(migrate(v12).statOverrides).toEqual({
+      MOUSE: { GALACTIC: { value: "1.2M", income: "48/s" } },
+    });
+  });
 });
