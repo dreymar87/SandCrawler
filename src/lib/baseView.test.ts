@@ -221,3 +221,60 @@ describe("crafting stations", () => {
     expect(view.stations.find((s) => s.type === "BATTLE")!.unlocked).toBe(false);
   });
 });
+
+describe("upgrade chip station", () => {
+  const base = {
+    cards: [],
+    dict: DICT,
+    stats: STATS,
+    standardRebirth: 5,
+    loungeCreditSlots: 5,
+    novaLoungeSlots: 0,
+    cycle: 1 as const,
+  };
+
+  it("is locked until the Nova upgrade is owned", () => {
+    const view = buildBaseView(base);
+    expect(view.chipStation).toEqual({
+      unlocked: false,
+      occupant: null,
+      perMin: null,
+      perHour: null,
+    });
+    expect(buildBaseView({ ...base, novaChipStationLevel: 1 }).chipStation.unlocked).toBe(true);
+  });
+
+  it("derives chips/hour from the recorded chips/min", () => {
+    const view = buildBaseView({
+      ...base,
+      novaChipStationLevel: 1,
+      chipStation: { name: "MOUSE", tier: "GOLD" },
+      chipRates: { MOUSE: { GOLD: 24 } },
+    });
+    expect(view.chipStation.occupant).toMatchObject({ name: "MOUSE", tier: "GOLD", class: "WORKER" });
+    expect(view.chipStation.perMin).toBe(24);
+    expect(view.chipStation.perHour).toBe(1440);
+  });
+
+  it("leaves the rate null when the tier has no recorded rate", () => {
+    const view = buildBaseView({
+      ...base,
+      novaChipStationLevel: 1,
+      chipStation: { name: "MOUSE", tier: "GOLD" },
+      // A rate for a DIFFERENT tier must not leak into this one.
+      chipRates: { MOUSE: { DEFAULT: 12 } },
+    });
+    expect(view.chipStation.perMin).toBeNull();
+    expect(view.chipStation.perHour).toBeNull();
+  });
+
+  it("does not consume any squad's working capacity", () => {
+    const withOccupant = buildBaseView({
+      ...base,
+      novaChipStationLevel: 1,
+      chipStation: { name: "MOUSE", tier: "GOLD" },
+    });
+    const worker = withOccupant.squads.find((s) => s.type === "WORKER")!;
+    expect(worker.deployed).toBe(0);
+  });
+});

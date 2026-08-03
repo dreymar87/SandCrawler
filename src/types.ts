@@ -236,6 +236,24 @@ export interface CraftingStationSlot {
   state: StationSlotState;
 }
 
+/**
+ * The droid assigned to the Upgrade Chip Station — a single-slot Nova Shop
+ * unlock that generates upgrade chips (not credits) while occupied.
+ * `null` = unlocked but empty, or not unlocked at all.
+ */
+export interface ChipStationSlot {
+  name: string;
+  tier: Tier;
+}
+
+/**
+ * Chips-per-minute the player has observed for a droid at a tier, keyed
+ * `chipRates[canonicalName][tier]`. The community workbooks publish no chip
+ * rates, so these are entered by hand; keeping them keyed by (droid, tier)
+ * means swapping a droid out and back restores its known rate.
+ */
+export type ChipRates = Record<string, Partial<Record<Tier, number>>>;
+
 /** Per-tier economy stats for a droid (from the community stats sheet). */
 export interface DroidTierStat {
   /** Upgrade cost to reach this tier, free-text (null for event droids). */
@@ -285,6 +303,16 @@ export interface PersistedState {
    * Resets on Super Rebirth.
    */
   craftingStations: CraftingStationSlot[];
+  /**
+   * Occupant of the Upgrade Chip Station (Nova Shop unlock, one slot).
+   * Resets on Super Rebirth, like the crafting stations.
+   */
+  chipStation: ChipStationSlot | null;
+  /**
+   * Observed chips/min per (droid, tier). Survives Super Rebirth — this is
+   * reference data the player learned, not deployment state.
+   */
+  chipRates: ChipRates;
   /** User edits to the per-tier economy stats (fill in / correct seed data). */
   statOverrides: StatOverrides;
   ui: UiPrefs;

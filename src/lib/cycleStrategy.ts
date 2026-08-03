@@ -1,7 +1,7 @@
 import { DROID_DICT } from "../data/droids.seed";
 import { RARITIES } from "../constants";
 import { buildDroidIndex } from "./autocomplete";
-import { rebirthsForCycle, sellHint } from "./sellGuidance";
+import { rebirthsForCycle } from "./sellGuidance";
 import { chipsFromDefaultTo } from "./chipCosts";
 import { tierRank } from "./tiers";
 import { normalizeName } from "./normalize";
@@ -108,17 +108,23 @@ export function computeCycleStrategy(cycle: RebirthCycle): CycleStrategy {
  * at ANY tier, we say "keep" even when the player owns a higher tier
  * that would substitute. Aggressive "sell" recommendations that turn
  * out wrong are much worse UX than conservative ones.
+ *
+ * Deliberately does NOT consult the sheet's per-row "DO_NOT_SELL" marker.
+ * That column is scoped to the three droids named on its own row ("droids
+ * you CAN sell because they are not needed for future rebirths"), so
+ * DO_NOT_SELL means "none of THIS row's droids are done yet" — not a
+ * global freeze on every droid you own. Treating it as global was a bug:
+ * it hid genuinely finished droids (e.g. UTIL-TEC, last needed at cycle-1
+ * RB8) whenever the player happened to stand on a flagged level like RB11.
+ * The forward scan below is also strictly more complete than the column,
+ * which is hand-maintained and left blank on 36 rows that do have a
+ * finished droid.
  */
 export function isDroidSafeToSell(
   canonicalName: string,
   cycle: RebirthCycle,
   currentLevel: number,
 ): boolean {
-  // Respect the community sheet's "do not sell" guard: when the current
-  // rebirth row is flagged DO_NOT_SELL, nothing is safe to sell at this level.
-  // (This is the single sell brain shared by Base, the Droidex filter, and the
-  // credit-strategy badges — so they all agree with the per-RB modal.)
-  if (sellHint(canonicalName, cycle, currentLevel).kind === "DO_NOT_SELL") return false;
   const target = normalizeName(canonicalName);
   const rows = rebirthsForCycle(cycle);
   let lastNeeded = -1;

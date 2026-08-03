@@ -1,5 +1,5 @@
 /** Bumped when the seed dictionary or Standard Rebirth seed changes. */
-export const SEED_VERSION = 8;
+export const SEED_VERSION = 9;
 
 /**
  * Bumped when PersistedState's shape changes incompatibly. `migrate.ts`
@@ -45,5 +45,8 @@ export const SEED_VERSION = 8;
  * v13 — Community sheet refresh (RB28-30, corrected stats). Prunes any
  *      `statOverrides` field that now duplicates the refreshed seed; edits
  *      that genuinely differ are kept.
+ * v14 — Adds the Upgrade Chip Station: `chipStation` (its single occupant,
+ *      reset on Super Rebirth) and `chipRates` (observed chips/min per
+ *      droid+tier, kept across Super Rebirths as reference data).
  */
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;

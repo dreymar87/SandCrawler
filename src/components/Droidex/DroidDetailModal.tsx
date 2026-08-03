@@ -4,7 +4,7 @@ import { TIERS } from "../../constants";
 import { droidCycles } from "../../lib/droidCycles";
 import { craftTimeFor, tierStatsFor } from "../../lib/droidStats";
 import { isDroidSafeToSell } from "../../lib/cycleStrategy";
-import { sellHint } from "../../lib/sellGuidance";
+import { nextNeededLevel } from "../../lib/sellGuidance";
 import { useAppStore } from "../../store/useAppStore";
 import { TierPill } from "../common/TierPill";
 import type { DroidDef, DroidTierStat, RebirthCycle, Tier } from "../../types";
@@ -42,9 +42,9 @@ export function DroidDetailModal({
   const cycles = droidCycles(def.canonical);
   const hasOverride = !!statOverrides[def.canonical];
 
-  // Sell verdict — the SAME brain (isDroidSafeToSell/sellHint) Base uses.
+  // Sell verdict — the SAME brain (isDroidSafeToSell) Base uses.
   const isIconic = def.rarity === "ICONIC";
-  const hint = activeCycle ? sellHint(def.canonical, activeCycle, currentLevel) : null;
+  const nextLevel = activeCycle ? nextNeededLevel(def.canonical, activeCycle, currentLevel) : null;
   const safe = activeCycle ? isDroidSafeToSell(def.canonical, activeCycle, currentLevel) : false;
   const isDeployed =
     !!deployed && Object.values(deployed).some((d) => (d?.working ?? 0) + (d?.lounge ?? 0) > 0);
@@ -148,10 +148,8 @@ export function DroidDetailModal({
               <span className="text-[12px] text-tier-galactic">Keep — event droid, never sell</span>
             ) : safe ? (
               <span className="text-[12px] text-ok">Safe to sell now</span>
-            ) : hint?.kind === "DO_NOT_SELL" ? (
-              <span className="text-[12px] text-warn">Do not sell — locked this rebirth</span>
-            ) : hint?.kind === "KEEP" ? (
-              <span className="text-[12px] text-sun">Keep — needed at RB{hint.nextLevel}</span>
+            ) : nextLevel !== null ? (
+              <span className="text-[12px] text-sun">Keep — needed at RB{nextLevel}</span>
             ) : (
               <span className="text-[12px] text-sun">Keep — needed later this cycle</span>
             )}

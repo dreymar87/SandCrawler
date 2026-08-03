@@ -52,6 +52,27 @@ export function sellHint(
   return { kind: "NOT_NEEDED" };
 }
 
+/**
+ * The next rebirth level above `currentLevel` in `cycle` that names this
+ * droid, or null if none do (i.e. it's finished for this cycle).
+ *
+ * Same scan as `sellHint`'s KEEP branch, but without the DO_NOT_SELL
+ * precedence in front of it — callers that want the precise "needed at
+ * RB{n}" answer shouldn't lose it just because the row they're standing
+ * on happens to carry the sheet's row-scoped marker.
+ */
+export function nextNeededLevel(
+  droidName: string,
+  cycle: RebirthCycle,
+  currentLevel: number,
+): number | null {
+  const key = normalizeName(droidName);
+  const upcoming = REBIRTH_CYCLES.filter((r) => r.cycle === cycle && r.level > currentLevel)
+    .sort((a, b) => a.level - b.level)
+    .find((r) => r.needs.some((n) => normalizeName(n.name) === key));
+  return upcoming ? upcoming.level : null;
+}
+
 /** Quick filter: rows of the active cycle, sorted by level. */
 export function rebirthsForCycle(cycle: RebirthCycle): StandardRebirth[] {
   return REBIRTH_CYCLES.filter((r) => r.cycle === cycle).sort((a, b) => a.level - b.level);

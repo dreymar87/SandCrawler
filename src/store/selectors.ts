@@ -273,11 +273,15 @@ export function useBaseView(): BaseView {
   const loungeCreditSlots = useAppStore((s) => s.profile.loungeCreditSlots);
   const novaUpgrades = useAppStore((s) => s.novaUpgrades);
   const craftingStations = useAppStore((s) => s.craftingStations);
+  const chipStation = useAppStore((s) => s.chipStation);
+  const chipRates = useAppStore((s) => s.chipRates);
   const statOverrides = useAppStore((s) => s.statOverrides);
   const cycle = useActiveCycle();
   return useMemo(() => {
     const novaLoungeSlots =
       novaUpgrades.find((u) => u.id === "workshop.lounge-slot")?.level ?? 0;
+    const novaChipStationLevel =
+      novaUpgrades.find((u) => u.id === "featured.chip-station")?.level ?? 0;
     return buildBaseView({
       cards,
       dict: [...DROID_DICT, ...customDroids],
@@ -287,9 +291,12 @@ export function useBaseView(): BaseView {
       novaLoungeSlots,
       cycle,
       craftingStations,
+      chipStation,
+      chipRates,
+      novaChipStationLevel,
     });
     // statOverrides feeds sell values via statsFromTable — recompute on edit.
-  }, [cards, customDroids, standardRebirth, loungeCreditSlots, novaUpgrades, craftingStations, statOverrides, cycle]);
+  }, [cards, customDroids, standardRebirth, loungeCreditSlots, novaUpgrades, craftingStations, chipStation, chipRates, statOverrides, cycle]);
 }
 
 /** Everything the Home dashboard needs, in one hook. */

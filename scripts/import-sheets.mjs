@@ -6,6 +6,12 @@
  *
  * Without --write it prints a summary and changes nothing (dry run).
  *
+ * `--check-nova` instead reports sheet-vs-seed drift for the Nova shop and
+ * exits non-zero if they disagree. The Nova seed is hand-maintained (it carries
+ * ids, trees and display names the sheet has no column for), so this is the
+ * guard that a cost ladder changing under us gets noticed — the Pass 30 import
+ * missed exactly that.
+ *
  * Regenerates:
  *   src/data/rebirthCycles.seed.ts   (RB requirements, credits, sell lists)
  *   src/data/droidStats.json         (per-tier cost / income / value)
@@ -315,6 +321,86 @@ function loadExistingCycleExtras() {
   return extras;
 }
 
+/**
+ * Nova-shop cost columns from the tracker, as { "CRITICAL CHANCE": [60, 90, …] }.
+ *
+ * The tab lays several blocks side by side (Featured / Core / Workshop /
+ * Cosmetics), each introduced by its own "LEVEL" column, so the header row is
+ * read as: every named column is a cost column, and its values run down until
+ * they stop. Trailing prose in the header row has no numbers under it and
+ * drops out on its own.
+ */
+function parseNovaCosts(sheets) {
+  const tab = Object.keys(sheets).find((n) => /nova/i.test(n));
+  if (!tab) throw new Error("no Nova tab in the tracker workbook");
+  const sheet = sheets[tab];
+
+  let header = 0;
+  for (let r = 1; r <= 12 && !header; r++) {
+    if (cell(sheet, r, 1).toUpperCase() === "LEVEL") header = r;
+  }
+  if (!header) throw new Error(`no "LEVEL" header row in ${JSON.stringify(tab)}`);
+
+  const width = Math.max(...[...sheet.keys()].map((k) => Number(k.split(",")[1])), 0);
+  const last = maxRow(sheet);
+  const out = new Map();
+  for (let c = 1; c <= width; c++) {
+    const name = cell(sheet, header, c).trim();
+    if (!name || name.toUpperCase() === "LEVEL") continue;
+    const costs = [];
+    for (let r = header + 1; r <= last; r++) {
+      const v = cell(sheet, r, c);
+      if (v === "") break; // a gap ends the ladder
+      const n = Number(v);
+      if (!Number.isFinite(n)) break;
+      costs.push(n);
+    }
+    if (costs.length) out.set(name.toUpperCase(), costs);
+  }
+  return out;
+}
+
+/** Print sheet-vs-seed drift for every Nova upgrade. Returns true if clean. */
+function checkNova(trackerBook) {
+  const sheet = parseNovaCosts(trackerBook);
+  const src = readFileSync(`${ROOT}/src/data/novaShop.seed.ts`, "utf8");
+  const seed = new Map();
+  for (const m of src.matchAll(/name:\s*"([^"]+)",\s*\n?\s*costs:\s*\[([^\]]*)\]/g)) {
+    seed.set(
+      m[1].toUpperCase(),
+      m[2]
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => (s === "null" ? null : Number(s))),
+    );
+  }
+  if (!seed.size) throw new Error("could not parse NOVA_UPGRADES out of novaShop.seed.ts");
+
+  let clean = true;
+  for (const [name, costs] of seed) {
+    const sheetCosts = sheet.get(name);
+    if (!sheetCosts) {
+      console.log(`  ?  ${name} — in the seed, no column in the sheet`);
+      continue;
+    }
+    // Seed `null` means "level exists, cost unpublished" — the sheet filling
+    // one in is drift worth reporting, not an error to hide.
+    const same =
+      costs.length === sheetCosts.length && costs.every((v, i) => v === sheetCosts[i]);
+    if (same) continue;
+    clean = false;
+    console.log(`  !  ${name}`);
+    console.log(`       seed  (${costs.length}): ${costs.join(", ")}`);
+    console.log(`       sheet (${sheetCosts.length}): ${sheetCosts.join(", ")}`);
+  }
+  for (const name of sheet.keys()) {
+    if (!seed.has(name)) console.log(`  +  ${name} — in the sheet, no seed entry`);
+  }
+  console.log(clean ? "nova: seed matches the sheet" : "nova: DRIFT (hand-edit novaShop.seed.ts)");
+  return clean;
+}
+
 /** Keep the app's compact credit notation when it means the same number. */
 const SUFFIX = { K: 1e3, M: 1e6, B: 1e9, T: 1e12, Q: 1e15, MILLION: 1e6, BILLION: 1e9, TRILLION: 1e12 };
 function creditValue(text) {
@@ -418,6 +504,12 @@ if (process.argv.includes("--dump")) {
   const s = cyclesBook["RBC1 (dark)"];
   if (s) for (let r = 1; r <= 5; r++) console.log(" row", r, [1, 2, 3, 4, 5].map((c) => JSON.stringify(cell(s, r, c))).join(" "));
   process.exit(0);
+}
+
+// The Nova shop stays hand-maintained (the seed carries ids/names/trees the
+// sheet has no column for), so this only reports drift — it never writes.
+if (process.argv.includes("--check-nova")) {
+  process.exit(checkNova(trackerBook) ? 0 : 1);
 }
 
 const cycles = parseCycles(cyclesBook, resolve);

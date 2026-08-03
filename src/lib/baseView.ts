@@ -6,6 +6,8 @@ import { statsFromTable } from "./droidStats";
 import { parseCredits, formatCredits } from "./credits";
 import { normalizeName } from "./normalize";
 import type {
+  ChipRates,
+  ChipStationSlot,
   CollectionCard,
   CraftingStationSlot,
   DroidClass,
@@ -123,11 +125,29 @@ export interface StationFill {
   } | null;
 }
 
+/**
+ * The Upgrade Chip Station — a Nova Shop unlock holding one droid that
+ * generates upgrade chips instead of credits. Storage caps at an hour and it
+ * doesn't run while you're offline, so `perHour` doubles as the cap you can
+ * bank before collecting.
+ */
+export interface ChipStationFill {
+  /** True once the "Upgrade Chip Station" Nova upgrade is owned. */
+  unlocked: boolean;
+  /** null when unlocked-but-empty (or still locked). */
+  occupant: { name: string; tier: Tier; rarity: Rarity; class: DroidClass } | null;
+  /** Observed chips/min for the occupant, or null if not recorded yet. */
+  perMin: number | null;
+  /** perMin × 60 — also the ~1 h storage cap. null when perMin is unknown. */
+  perHour: number | null;
+}
+
 export interface BaseView {
   squads: SquadFill[];
   lounge: LoungeFill;
   companion: CompanionSlot;
   stations: StationFill[];
+  chipStation: ChipStationFill;
   sellCandidates: SellCandidate[];
   /** Formatted sum of sell-candidate values, e.g. "1.24B". */
   sellTotal: string;
@@ -145,6 +165,12 @@ export interface BuildBaseViewArgs {
   cycle: RebirthCycle;
   /** Current crafting-station occupancy. Optional — defaults to []. */
   craftingStations?: readonly CraftingStationSlot[];
+  /** Upgrade Chip Station occupant. Optional — defaults to empty. */
+  chipStation?: ChipStationSlot | null;
+  /** Observed chips/min per (droid, tier). Optional — defaults to {}. */
+  chipRates?: ChipRates;
+  /** Level of the "Upgrade Chip Station" Nova upgrade (0 = locked). */
+  novaChipStationLevel?: number;
 }
 
 /**
@@ -162,6 +188,9 @@ export function buildBaseView({
   novaLoungeSlots,
   cycle,
   craftingStations = [],
+  chipStation: chipStationSlot = null,
+  chipRates = {},
+  novaChipStationLevel = 0,
 }: BuildBaseViewArgs): BaseView {
   const byKey = new Map<string, DroidDef>();
   for (const d of dict) {
@@ -261,6 +290,30 @@ export function buildBaseView({
     };
   });
 
+  // Upgrade Chip Station: one Nova-unlocked slot producing chips, not credits.
+  // Deliberately NOT counted against any squad's working capacity — see the
+  // note on ChipStationFill.
+  const chipStation: ChipStationFill = (() => {
+    const unlocked = novaChipStationLevel > 0;
+    if (!chipStationSlot) return { unlocked, occupant: null, perMin: null, perHour: null };
+    const cdef = resolve(chipStationSlot.name);
+    // Rates are recorded under the canonical name so an alias spelling in the
+    // slot still finds them.
+    const key = cdef?.canonical ?? chipStationSlot.name;
+    const perMin = chipRates[key]?.[chipStationSlot.tier] ?? null;
+    return {
+      unlocked,
+      occupant: {
+        name: chipStationSlot.name,
+        tier: chipStationSlot.tier,
+        rarity: cdef?.rarity ?? "COMMON",
+        class: cdef?.class ?? "UNKNOWN",
+      },
+      perMin,
+      perHour: perMin === null ? null : perMin * 60,
+    };
+  })();
+
   // Sell candidates: DEPLOYED cards (working or lounge — actually
   // occupying a base slot) whose droid isn't needed later this cycle.
   // A card merely flagged "owned" in the Droidex isn't taking a slot, so
@@ -293,6 +346,7 @@ export function buildBaseView({
     lounge,
     companion,
     stations,
+    chipStation,
     sellCandidates,
     sellTotal: formatCredits(sellTotalCredits),
   };

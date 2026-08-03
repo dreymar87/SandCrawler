@@ -105,9 +105,20 @@ describe("isDroidSafeToSell", () => {
     expect(isDroidSafeToSell("SOME-NONEXISTENT-DROID", 1, 5)).toBe(true);
   });
 
-  it("returns false at a DO_NOT_SELL rebirth, even for an unneeded droid", () => {
-    // Cycle 1, RB3 is flagged DO_NOT_SELL in the seed → nothing is safe here.
-    expect(isDroidSafeToSell("SOME-NONEXISTENT-DROID", 1, 3)).toBe(false);
+  // The sheet's "DO_NOT_SELL" marker is scoped to the three droids named on
+  // its own row, NOT a global freeze. Treating it as global hid finished
+  // droids whenever the player stood on a flagged level — the reported bug.
+  it("does not let a DO_NOT_SELL row freeze an unrelated finished droid", () => {
+    // Cycle 1, RB11 is flagged DO_NOT_SELL in the seed. UTIL-TEC's last
+    // cycle-1 requirement is RB8, so at RB11 it is genuinely done.
+    expect(isDroidSafeToSell("UTIL-TEC", 1, 11)).toBe(true);
+    // ...and a droid that cycle 1 never names is safe there too.
+    expect(isDroidSafeToSell("SOME-NONEXISTENT-DROID", 1, 11)).toBe(true);
+  });
+
+  it("still keeps a droid the DO_NOT_SELL row itself names", () => {
+    // BB9 IS one of cycle-1 RB11's three droids, and is needed again later.
+    expect(isDroidSafeToSell("BB9", 1, 11)).toBe(false);
   });
 
   it("returns true once currentLevel reaches the last required RB", () => {

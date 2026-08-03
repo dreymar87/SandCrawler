@@ -9,6 +9,7 @@ import { DROID_STATS } from "./droidStats.seed";
 import { CRAFTING_TIMES } from "./craftingTimes.seed";
 import { CHIP_COSTS } from "./chipCosts.seed";
 import { SUPER_REBIRTH_BONUSES } from "./superRebirthBonuses.seed";
+import { NOVA_UPGRADES } from "./novaShop.seed";
 import { MAX_STANDARD_REBIRTH, TIERS } from "../constants";
 import { normalizeName } from "../lib/normalize";
 
@@ -117,5 +118,35 @@ describe("chip costs + SRB bonuses", () => {
   it("covers RB12..30 with no gaps", () => {
     const levels = SUPER_REBIRTH_BONUSES.map((b) => b.rbLevel);
     expect(levels).toEqual(Array.from({ length: MAX_RB - 11 }, (_, i) => i + 12));
+  });
+});
+
+describe("nova shop", () => {
+  it("has unique ids and at least one cost level each", () => {
+    const ids = NOVA_UPGRADES.map((u) => u.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const u of NOVA_UPGRADES) {
+      expect(u.costs.length, u.id).toBeGreaterThan(0);
+    }
+  });
+
+  // Pass 30's sheet comparison skipped columns A-E and missed the whole
+  // FEATURED block. These pin the values `--check-nova` now verifies.
+  it("matches the sheet's FEATURED ladders", () => {
+    const byId = new Map(NOVA_UPGRADES.map((u) => [u.id, u]));
+
+    const chance = byId.get("featured.critical-chance")!;
+    expect(chance.costs).toHaveLength(18);
+    // 60 rising by 30 a level, to 570.
+    expect(chance.costs).toEqual(Array.from({ length: 18 }, (_, i) => 60 + i * 30));
+
+    const amount = byId.get("featured.critical-amount")!;
+    expect(amount.costs).toHaveLength(18);
+    // 30 rising by 60 a level, to 1050.
+    expect(amount.costs).toEqual(Array.from({ length: 18 }, (_, i) => 30 + i * 60));
+
+    expect(byId.get("featured.companion-slot")!.costs).toEqual([250]);
+    expect(byId.get("featured.chip-station")!.costs).toEqual([120]);
+    expect(byId.get("featured.daily-crystals")!.costs).toEqual([30]);
   });
 });

@@ -8,6 +8,7 @@ import { srbBonusAt } from "../lib/novaCrystals";
 import { normalizeTier } from "../lib/tiers";
 import { TIERS } from "../constants";
 import type {
+  ChipRates,
   CollectionCard,
   CosmeticState,
   DroidDef,
@@ -97,6 +98,18 @@ interface Actions {
   grabStation(station: StationType, target?: Slot | null): void;
   /** Empty a station without granting ownership (cancel / eject). */
   clearStation(station: StationType): void;
+
+  // ── Upgrade Chip Station (Nova unlock, one slot) ──────────────────────
+  /** Assign the chip station's single occupant (replaces any current one). */
+  setChipStationDroid(name: string, tier: Tier): void;
+  /** Empty the chip station. */
+  clearChipStation(): void;
+  /**
+   * Record the observed chips/min for a droid at a tier. `null` (or a
+   * non-positive value) clears it. Kept per (droid, tier) so swapping a droid
+   * out and back restores its rate.
+   */
+  setChipRate(name: string, tier: Tier, perMin: number | null): void;
   /**
    * On a "ready" slot: the finished droid becomes your Companion (owned;
    * clears any prior companion) and your prior companion parks into the
@@ -438,6 +451,34 @@ export const useAppStore = create<AppStore>()(
         }));
       },
 
+      setChipStationDroid(name, tier) {
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        set({ chipStation: { name: trimmed, tier } });
+      },
+
+      clearChipStation() {
+        set({ chipStation: null });
+      },
+
+      setChipRate(name, tier, perMin) {
+        const key = name.trim();
+        if (!key) return;
+        set((s) => {
+          const rates: ChipRates = { ...s.chipRates };
+          const tiers = { ...(rates[key] ?? {}) };
+          // A blank / non-positive entry clears the rate rather than storing 0.
+          if (perMin === null || !Number.isFinite(perMin) || perMin <= 0) {
+            delete tiers[tier];
+          } else {
+            tiers[tier] = perMin;
+          }
+          if (Object.keys(tiers).length === 0) delete rates[key];
+          else rates[key] = tiers;
+          return { chipRates: rates };
+        });
+      },
+
       swapCompanionIntoStation(station) {
         const s = get();
         const slot = s.craftingStations.find((c) => c.station === station);
@@ -579,6 +620,9 @@ export const useAppStore = create<AppStore>()(
             iconicMerchantBought: [],
             // Station occupancy clears on SR (Astromech/Battle also re-lock).
             craftingStations: [],
+            // Same for the chip station's occupant. `chipRates` is deliberately
+            // NOT cleared — those are observed numbers, not deployment state.
+            chipStation: null,
             profile: {
               ...s.profile,
               standardRebirth: 0,
@@ -614,6 +658,8 @@ export const useAppStore = create<AppStore>()(
         novaIconicOwned: state.novaIconicOwned ?? [],
         iconicMerchantBought: state.iconicMerchantBought ?? [],
         craftingStations: state.craftingStations ?? [],
+        chipStation: state.chipStation ?? null,
+        chipRates: state.chipRates ?? {},
         statOverrides: state.statOverrides ?? {},
         ui: state.ui,
       }),

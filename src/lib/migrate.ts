@@ -1,6 +1,8 @@
 import { DROID_DICT } from "../data/droids.seed";
 import { SCHEMA_VERSION } from "../data/version";
 import type {
+  ChipRates,
+  ChipStationSlot,
   CollectionCard,
   CosmeticState,
   CraftingStationSlot,
@@ -60,6 +62,8 @@ export function emptyState(): PersistedState {
     novaIconicOwned: [],
     iconicMerchantBought: [],
     craftingStations: [],
+    chipStation: null,
+    chipRates: {},
     statOverrides: {},
     ui: { activeTab: "base" },
   };
@@ -311,6 +315,30 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
     if (Object.keys(tiers).length === 0) delete statOverrides[name];
   }
 
+  // v14: the Upgrade Chip Station's single slot, plus the chips/min the
+  // player has recorded per (droid, tier).
+  let chipStation: ChipStationSlot | null = null;
+  if (obj.chipStation && typeof obj.chipStation === "object") {
+    const r = obj.chipStation as Record<string, unknown>;
+    const name = typeof r.name === "string" ? r.name.trim() : "";
+    const tier = normalizeTier(String(r.tier ?? "")) as Tier;
+    if (name && tier) chipStation = { name, tier };
+  }
+
+  const chipRates: ChipRates = {};
+  if (obj.chipRates && typeof obj.chipRates === "object" && !Array.isArray(obj.chipRates)) {
+    for (const [name, tiersRaw] of Object.entries(obj.chipRates as Record<string, unknown>)) {
+      if (!name.trim() || !tiersRaw || typeof tiersRaw !== "object") continue;
+      const tiers: Partial<Record<Tier, number>> = {};
+      for (const [tier, rate] of Object.entries(tiersRaw as Record<string, unknown>)) {
+        if (!validTiers.has(tier as Tier)) continue;
+        const n = Number(rate);
+        if (Number.isFinite(n) && n > 0) tiers[tier as Tier] = n;
+      }
+      if (Object.keys(tiers).length > 0) chipRates[name.trim()] = tiers;
+    }
+  }
+
   // v5: lift StandardRebirth.rewards.slotUnlock to top-level, drop the rest.
   // v4 stored slot/crystals/mults nested under `rewards`; v5 keeps only
   // slotUnlock (the genuinely per-RB datum).
@@ -327,6 +355,8 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
     novaIconicOwned,
     iconicMerchantBought,
     craftingStations,
+    chipStation,
+    chipRates,
     statOverrides,
     ui: {
       // creditsCurrent intentionally dropped from uiRaw (moved to profile in v6).

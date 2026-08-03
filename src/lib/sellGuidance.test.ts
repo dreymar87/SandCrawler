@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rebirthsForCycle, sellHint } from "./sellGuidance";
+import { nextNeededLevel, rebirthsForCycle, sellHint } from "./sellGuidance";
 
 describe("rebirthsForCycle", () => {
   it("returns exactly the 30 levels for cycle 1", () => {
@@ -50,5 +50,26 @@ describe("sellHint", () => {
   it("returns NOT_NEEDED when nothing ahead requires the droid", () => {
     // CB is RBC1 RB1 only — once you've cleared RB23, it's not needed
     expect(sellHint("CB", 1, 23).kind).toBe("NOT_NEEDED");
+  });
+});
+
+describe("nextNeededLevel", () => {
+  it("finds the next level that names the droid", () => {
+    // BB9 is a cycle-1 requirement at RB11, RB15 and RB18.
+    expect(nextNeededLevel("BB9", 1, 11)).toBe(15);
+    expect(nextNeededLevel("BB9", 1, 15)).toBe(18);
+  });
+
+  it("returns null once the droid is finished for the cycle", () => {
+    // UTIL-TEC's last cycle-1 requirement is RB8.
+    expect(nextNeededLevel("UTIL-TEC", 1, 8)).toBeNull();
+    expect(nextNeededLevel("SOME-NONEXISTENT-DROID", 1, 0)).toBeNull();
+  });
+
+  it("ignores the row-scoped DO_NOT_SELL marker that shadows sellHint", () => {
+    // Cycle-1 RB11 is a DO_NOT_SELL row, so sellHint short-circuits there;
+    // nextNeededLevel still reports the precise answer.
+    expect(sellHint("BB9", 1, 11).kind).toBe("DO_NOT_SELL");
+    expect(nextNeededLevel("BB9", 1, 11)).toBe(15);
   });
 });

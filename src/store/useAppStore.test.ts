@@ -129,6 +129,46 @@ describe("performSuperRebirth", () => {
     useAppStore.getState().performSuperRebirth();
     expect(useAppStore.getState().craftingStations).toEqual([]);
   });
+
+  it("clears the chip station on Super Rebirth but keeps the recorded rates", () => {
+    useAppStore.getState().setChipStationDroid("HAUL-R", "RAINBOW");
+    useAppStore.getState().setChipRate("HAUL-R", "RAINBOW", 24);
+    useAppStore.getState().performSuperRebirth();
+    // The droid leaves the slot...
+    expect(useAppStore.getState().chipStation).toBeNull();
+    // ...but what the player measured is reference data, not deployment state.
+    expect(useAppStore.getState().chipRates).toEqual({ "HAUL-R": { RAINBOW: 24 } });
+  });
+});
+
+describe("upgrade chip station", () => {
+  beforeEach(() => useAppStore.getState().resetAll());
+
+  it("assigns, replaces and clears the single slot", () => {
+    expect(useAppStore.getState().chipStation).toBeNull();
+    useAppStore.getState().setChipStationDroid("HAUL-R", "RAINBOW");
+    expect(useAppStore.getState().chipStation).toEqual({ name: "HAUL-R", tier: "RAINBOW" });
+    // One slot — assigning again replaces rather than accumulating.
+    useAppStore.getState().setChipStationDroid("MOUSE", "GOLD");
+    expect(useAppStore.getState().chipStation).toEqual({ name: "MOUSE", tier: "GOLD" });
+    useAppStore.getState().clearChipStation();
+    expect(useAppStore.getState().chipStation).toBeNull();
+  });
+
+  it("stores chip rates per droid and tier", () => {
+    useAppStore.getState().setChipRate("HAUL-R", "RAINBOW", 24);
+    useAppStore.getState().setChipRate("HAUL-R", "GOLD", 12);
+    expect(useAppStore.getState().chipRates).toEqual({ "HAUL-R": { RAINBOW: 24, GOLD: 12 } });
+  });
+
+  it("clears a rate on null / non-positive, pruning empty entries", () => {
+    useAppStore.getState().setChipRate("HAUL-R", "RAINBOW", 24);
+    useAppStore.getState().setChipRate("HAUL-R", "RAINBOW", null);
+    expect(useAppStore.getState().chipRates).toEqual({});
+    // 0 means "not measured", not "produces nothing" — treated as a clear.
+    useAppStore.getState().setChipRate("HAUL-R", "RAINBOW", 0);
+    expect(useAppStore.getState().chipRates).toEqual({});
+  });
 });
 
 describe("crafting stations", () => {

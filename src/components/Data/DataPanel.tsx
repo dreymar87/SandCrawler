@@ -32,6 +32,8 @@ export function DataPanel() {
       novaIconicOwned: s.novaIconicOwned,
       iconicMerchantBought: s.iconicMerchantBought,
       craftingStations: s.craftingStations,
+      chipStation: s.chipStation,
+      chipRates: s.chipRates,
       statOverrides: s.statOverrides,
       ui: s.ui,
     };

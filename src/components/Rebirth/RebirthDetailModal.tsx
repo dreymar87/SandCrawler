@@ -135,7 +135,7 @@ export function RebirthDetailModal({
             }`}
           >
             {dnsell
-              ? "Do not sell anything yet — droids are needed for upcoming rebirths."
+              ? "None of this rebirth's droids are done yet — they're all still needed ahead. Other droids you own may still be safe; see Safe to sell on the Base tab."
               : `Safe to sell: ${sell.join(", ")}`}
           </div>
         ) : null}

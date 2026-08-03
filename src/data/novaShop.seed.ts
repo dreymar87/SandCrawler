@@ -14,10 +14,15 @@ import type { NovaIconicPurchase, NovaUpgrade } from "../types";
 
 export const NOVA_UPGRADES: readonly NovaUpgrade[] = [
   // ── Featured Upgrades ─────────────────────────────────────────────────
-  { id: "featured.critical-chance", tree: "FEATURED", name: "Critical Chance", costs: [60, 90, 120, 180] },
-  { id: "featured.critical-amount", tree: "FEATURED", name: "Critical Amount", costs: [30, 90, 150, 210, 330] },
-  // Companion Slot isn't released yet — 1 level assumed, cost unknown (rumored <500).
-  { id: "featured.companion-slot", tree: "FEATURED", name: "Companion Slot", costs: [null] },
+  // prettier-ignore
+  { id: "featured.critical-chance", tree: "FEATURED", name: "Critical Chance",
+    costs: [60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480, 510, 540, 570] },
+  // prettier-ignore
+  { id: "featured.critical-amount", tree: "FEATURED", name: "Critical Amount",
+    costs: [30, 90, 150, 210, 270, 330, 390, 450, 510, 570, 630, 690, 750, 810, 870, 930, 990, 1050] },
+  { id: "featured.companion-slot", tree: "FEATURED", name: "Companion Slot", costs: [250] },
+  { id: "featured.chip-station", tree: "FEATURED", name: "Upgrade Chip Station", costs: [120] },
+  { id: "featured.daily-crystals", tree: "FEATURED", name: "Daily Crystals", costs: [30] },
 
   // ── Core Upgrades ─────────────────────────────────────────────────────
   {
@@ -58,14 +63,14 @@ export const NOVA_UPGRADES: readonly NovaUpgrade[] = [
     name: "Jawa Bartering",
     costs: [5, 15, 30, 45, 60],
   },
-  { id: "core.super-crates", tree: "CORE", name: "Super Crates", costs: [10, 25, null] },
+  { id: "core.super-crates", tree: "CORE", name: "Super Crates", costs: [10, 25, 50] },
 
   // ── Workshop Upgrades ─────────────────────────────────────────────────
   {
     id: "workshop.lounge-slot",
     tree: "WORKSHOP",
     name: "Lounge Slot",
-    costs: [1, 30, 60, null],
+    costs: [1, 30, 60, 90],
   },
   {
     id: "workshop.upgrade-chip-scrap",

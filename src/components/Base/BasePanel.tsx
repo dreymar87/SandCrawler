@@ -18,6 +18,7 @@ import { DroidActionMenu } from "./DroidActionMenu";
 import { AddToBaseModal } from "./AddToBaseModal";
 import { ActiveBonuses } from "./ActiveBonuses";
 import { CraftingStations } from "./CraftingStations";
+import { ChipStationCard } from "./ChipStationCard";
 import type { CompanionSlot, DeployedDroid, LoungeFill, SellCandidate, SquadFill } from "../../lib/baseView";
 
 type OpenMenu = { droid: DeployedDroid; slot: Slot };
@@ -174,6 +175,8 @@ export function BasePanel() {
 
       {/* Crafting stations — one droid per station, RB-gated. */}
       <CraftingStations stations={base.stations} />
+
+      <ChipStationCard station={base.chipStation} />
 
       {/* Safe to sell */}
       <section className="card p-4">

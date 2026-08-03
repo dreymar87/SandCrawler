@@ -293,6 +293,43 @@ describe("migrate", () => {
     expect(migrate({ schemaVersion: 11 }).statOverrides).toEqual({});
   });
 
+  it("bootstraps the chip station slices for payloads that lack them (v14)", () => {
+    const m = migrate({ schemaVersion: 13 });
+    expect(m.chipStation).toBeNull();
+    expect(m.chipRates).toEqual({});
+  });
+
+  it("round-trips a chip station and its rates, dropping malformed entries", () => {
+    const v14 = {
+      schemaVersion: 14,
+      chipStation: { name: "HAUL-R", tier: "RAINBOW" },
+      chipRates: {
+        "HAUL-R": {
+          RAINBOW: 24,
+          NOPE: 5, // invalid tier → drop
+          GOLD: -3, // non-positive → drop
+        },
+        "": { GOLD: 1 }, // empty name → drop
+      },
+    };
+    const m = migrate(v14);
+    expect(m.chipStation).toEqual({ name: "HAUL-R", tier: "RAINBOW" });
+    expect(m.chipRates).toEqual({ "HAUL-R": { RAINBOW: 24 } });
+  });
+
+  it("drops a chip station with no usable name", () => {
+    expect(migrate({ schemaVersion: 14, chipStation: { name: "", tier: "GOLD" } }).chipStation).toBeNull();
+    expect(migrate({ schemaVersion: 14, chipStation: null }).chipStation).toBeNull();
+  });
+
+  it("falls back to DEFAULT for a missing tier rather than losing the droid", () => {
+    // Same rule the craftingStations slice uses — normalizeTier's fallback.
+    expect(migrate({ schemaVersion: 14, chipStation: { name: "MOUSE" } }).chipStation).toEqual({
+      name: "MOUSE",
+      tier: "DEFAULT",
+    });
+  });
+
   it("round-trips valid stat overrides and drops malformed fields/tiers", () => {
     const v12 = {
       schemaVersion: 12,
