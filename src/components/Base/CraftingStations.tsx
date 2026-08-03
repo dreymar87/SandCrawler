@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { haptic } from "../../lib/native";
 import { toast } from "../../lib/toast";
+import { craftTimeFor } from "../../lib/droidStats";
 import { useAppStore, type Slot } from "../../store/useAppStore";
 import { TierPill } from "../common/TierPill";
 import { StartCraftModal } from "./StartCraftModal";
@@ -100,6 +101,14 @@ function StationCard({
           className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md border border-line bg-bg-alt/40 hover:bg-holo/5 transition text-left"
         >
           <span className="flex-1 min-w-0 font-mono text-[12px] truncate">{slot.name}</span>
+          {craftTimeFor(slot.name, slot.tier) ? (
+            <span
+              className="font-mono text-[9.5px] text-muted-alt tabular-nums shrink-0"
+              title="Build time with no crafting-speed bonuses"
+            >
+              {craftTimeFor(slot.name, slot.tier)}
+            </span>
+          ) : null}
           <TierPill tier={slot.tier} />
           <span
             className={`font-mono text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${

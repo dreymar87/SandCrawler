@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { TIERS } from "../../constants";
 import { droidCycles } from "../../lib/droidCycles";
-import { tierStatsFor } from "../../lib/droidStats";
+import { craftTimeFor, tierStatsFor } from "../../lib/droidStats";
 import { isDroidSafeToSell } from "../../lib/cycleStrategy";
 import { sellHint } from "../../lib/sellGuidance";
 import { useAppStore } from "../../store/useAppStore";
@@ -192,11 +192,16 @@ export function DroidDetailModal({
           </p>
         ) : (
           <div className="rounded-[10px] border border-line overflow-hidden">
-            <div className="grid grid-cols-[3.2rem_1fr_1fr_1fr] gap-x-2 px-3 py-1.5 bg-panel-alt font-mono text-[9px] uppercase tracking-wider text-muted-alt">
+            <div
+              className={`grid ${
+                editing ? "grid-cols-[3.2rem_1fr_1fr_1fr]" : "grid-cols-[3.2rem_1fr_1fr_1fr_1fr]"
+              } gap-x-2 px-3 py-1.5 bg-panel-alt font-mono text-[9px] uppercase tracking-wider text-muted-alt`}
+            >
               <span>Tier</span>
               <span className="text-right">Buy</span>
               <span className="text-right">Sell</span>
               <span className="text-right">Mining/s</span>
+              {editing ? null : <span className="text-right">Craft</span>}
             </div>
             {(editing ? TIERS.filter((t) => def.tiers.includes(t)) : rows.map((r) => r.tier)).map(
               (tier) => {
@@ -235,7 +240,7 @@ export function DroidDetailModal({
                 return (
                   <div
                     key={tier}
-                    className={`grid grid-cols-[3.2rem_1fr_1fr_1fr] gap-x-2 items-center px-3 py-1.5 border-t border-line ${
+                    className={`grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-x-2 items-center px-3 py-1.5 border-t border-line ${
                       dep ? "bg-ok/10 border-l-2 border-l-ok/70" : ""
                     }`}
                   >
@@ -264,6 +269,9 @@ export function DroidDetailModal({
                     <span className="text-right font-mono text-[11px] tabular-nums text-holo">
                       {stat?.income || "—"}
                     </span>
+                    <span className="text-right font-mono text-[10.5px] tabular-nums text-muted">
+                      {craftTimeFor(def, tier) ?? "—"}
+                    </span>
                   </div>
                 );
               },
@@ -271,7 +279,8 @@ export function DroidDetailModal({
           </div>
         )}
         <p className="font-mono text-[10px] text-muted-alt mt-3 leading-snug">
-          Buy = upgrade cost · Sell = its value · Mining/s = credits per second (Working).{" "}
+          Buy = upgrade cost · Sell = its value · Mining/s = credits per second (Working) ·
+          Craft = build time with no speed bonuses.{" "}
           <span className="text-ok">Green</span> = on your base ·{" "}
           <span className="text-holo">blue dot</span> = you edited it. "%/s" = a percentage booster.
         </p>

@@ -5,8 +5,8 @@ describe("chipsFromDefaultTo", () => {
   it("sums per-rarity upgrade steps to hit the target tier", () => {
     // COMMON: 10 + 25 = 35 to reach DIAMOND
     expect(chipsFromDefaultTo("COMMON", "DIAMOND")).toBe(35);
-    // MYTHIC full path to BESKAR = 8000 + 15000 + 40000 + 80000
-    expect(chipsFromDefaultTo("MYTHIC", "BESKAR")).toBe(143_000);
+    // MYTHIC full path to BESKAR = 4000 + 8000 + 20000 + 40000
+    expect(chipsFromDefaultTo("MYTHIC", "BESKAR")).toBe(72_000);
     // LEGENDARY DEFAULT → GOLD
     expect(chipsFromDefaultTo("LEGENDARY", "GOLD")).toBe(400);
   });
@@ -17,8 +17,8 @@ describe("chipsFromDefaultTo", () => {
   });
 
   it("includes the new BESKAR→GALACTIC step", () => {
-    // MYTHIC full path to GALACTIC = 8000+15000+40000+80000+120000
-    expect(chipsFromDefaultTo("MYTHIC", "GALACTIC")).toBe(263_000);
+    // MYTHIC full path to GALACTIC = 4000+8000+20000+40000+70000
+    expect(chipsFromDefaultTo("MYTHIC", "GALACTIC")).toBe(142_000);
     // COMMON BESKAR → GALACTIC step = 120
     expect(chipsBetween("COMMON", "BESKAR", "GALACTIC")).toBe(120);
   });

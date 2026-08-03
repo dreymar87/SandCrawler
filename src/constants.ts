@@ -36,7 +36,7 @@ export const CLASS_COLOR: Record<DroidClass, string> = {
 };
 
 /** The highest Standard Rebirth level we track SRB bonuses for. */
-export const MAX_STANDARD_REBIRTH = 29;
+export const MAX_STANDARD_REBIRTH = 30;
 
 /**
  * Credit suffix multipliers. The game shows values like "10.00K", "1.36B";

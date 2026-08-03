@@ -113,9 +113,11 @@ owned droids no future rebirth in the cycle needs (via
 ## Rebirth cycles
 
 Standard Rebirth runs through a **4-cycle loop**. Each cycle has its own
-**27** droid+tier requirements (RB1-27; RB24-27 introduce MYTHIC droids);
-**credit costs and per-rebirth rewards are constant across cycles**. Note
-the RB21-23 requirements for cycles 3 & 4 were revised in the latest data.
+**30** droid+tier requirements (RB1-30; RB24+ introduce MYTHIC droids, and
+RB28-30 require GALACTIC-tier droids); **credit costs and per-rebirth rewards
+are constant across cycles**. The seeds are regenerated from the community
+workbooks with `node scripts/import-sheets.mjs <cycles.xlsx> <tracker.xlsx>
+--write` — don't hand-edit the generated files.
 
 ```
 Run #     | Cycle | Source

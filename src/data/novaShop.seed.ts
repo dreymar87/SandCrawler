@@ -36,7 +36,7 @@ export const NOVA_UPGRADES: readonly NovaUpgrade[] = [
     id: "core.credits",
     tree: "CORE",
     name: "Credits",
-    costs: [2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66, 70],
+    costs: [2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66, 70, 74, 78, 82, 86, 90, 94, 98],
   },
   { id: "core.flawless-charm", tree: "CORE", name: "Flawless Charm", costs: [500] },
   {
@@ -77,7 +77,7 @@ export const NOVA_UPGRADES: readonly NovaUpgrade[] = [
     id: "workshop.scrap-value",
     tree: "WORKSHOP",
     name: "Scrap Value",
-    costs: [25, 55, 85, 115, 145, 175, 205, 235, 265, 295, 325, 355, 385],
+    costs: [25, 55, 85, 115, 145, 175, 205, 235, 265, 295, 325, 355, 385, 415, 445, 475, 505, 535, 565],
   },
   {
     id: "workshop.blueprint-scrap",
@@ -89,7 +89,7 @@ export const NOVA_UPGRADES: readonly NovaUpgrade[] = [
     id: "workshop.crafting-speed",
     tree: "WORKSHOP",
     name: "Crafting Speed",
-    costs: [3, 18, 33, 48, 63, 78, 93, 108, 123, 138],
+    costs: [3, 18, 33, 48, 63, 78, 93, 108, 123, 138, 445],
   },
   {
     id: "workshop.blueprint-storage",

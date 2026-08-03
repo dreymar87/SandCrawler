@@ -1,4 +1,5 @@
 import { DROID_STATS } from "../data/droidStats.seed";
+import { CRAFTING_TIMES } from "../data/craftingTimes.seed";
 import { DROID_DICT } from "../data/droids.seed";
 import { TIERS } from "../constants";
 import { buildDroidIndex } from "./autocomplete";
@@ -32,16 +33,13 @@ export function resolveDroid(name: string): DroidDef | null {
  * `"MONO-WALKER"`, `"OPTI-STRK"` for `"OPTI-STRIKE"`), so a plain
  * `table[canonical]` lookup misses them — this reconciles both.
  */
-export function statsFromTable(
+function lookupRaw(
   table: DroidStats,
   def: DroidDef | undefined | null,
   rawName?: string,
-): Partial<Record<Tier, DroidTierStat>> | undefined {
-  let seed: Partial<Record<Tier, DroidTierStat>> | undefined;
-  let overrideKey: string | undefined;
+): { seed: Partial<Record<Tier, DroidTierStat>> | undefined; key: string | undefined } {
   if (def) {
-    overrideKey = def.canonical;
-    seed = table[def.canonical];
+    let seed = table[def.canonical];
     if (!seed) {
       for (const alias of def.aliases ?? []) {
         if (table[alias]) {
@@ -50,11 +48,33 @@ export function statsFromTable(
         }
       }
     }
-  } else if (rawName) {
-    overrideKey = rawName;
-    seed = table[rawName];
+    return { seed, key: def.canonical };
   }
+  if (rawName) return { seed: table[rawName], key: rawName };
+  return { seed: undefined, key: undefined };
+}
 
+/**
+ * The seed stats for a droid with NO user overrides applied. Used by the
+ * migration that prunes overrides which merely duplicate the seed — comparing
+ * through `statsFromTable` there would merge in the very overrides being
+ * pruned and make every one of them look redundant.
+ */
+export function seedStatsFor(
+  nameOrDef: string | DroidDef,
+): Partial<Record<Tier, DroidTierStat>> | undefined {
+  if (typeof nameOrDef === "string") {
+    return lookupRaw(DROID_STATS, INDEX.resolve(nameOrDef), nameOrDef).seed;
+  }
+  return lookupRaw(DROID_STATS, nameOrDef, nameOrDef.canonical).seed;
+}
+
+export function statsFromTable(
+  table: DroidStats,
+  def: DroidDef | undefined | null,
+  rawName?: string,
+): Partial<Record<Tier, DroidTierStat>> | undefined {
+  const { seed, key: overrideKey } = lookupRaw(table, def, rawName);
   const ov = overrideKey ? overrides[overrideKey] : undefined;
   if (!ov) return seed; // no override → seed passthrough (unchanged)
 
@@ -71,6 +91,18 @@ export function statsFromTable(
     };
   }
   return merged;
+}
+
+/**
+ * Build time for a droid at a tier ("1:08:41"), or null when unknown. ICONIC
+ * event droids aren't craftable, so they have no times. Alias-aware, mirroring
+ * `tierStatsFor`.
+ */
+export function craftTimeFor(nameOrDef: string | DroidDef, tier: Tier): string | null {
+  const def = typeof nameOrDef === "string" ? INDEX.resolve(nameOrDef) : nameOrDef;
+  const raw = typeof nameOrDef === "string" ? nameOrDef : nameOrDef.canonical;
+  const row = (def && CRAFTING_TIMES[def.canonical]) ?? CRAFTING_TIMES[raw];
+  return row?.[tier] ?? null;
 }
 
 /** Convenience over the seed `DROID_STATS` — resolves name-or-def with alias fallback. */

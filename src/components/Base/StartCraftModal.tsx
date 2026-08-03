@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { TIERS } from "../../constants";
+import { craftTimeFor } from "../../lib/droidStats";
 import { haptic } from "../../lib/native";
 import { toast } from "../../lib/toast";
 import { useAppStore } from "../../store/useAppStore";
@@ -113,8 +114,16 @@ export function StartCraftModal({
               ))}
             </div>
 
+            {craftTimeFor(resolved, activeTier) ? (
+              <p className="font-mono text-[10px] text-muted-alt mt-3">
+                Build time{" "}
+                <span className="text-holo font-bold">{craftTimeFor(resolved, activeTier)}</span>{" "}
+                at {activeTier} — before any crafting-speed bonuses.
+              </p>
+            ) : null}
+
             {typeMatch ? (
-              <p className="font-mono text-[10px] text-ok mt-3">
+              <p className="font-mono text-[10px] text-ok mt-1.5">
                 ⚡ Type match — this droid gets a crafting-speed bonus at the {STATION_LABEL[station]} station.
               </p>
             ) : (

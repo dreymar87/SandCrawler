@@ -64,6 +64,7 @@ export const COSMETICS: readonly CosmeticItem[] = [
   hat("Gridcap", "Find in world"),
   hat("Outeredge", "Find in world"),
   hat("Bonehead Hat", "Mister Bones event", "EVENT"),
+  hat("Chopper Hat", "Chopper event", "EVENT"),
 
   // ── Paints ──────────────────────────────────────────────────────────
   paint("Red Paint (Default)", "Owned by default", "NONE"),
@@ -89,6 +90,7 @@ export const COSMETICS: readonly CosmeticItem[] = [
   paint("Nova Crystal Stage 3", "Unlock with Nova Crystals (400 + Stage 2)", "NOVA", 400),
   paint("DJ R-3X Paint", "DJ R-3X event", "EVENT"),
   paint("R2-D2 Paint", "R2-D2 event", "EVENT"),
+  paint("Chopper Paint", "Chopper event", "EVENT"),
 
   // ── Droid Effects ───────────────────────────────────────────────────
   effect("Groovy Aura", "DJ R-3X event"),

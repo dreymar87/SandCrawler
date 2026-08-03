@@ -128,8 +128,9 @@ export const DROID_DICT: readonly DroidDef[] = [
   { canonical: "IG-11 MARSHAL", class: "BATTLE", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["IG-11", "IG11", "IG11 MARSHAL"], companionEffect: "Blueprint shield" },
   { canonical: "DJ-R3X", class: "WORKER", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["DJ R-3X", "DJ R3X", "DJ-R-3X"], companionEffect: "×2 world-quest rewards" },
   { canonical: "CB-23", class: "ASTROMECH", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["CB23"], companionEffect: "Secret astromech mission" },
-  { canonical: "R2-D2", class: "ASTROMECH", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["R2D2", "R2 D2"], companionEffect: "+15% astromech mission speed" },
+  { canonical: "R2-D2", class: "ASTROMECH", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["R2D2", "R2 D2"], companionEffect: "×2 assigned astromech mission reward" },
   { canonical: "C-3PO", class: "WORKER", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["C3PO", "C 3PO", "C-3P0"], companionEffect: "+100% droid sell value" },
+  { canonical: "CHOPPER", class: "ASTROMECH", rarity: "ICONIC", tiers: ICONIC_TIERS, eventLocked: true, aliases: ["C1-10P", "C110P"], companionEffect: "+50% crit chance & damage" },
 ];
 
 /** Total Droidex card count = sum over droids of their tier-count. */

@@ -1,5 +1,5 @@
 /** Bumped when the seed dictionary or Standard Rebirth seed changes. */
-export const SEED_VERSION = 7;
+export const SEED_VERSION = 8;
 
 /**
  * Bumped when PersistedState's shape changes incompatibly. `migrate.ts`
@@ -42,5 +42,8 @@ export const SEED_VERSION = 7;
  * v12 — Adds `statOverrides` slice: user edits to per-tier droid economy
  *      stats (cost/income/value), merged over the seed everywhere via
  *      statsFromTable. Lets players fill in missing/wrong data.
+ * v13 — Community sheet refresh (RB28-30, corrected stats). Prunes any
+ *      `statOverrides` field that now duplicates the refreshed seed; edits
+ *      that genuinely differ are kept.
  */
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;

@@ -10,13 +10,13 @@ describe("tierStatsFor", () => {
     expect(stats?.DEFAULT?.income).toBeTruthy();
   });
 
-  it("resolves a droid whose stats key is an alias, not the canonical", () => {
-    // droidStats.json keys MONO-WALKER as "MONO-WLKR" (an alias), so a plain
-    // canonical lookup misses — tierStatsFor must fall back through aliases.
-    expect(DROID_STATS["MONO-WALKER"]).toBeUndefined(); // the latent gap
-    const stats = tierStatsFor("MONO-WALKER");
-    expect(stats).toBeDefined();
-    expect(stats?.DEFAULT?.income).toBeTruthy();
+  it("keys the stats table by canonical name, and still resolves aliases", () => {
+    // The importer canonicalises every key, so the plain lookup hits directly
+    // (it used to be keyed "MONO-WLKR", which the alias fallback had to cover).
+    expect(DROID_STATS["MONO-WALKER"]).toBeDefined();
+    expect(tierStatsFor("MONO-WALKER")?.DEFAULT?.income).toBeTruthy();
+    // Looking up by an alias spelling still lands on the same row.
+    expect(tierStatsFor("MONO-WLKR")).toEqual(tierStatsFor("MONO-WALKER"));
   });
 
   it("returns undefined for an unknown droid", () => {
@@ -56,9 +56,9 @@ describe("statsFromTable — user overrides", () => {
   });
 
   it("fills in a tier the seed lacks", () => {
-    expect(tierStatsFor("GONK")?.GALACTIC).toBeUndefined(); // seed gap
-    setStatOverrides({ GONK: { GALACTIC: { income: "999/s" } } });
-    expect(tierStatsFor("GONK")?.GALACTIC?.income).toBe("999/s");
+    expect(tierStatsFor("BB8")?.GOLD).toBeUndefined(); // ICONIC are DEFAULT-only
+    setStatOverrides({ BB8: { GOLD: { income: "999/s" } } });
+    expect(tierStatsFor("BB8")?.GOLD?.income).toBe("999/s");
   });
 
   it("empty registry is a seed passthrough (no merge object built)", () => {

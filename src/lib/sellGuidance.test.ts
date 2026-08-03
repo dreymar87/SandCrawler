@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { rebirthsForCycle, sellHint } from "./sellGuidance";
 
 describe("rebirthsForCycle", () => {
-  it("returns exactly the 27 levels for cycle 1", () => {
+  it("returns exactly the 30 levels for cycle 1", () => {
     const rows = rebirthsForCycle(1);
-    expect(rows).toHaveLength(27);
+    expect(rows).toHaveLength(30);
     expect(rows[0]?.level).toBe(1);
-    expect(rows[26]?.level).toBe(27);
+    expect(rows[29]?.level).toBe(30);
   });
 
   it("RB24 cycle 1 requires a MYTHIC droid (MO-TRAK) per the new data", () => {

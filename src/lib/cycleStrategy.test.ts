@@ -4,13 +4,13 @@ import { chipsFromDefaultTo } from "./chipCosts";
 import { rebirthsForCycle } from "./sellGuidance";
 
 describe("computeCycleStrategy", () => {
-  it("unions requirements across all 27 levels of a cycle", () => {
+  it("unions requirements across all 30 levels of a cycle", () => {
     const s = computeCycleStrategy(1);
-    // Every keeper must appear at ≥ 1 RB level and ≤ 27.
+    // Every keeper must appear at ≥ 1 RB level and ≤ 30.
     for (const k of s.keepers) {
       expect(k.appearsAt.length).toBeGreaterThan(0);
       expect(k.firstNeeded).toBeGreaterThanOrEqual(1);
-      expect(k.lastNeeded).toBeLessThanOrEqual(27);
+      expect(k.lastNeeded).toBeLessThanOrEqual(30);
       expect(k.firstNeeded).toBeLessThanOrEqual(k.lastNeeded);
     }
     // The union should cover more distinct droids than any single RB row.

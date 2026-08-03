@@ -298,14 +298,29 @@ describe("migrate", () => {
       schemaVersion: 12,
       statOverrides: {
         MOUSE: {
-          GALACTIC: { value: "1.2M", income: "48/s", cost: 5 /* non-string → drop */ },
+          GALACTIC: { value: "1.2M", cost: 5 /* non-string → drop */ },
           NOPE: { value: "x" }, // invalid tier → drop
         },
         "": { GOLD: { value: "1" } }, // empty name → drop
       },
     };
     expect(migrate(v12).statOverrides).toEqual({
-      MOUSE: { GALACTIC: { value: "1.2M", income: "48/s" } },
+      MOUSE: { GALACTIC: { value: "1.2M" } },
     });
+  });
+
+  it("v13 prunes stat overrides that now duplicate the refreshed seed", () => {
+    const v12 = {
+      schemaVersion: 12,
+      statOverrides: {
+        // income matches the seed exactly → pruned; value differs → kept.
+        MOUSE: { GALACTIC: { income: "48/s", value: "1.2M" } },
+        // every field matches the seed → the whole droid entry disappears.
+        PIT: { GOLD: { income: "4/s" } },
+      },
+    };
+    const out = migrate(v12).statOverrides;
+    expect(out.MOUSE).toEqual({ GALACTIC: { value: "1.2M" } });
+    expect(out.PIT).toBeUndefined();
   });
 });

@@ -24,8 +24,8 @@ describe("incomeAt", () => {
     expect(incomeAt("BB8", "DEFAULT")).toBeNull();
   });
 
-  it("returns null for a tier with no stats (MYTHIC lack GALACTIC)", () => {
-    expect(incomeAt("SNOW MOUSE", "GALACTIC")).toBeNull();
+  it("returns null for a tier the droid has no stats at (ICONIC are DEFAULT-only)", () => {
+    expect(incomeAt("BB8", "GOLD")).toBeNull();
   });
 });
 

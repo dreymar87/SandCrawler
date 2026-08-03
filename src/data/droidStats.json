@@ -28,7 +28,7 @@
     "GALACTIC": {
       "cost": "19.00k",
       "income": "48/s",
-      "value": null
+      "value": "13.30k"
     }
   },
   "PIT": {
@@ -60,7 +60,7 @@
     "GALACTIC": {
       "cost": "22.00k",
       "income": "48/s",
-      "value": null
+      "value": "15.40k"
     }
   },
   "GONK": {
@@ -88,6 +88,11 @@
       "cost": "48k",
       "income": "48/s",
       "value": "33.60k"
+    },
+    "GALACTIC": {
+      "cost": "60.00k",
+      "income": "96/s",
+      "value": "42.00k"
     }
   },
   "CB": {
@@ -115,6 +120,11 @@
       "cost": "32k",
       "income": "36/s",
       "value": "22.40k"
+    },
+    "GALACTIC": {
+      "cost": "40.00k",
+      "income": "72/s",
+      "value": "28.00k"
     }
   },
   "R3": {
@@ -146,7 +156,7 @@
     "GALACTIC": {
       "cost": "40.00k",
       "income": "72/s",
-      "value": null
+      "value": "28.00k"
     }
   },
   "R5": {
@@ -174,6 +184,11 @@
       "cost": "32k",
       "income": "36/s",
       "value": "22.40k"
+    },
+    "GALACTIC": {
+      "cost": "40.00k",
+      "income": "72/s",
+      "value": "28.00k"
     }
   },
   "R8": {
@@ -201,6 +216,11 @@
       "cost": "48k",
       "income": "48/s",
       "value": "33.60k"
+    },
+    "GALACTIC": {
+      "cost": "60.00k",
+      "income": "96/s",
+      "value": "42.00k"
     }
   },
   "IMPERIAL PROBE": {
@@ -227,12 +247,12 @@
     "BESKAR": {
       "cost": "80k",
       "income": "72/s",
-      "value": "56k"
+      "value": "56.00k"
     },
     "GALACTIC": {
       "cost": "100.00k",
       "income": "144/s",
-      "value": null
+      "value": "70.00k"
     }
   },
   "B1 BATTLE": {
@@ -264,7 +284,7 @@
     "GALACTIC": {
       "cost": "80.00k",
       "income": "120/s",
-      "value": null
+      "value": "56.00k"
     }
   },
   "DRK-1 PROBE": {
@@ -292,6 +312,11 @@
       "cost": "48k",
       "income": "36/s",
       "value": "33.60k"
+    },
+    "GALACTIC": {
+      "cost": "60.00k",
+      "income": "72/s",
+      "value": "42.00k"
     }
   },
   "ID10": {
@@ -319,6 +344,11 @@
       "cost": "64k",
       "income": "48/s",
       "value": "44.80k"
+    },
+    "GALACTIC": {
+      "cost": "80.00k",
+      "income": "96/s",
+      "value": "56.00k"
     }
   },
   "BDX EXPLORER": {
@@ -346,6 +376,11 @@
       "cost": "400k",
       "income": "180/s",
       "value": "280k"
+    },
+    "GALACTIC": {
+      "cost": "500.00k",
+      "income": "360/s",
+      "value": "350.00k"
     }
   },
   "ARG": {
@@ -375,7 +410,7 @@
       "value": "985.60k"
     },
     "GALACTIC": {
-      "cost": null,
+      "cost": "1.76m",
       "income": "1.00k/s",
       "value": "1.23m"
     }
@@ -409,7 +444,39 @@
     "GALACTIC": {
       "cost": "2.00m",
       "income": "1.10k/s",
-      "value": null
+      "value": "1.40m"
+    }
+  },
+  "B-U4D": {
+    "DEFAULT": {
+      "cost": "130k",
+      "income": "58/s",
+      "value": "91.00k"
+    },
+    "GOLD": {
+      "cost": "520k",
+      "income": "116/s",
+      "value": "364.00k"
+    },
+    "DIAMOND": {
+      "cost": "1.04m",
+      "income": "232/s",
+      "value": "728.00k"
+    },
+    "RAINBOW": {
+      "cost": "1.56m",
+      "income": "464/s",
+      "value": "1.10m"
+    },
+    "BESKAR": {
+      "cost": "2.08m",
+      "income": "696/s",
+      "value": "1.45m"
+    },
+    "GALACTIC": {
+      "cost": "2.60m",
+      "income": "1.39k/s",
+      "value": "1.82m"
     }
   },
   "BAL-CORE": {
@@ -501,6 +568,11 @@
       "cost": "480k",
       "income": "204/s",
       "value": "336k"
+    },
+    "GALACTIC": {
+      "cost": "600.00k",
+      "income": "408/s",
+      "value": "420k"
     }
   },
   "A-LT": {
@@ -532,7 +604,7 @@
     "GALACTIC": {
       "cost": "1.48m",
       "income": "864/s",
-      "value": null
+      "value": "1.03m"
     }
   },
   "R4": {
@@ -564,7 +636,7 @@
     "GALACTIC": {
       "cost": "2.20m",
       "income": "1.20k/s",
-      "value": null
+      "value": "1.54m"
     }
   },
   "R9": {
@@ -592,6 +664,11 @@
       "cost": "1.92m",
       "income": "648/s",
       "value": "1.34m"
+    },
+    "GALACTIC": {
+      "cost": "2.40m",
+      "income": "1.29k/s",
+      "value": "1.68m"
     }
   },
   "B1 SECURITY": {
@@ -619,6 +696,11 @@
       "cost": "2.40m",
       "income": "792/s",
       "value": "1.68m"
+    },
+    "GALACTIC": {
+      "cost": "3.00m",
+      "income": "1.58k/s",
+      "value": "2.10m"
     }
   },
   "NAV-EX": {
@@ -650,7 +732,7 @@
     "GALACTIC": {
       "cost": "720k",
       "income": "432/s",
-      "value": null
+      "value": "504.00k"
     }
   },
   "VECT-ARM": {
@@ -678,6 +760,11 @@
       "cost": "832k",
       "income": "324/s",
       "value": "582.40k"
+    },
+    "GALACTIC": {
+      "cost": "1.04m",
+      "income": "648/s",
+      "value": "728.00k"
     }
   },
   "HOV-R": {
@@ -703,8 +790,13 @@
     },
     "BESKAR": {
       "cost": "2.24m",
-      "income": "774/s",
+      "income": "744/s",
       "value": "1.56m"
+    },
+    "GALACTIC": {
+      "cost": "2.80m",
+      "income": "1.48k/s",
+      "value": "1.96m"
     }
   },
   "GROUNDMECH": {
@@ -768,7 +860,7 @@
     "GALACTIC": {
       "cost": "630m",
       "income": "12.48k/s",
-      "value": null
+      "value": "441m"
     }
   },
   "AMP WALKER": {
@@ -830,7 +922,7 @@
       "value": "420m"
     },
     "GALACTIC": {
-      "cost": null,
+      "cost": "1.44b",
       "income": "26.52k/s",
       "value": "1.00b"
     }
@@ -860,6 +952,43 @@
       "cost": "450m",
       "income": "13.26k/s",
       "value": "315m"
+    },
+    "GALACTIC": {
+      "cost": "1.08b",
+      "income": "20.28k/s",
+      "value": "756.00m"
+    }
+  },
+  "GUNRUNNER": {
+    "DEFAULT": {
+      "cost": "6.30m",
+      "income": "660/s",
+      "value": "4.41m"
+    },
+    "GOLD": {
+      "cost": "25.20m",
+      "income": "1.32k/s",
+      "value": "17.64m"
+    },
+    "DIAMOND": {
+      "cost": "50.40m",
+      "income": "2.64k/s",
+      "value": "35.28m"
+    },
+    "RAINBOW": {
+      "cost": "75.60m",
+      "income": "5.28k/s",
+      "value": "52.92m"
+    },
+    "BESKAR": {
+      "cost": "787.50m",
+      "income": "22.44k/s",
+      "value": "551.25m"
+    },
+    "GALACTIC": {
+      "cost": "1.89b",
+      "income": "34.32k/s",
+      "value": "1.32b"
     }
   },
   "BB": {
@@ -891,7 +1020,7 @@
     "GALACTIC": {
       "cost": "360m",
       "income": "7.80k/s",
-      "value": null
+      "value": "252.00m"
     }
   },
   "R2": {
@@ -923,7 +1052,7 @@
     "GALACTIC": {
       "cost": "990m",
       "income": "18.72k/s",
-      "value": null
+      "value": "693.00m"
     }
   },
   "R6": {
@@ -1022,38 +1151,6 @@
       "value": "315m"
     }
   },
-  "GUNRUNNER": {
-    "DEFAULT": {
-      "cost": "6.30m",
-      "income": "660/s",
-      "value": "4.41m"
-    },
-    "GOLD": {
-      "cost": "25.20m",
-      "income": "1.32k/s",
-      "value": "17.64m"
-    },
-    "DIAMOND": {
-      "cost": "50.40m",
-      "income": "2.64k/s",
-      "value": "35.28m"
-    },
-    "RAINBOW": {
-      "cost": "75.60m",
-      "income": "5.28k/s",
-      "value": "52.92m"
-    },
-    "BESKAR": {
-      "cost": "787.50m",
-      "income": "22.44k/s",
-      "value": "551.25m"
-    },
-    "GALACTIC": {
-      "cost": "1.89b",
-      "income": "34.32k/s",
-      "value": null
-    }
-  },
   "UTIL-TEC": {
     "DEFAULT": {
       "cost": "1.80m",
@@ -1111,6 +1208,11 @@
       "cost": "750m",
       "income": "20.40k/s",
       "value": "525.00m"
+    },
+    "GALACTIC": {
+      "cost": "1.80b",
+      "income": "31.20k/s",
+      "value": "1.26b"
     }
   },
   "B2 SUPER": {
@@ -1174,7 +1276,7 @@
     "GALACTIC": {
       "cost": "1.35b",
       "income": "24.96k/s",
-      "value": null
+      "value": "945.00m"
     }
   },
   "STRIKE-ORB": {
@@ -1234,6 +1336,11 @@
       "cost": "300m",
       "income": "9.18k/s",
       "value": "210.00m"
+    },
+    "GALACTIC": {
+      "cost": "720m",
+      "income": "14.04k/s",
+      "value": "504.00m"
     }
   },
   "LNG-SHOT": {
@@ -1265,7 +1372,7 @@
     "GALACTIC": {
       "cost": "1.26b",
       "income": "23.40k/s",
-      "value": null
+      "value": "882.00m"
     }
   },
   "PROTO-ROLLER": {
@@ -1332,7 +1439,7 @@
       "value": "48.72b"
     }
   },
-  "MONO-WLKR": {
+  "MONO-WALKER": {
     "DEFAULT": {
       "cost": "37m",
       "income": "1.50k/s",
@@ -1492,7 +1599,7 @@
       "value": "50.40b"
     }
   },
-  "OPTI-STRK": {
+  "OPTI-STRIKE": {
     "DEFAULT": {
       "cost": "37m",
       "income": "1.50k/s",
@@ -1549,6 +1656,11 @@
       "cost": "144b",
       "income": "70.40k/s",
       "value": "100.8b"
+    },
+    "GALACTIC": {
+      "cost": "846b",
+      "income": "193.60k/s",
+      "value": "592.20b"
     }
   },
   "RIC": {
@@ -1576,6 +1688,11 @@
       "cost": "163.20b",
       "income": "81.60k/s",
       "value": "114.24b"
+    },
+    "GALACTIC": {
+      "cost": "958.80b",
+      "income": "224.40k/s",
+      "value": "671.16b"
     }
   },
   "LOADLIFTER": {
@@ -1603,6 +1720,11 @@
       "cost": "240b",
       "income": "115.20k/s",
       "value": "168.00b"
+    },
+    "GALACTIC": {
+      "cost": "1.41T",
+      "income": "316.80k/s",
+      "value": "987.00b"
     }
   },
   "LEP": {
@@ -1630,6 +1752,11 @@
       "cost": "201.60b",
       "income": "104k/s",
       "value": "141.12b"
+    },
+    "GALACTIC": {
+      "cost": "1.18T",
+      "income": "286.00k/s",
+      "value": "829.08b"
     }
   },
   "RIC-1200": {
@@ -1657,6 +1784,11 @@
       "cost": "182.40b",
       "income": "92.80k/s",
       "value": "127.68b"
+    },
+    "GALACTIC": {
+      "cost": "1.07T",
+      "income": "255.20k/s",
+      "value": "750.12b"
     }
   },
   "DRFT-R": {
@@ -1684,6 +1816,11 @@
       "cost": "182.40b",
       "income": "92.80k/s",
       "value": "127.68b"
+    },
+    "GALACTIC": {
+      "cost": "1.07T",
+      "income": "255.20k/s",
+      "value": "750.12b"
     }
   },
   "CYCLENS": {
@@ -1711,6 +1848,11 @@
       "cost": "144b",
       "income": "70.40k/s",
       "value": "100.8b"
+    },
+    "GALACTIC": {
+      "cost": "846b",
+      "income": "193.60k/s",
+      "value": "592.20b"
     }
   },
   "MO-TRAK": {
@@ -1738,6 +1880,11 @@
       "cost": "240b",
       "income": "115.20k/s",
       "value": "168.00b"
+    },
+    "GALACTIC": {
+      "cost": "1.41T",
+      "income": "316.80k/s",
+      "value": "987.00b"
     }
   },
   "TRI-TEK": {
@@ -1765,23 +1912,28 @@
       "cost": "201.60b",
       "income": "104k/s",
       "value": "141.12b"
+    },
+    "GALACTIC": {
+      "cost": "1.18T",
+      "income": "286.00k/s",
+      "value": "829.08b"
     }
   },
   "IG": {
     "DEFAULT": {
       "cost": "228m",
       "income": "5.80k/s",
-      "value": "239.40m"
+      "value": "159.60m"
     },
     "GOLD": {
-      "cost": "1.37b",
-      "income": "11.00k/s",
-      "value": "959.00m"
+      "cost": "912m",
+      "income": "11.60k/s",
+      "value": "638.40m"
     },
     "DIAMOND": {
       "cost": "1.82b",
       "income": "23.20k/s",
-      "value": "1.91b"
+      "value": "1.27b"
     },
     "RAINBOW": {
       "cost": "5.47b",
@@ -1791,7 +1943,12 @@
     "BESKAR": {
       "cost": "182.40b",
       "income": "92.80k/s",
-      "value": "191.52b"
+      "value": "127.68b"
+    },
+    "GALACTIC": {
+      "cost": "1.07T",
+      "income": "255.20k/s",
+      "value": "750.12b"
     }
   },
   "KX": {
@@ -1819,6 +1976,11 @@
       "cost": "240b",
       "income": "115.20k/s",
       "value": "168.00b"
+    },
+    "GALACTIC": {
+      "cost": "1.41T",
+      "income": "316.80k/s",
+      "value": "987.00b"
     }
   },
   "BB8": {
@@ -1851,7 +2013,7 @@
   },
   "CB-23": {
     "DEFAULT": {
-      "cost": null,
+      "cost": "75 NC",
       "income": "15%/s",
       "value": null
     }
@@ -1863,39 +2025,14 @@
       "value": null
     }
   },
-  "B-U4D": {
+  "C-3PO": {
     "DEFAULT": {
-      "cost": "130k",
-      "income": "58/s",
-      "value": "91.00k"
-    },
-    "GOLD": {
-      "cost": "520k",
-      "income": "116/s",
-      "value": "364.00k"
-    },
-    "DIAMOND": {
-      "cost": "1.04m",
-      "income": "232/s",
-      "value": "728.00k"
-    },
-    "RAINBOW": {
-      "cost": "1.56m",
-      "income": "464/s",
-      "value": "1.10m"
-    },
-    "BESKAR": {
-      "cost": "2.08m",
-      "income": "696/s",
-      "value": "1.45m"
-    },
-    "GALACTIC": {
-      "cost": "2.60m",
-      "income": "1.39k/s",
+      "cost": null,
+      "income": "25%/s",
       "value": null
     }
   },
-  "C-3PO": {
+  "CHOPPER": {
     "DEFAULT": {
       "cost": null,
       "income": "15%/s",

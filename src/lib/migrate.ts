@@ -18,6 +18,7 @@ import type {
 } from "../types";
 import { buildDroidIndex } from "./autocomplete";
 import { LOUNGE_BASE_SLOTS } from "./baseView";
+import { seedStatsFor } from "./droidStats";
 import { normalizeTier } from "./tiers";
 
 /**
@@ -291,6 +292,23 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
       }
       if (Object.keys(tiers).length > 0) statOverrides[name.trim()] = tiers;
     }
+  }
+
+  // v13: the seed refresh filled in / corrected many stats. Drop any override
+  // that now merely duplicates the seed (pure cleanup) but keep every edit
+  // that genuinely differs, so nothing the user typed is silently lost.
+  for (const [name, tiers] of Object.entries(statOverrides)) {
+    const seed = seedStatsFor(name);
+    if (!seed) continue;
+    for (const [tier, patch] of Object.entries(tiers)) {
+      const seedTier = seed[tier as Tier];
+      if (!seedTier) continue;
+      for (const field of ["cost", "income", "value"] as const) {
+        if (patch[field] !== undefined && patch[field] === seedTier[field]) delete patch[field];
+      }
+      if (Object.keys(patch).length === 0) delete tiers[tier as Tier];
+    }
+    if (Object.keys(tiers).length === 0) delete statOverrides[name];
   }
 
   // v5: lift StandardRebirth.rewards.slotUnlock to top-level, drop the rest.
