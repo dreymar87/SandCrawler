@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  companionCapacity,
   buildBaseView,
   loungeCapacity,
   loungeRbUnlocksAt,
@@ -276,5 +277,47 @@ describe("upgrade chip station", () => {
     });
     const worker = withOccupant.squads.find((s) => s.type === "WORKER")!;
     expect(worker.deployed).toBe(0);
+  });
+});
+
+describe("companion capacity", () => {
+  const base = {
+    dict: DICT,
+    stats: STATS,
+    standardRebirth: 5,
+    loungeCreditSlots: 5,
+    novaLoungeSlots: 0,
+    cycle: 1 as const,
+  };
+
+  it("is 1 by default and grows with the Nova Shop upgrade", () => {
+    expect(companionCapacity(0)).toBe(1);
+    expect(companionCapacity(1)).toBe(2);
+    // A negative/garbage level can't shrink you below the base slot.
+    expect(companionCapacity(-3)).toBe(1);
+  });
+
+  it("reports the purchased capacity on the view", () => {
+    const cards = [
+      { name: "MOUSE", tier: "DEFAULT" as const, owned: true, working: 0, lounge: 0, companion: 1 },
+      { name: "R2", tier: "DEFAULT" as const, owned: true, working: 0, lounge: 0, companion: 1 },
+    ];
+    const view = buildBaseView({ ...base, cards, novaCompanionSlots: 1 });
+    expect(view.companion.capacity).toBe(2);
+    expect(view.companion.novaSlots).toBe(1);
+    expect(view.companion.deployed).toBe(2);
+    expect(view.companion.droids).toHaveLength(2);
+    // Both companions' buffs are active, not just the first.
+    expect(view.companion.bonuses).toHaveLength(2);
+  });
+
+  it("two companions are over capacity without the upgrade", () => {
+    const cards = [
+      { name: "MOUSE", tier: "DEFAULT" as const, owned: true, working: 0, lounge: 0, companion: 1 },
+      { name: "R2", tier: "DEFAULT" as const, owned: true, working: 0, lounge: 0, companion: 1 },
+    ];
+    const view = buildBaseView({ ...base, cards });
+    expect(view.companion.capacity).toBe(1);
+    expect(view.companion.deployed).toBe(2); // UI flags this as over-capacity
   });
 });

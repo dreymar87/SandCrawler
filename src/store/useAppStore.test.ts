@@ -382,6 +382,46 @@ describe("deployed-droid actions", () => {
     expect(find("R2", "DEFAULT")!.companion).toBe(1);
     expect(find("MOUSE", "DEFAULT")!.companion).toBe(0);
   });
+
+  // The Nova Shop "Companion Slot" upgrade (250 ◆) grants a SECOND slot, so a
+  // new companion should sit alongside the first instead of evicting it.
+  it("keeps the existing companion when a Nova slot is free", () => {
+    seedState({
+      cards: [
+        { name: "MOUSE", tier: "DEFAULT", owned: true, working: 0, lounge: 0, companion: 1 },
+        { name: "R2", tier: "DEFAULT", owned: true, working: 1, lounge: 0, companion: 0 },
+      ],
+    });
+    useAppStore.getState().setNovaUpgradeLevel("featured.companion-slot", 1); // capacity 2
+    useAppStore.getState().moveToCompanion("R2", "DEFAULT", "working");
+    expect(find("R2", "DEFAULT")!.companion).toBe(1);
+    expect(find("MOUSE", "DEFAULT")!.companion).toBe(1); // NOT evicted
+  });
+
+  it("still evicts once both companion slots are full", () => {
+    seedState({
+      cards: [
+        { name: "MOUSE", tier: "DEFAULT", owned: true, working: 0, lounge: 0, companion: 1 },
+        { name: "PIT", tier: "DEFAULT", owned: true, working: 0, lounge: 0, companion: 1 },
+        { name: "R2", tier: "DEFAULT", owned: true, working: 1, lounge: 0, companion: 0 },
+      ],
+    });
+    useAppStore.getState().setNovaUpgradeLevel("featured.companion-slot", 1); // capacity 2
+    useAppStore.getState().moveToCompanion("R2", "DEFAULT", "working");
+    expect(find("R2", "DEFAULT")!.companion).toBe(1);
+    // Exactly one of the two prior companions makes way — total stays at 2.
+    const total = useAppStore.getState().cards.reduce((n, c) => n + c.companion, 0);
+    expect(total).toBe(2);
+  });
+
+  it("clamps a card's companion count to the purchased capacity", () => {
+    seedState({ cards: [] });
+    useAppStore.getState().setCardCounts("MOUSE", "DEFAULT", { companion: 5 });
+    expect(find("MOUSE", "DEFAULT")!.companion).toBe(1); // no Nova slot yet
+    useAppStore.getState().setNovaUpgradeLevel("featured.companion-slot", 1);
+    useAppStore.getState().setCardCounts("MOUSE", "DEFAULT", { companion: 5 });
+    expect(find("MOUSE", "DEFAULT")!.companion).toBe(2);
+  });
 });
 
 describe("setLoungeCreditSlots", () => {

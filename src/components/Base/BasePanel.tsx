@@ -334,15 +334,17 @@ function CompanionCard({
   companion: CompanionSlot;
   onOpenDroid: (d: DeployedDroid) => void;
 }) {
-  const over = companion.deployed > 1;
+  const { capacity, novaSlots } = companion;
+  const over = companion.deployed > capacity;
+  const free = capacity - companion.deployed;
   return (
     <div className="rounded-[10px] border border-line bg-panel-alt p-3">
       <div className="flex items-baseline gap-2 mb-2">
         <span className="font-display font-semibold text-[14px] text-tier-galactic">Companion</span>
         <span className="flex-1" />
         <span className="font-display font-bold text-[14px]">
-          {Math.min(1, companion.deployed)}
-          <span className="text-muted-alt text-[11px] ml-1">/ 1</span>
+          {companion.deployed}
+          <span className="text-muted-alt text-[11px] ml-1">/ {capacity}</span>
         </span>
       </div>
       {companion.droids.length === 0 ? (
@@ -352,16 +354,28 @@ function CompanionCard({
       ) : (
         <>
           <DroidChips droids={companion.droids} empty="" onDroid={onOpenDroid} />
-          {companion.bonus ? (
-            <p className="font-mono text-[10.5px] text-tier-galactic mt-2">{companion.bonus}</p>
-          ) : null}
+          {/* One buff line per companion — with 2 slots both are active. */}
+          {companion.bonuses.map((b, i) => (
+            <p key={i} className="font-mono text-[10.5px] text-tier-galactic mt-2">
+              {b}
+            </p>
+          ))}
           {over ? (
             <p className="font-mono text-[10px] text-danger mt-1">
-              Only one companion can be active — pick a single droid.
+              Over capacity — you have {capacity} companion slot{capacity === 1 ? "" : "s"}.
+            </p>
+          ) : free > 0 ? (
+            <p className="font-mono text-[10px] text-muted-alt mt-1.5">
+              {free} slot{free === 1 ? "" : "s"} free.
             </p>
           ) : null}
         </>
       )}
+      {novaSlots > 0 ? (
+        <p className="font-mono text-[10px] text-muted-alt mt-1.5">
+          + {novaSlots} from Nova shop
+        </p>
+      ) : null}
     </div>
   );
 }

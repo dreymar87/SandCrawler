@@ -10,7 +10,12 @@ import { rebirthsForCycle } from "../lib/sellGuidance";
 import { computeProduction, type ProductionTotals } from "../lib/production";
 import { scoreRequirements, standardRebirthReady, type ScoredRank } from "../lib/readiness";
 import { getMaxSlots, nextSlotUnlock } from "../lib/squads";
-import { buildBaseView, loungeCapacity, type BaseView } from "../lib/baseView";
+import {
+  buildBaseView,
+  loungeCapacity,
+  NOVA_COMPANION_SLOT_ID,
+  type BaseView,
+} from "../lib/baseView";
 import type {
   CosmeticItem,
   CosmeticKind,
@@ -282,6 +287,8 @@ export function useBaseView(): BaseView {
       novaUpgrades.find((u) => u.id === "workshop.lounge-slot")?.level ?? 0;
     const novaChipStationLevel =
       novaUpgrades.find((u) => u.id === "featured.chip-station")?.level ?? 0;
+    const novaCompanionSlots =
+      novaUpgrades.find((u) => u.id === NOVA_COMPANION_SLOT_ID)?.level ?? 0;
     return buildBaseView({
       cards,
       dict: [...DROID_DICT, ...customDroids],
@@ -294,6 +301,7 @@ export function useBaseView(): BaseView {
       chipStation,
       chipRates,
       novaChipStationLevel,
+      novaCompanionSlots,
     });
     // statOverrides feeds sell values via statsFromTable — recompute on edit.
   }, [cards, customDroids, standardRebirth, loungeCreditSlots, novaUpgrades, craftingStations, chipStation, chipRates, statOverrides, cycle]);

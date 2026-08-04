@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { SCHEMA_VERSION } from "../data/version";
 import { idbStorage } from "../lib/idbStorage";
+import { companionCapacity, NOVA_COMPANION_SLOT_ID } from "../lib/baseView";
 import { setStatOverrides } from "../lib/droidStats";
 import { defaultProfile, emptyState, migrate } from "../lib/migrate";
 import { srbBonusAt } from "../lib/novaCrystals";
@@ -24,6 +25,10 @@ import type {
 } from "../types";
 
 const STORAGE_KEY = "sandcrawler:v6";
+
+/** Companion capacity implied by the player's Nova Shop purchases. */
+const companionCapacityOf = (upgrades: readonly NovaUpgradeState[]): number =>
+  companionCapacity(upgrades.find((u) => u.id === NOVA_COMPANION_SLOT_ID)?.level ?? 0);
 
 function bootstrapState(): PersistedState {
   return emptyState();
@@ -163,8 +168,11 @@ export const useAppStore = create<AppStore>()(
           const current = idx >= 0 ? list[idx]! : null;
           const working = patch.working !== undefined ? clean(patch.working) : (current?.working ?? 0);
           const lounge = patch.lounge !== undefined ? clean(patch.lounge) : (current?.lounge ?? 0);
+          const companionCap = companionCapacityOf(s.novaUpgrades);
           const companion =
-            patch.companion !== undefined ? Math.min(1, clean(patch.companion)) : (current?.companion ?? 0);
+            patch.companion !== undefined
+              ? Math.min(companionCap, clean(patch.companion))
+              : (current?.companion ?? 0);
           // Owned auto-true whenever a copy is deployed; otherwise honor the patch or existing state.
           const deployed = working + lounge + companion > 0;
           const owned = deployed
@@ -258,7 +266,7 @@ export const useAppStore = create<AppStore>()(
       },
 
       addDeployed(name, tier, slot) {
-        // Companion adds route through the swap path so the single slot stays single.
+        // Companion adds route through moveToCompanion so capacity is respected.
         if (slot === "companion") {
           get().moveToCompanion(name, tier, null);
           return;
@@ -275,17 +283,26 @@ export const useAppStore = create<AppStore>()(
         const card = get().cards.find(match);
         // Guard before mutating anything (no-op if the source slot is empty).
         if (from && (!card || card[from] <= 0)) return;
-        // Clear the (single) existing companion — swap it out.
-        for (const c of get().cards) {
-          if (c.companion > 0 && !match(c)) {
-            get().setCardCounts(c.name, c.tier, { companion: 0 });
-          }
+
+        // Evict existing companions ONLY when there's no free slot. With the
+        // Nova "Companion Slot" upgrade bought, a second companion coexists
+        // instead of displacing the first.
+        const capacity = companionCapacityOf(get().novaUpgrades);
+        const needed = (card?.companion ?? 0) > 0 ? 0 : 1;
+        const others = get().cards.filter((c) => c.companion > 0 && !match(c));
+        let used = others.reduce((n, c) => n + c.companion, 0);
+        for (const c of others) {
+          if (used + needed <= capacity) break;
+          used -= c.companion;
+          get().setCardCounts(c.name, c.tier, { companion: 0 });
         }
+
         const cur = get().cards.find(match);
+        const companion = Math.max(1, cur?.companion ?? 0);
         get().setCardCounts(
           name,
           tier,
-          from ? { [from]: (cur?.[from] ?? 0) - 1, companion: 1 } : { companion: 1 },
+          from ? { [from]: (cur?.[from] ?? 0) - 1, companion } : { companion },
         );
       },
 
@@ -489,14 +506,23 @@ export const useAppStore = create<AppStore>()(
             c.companion > 0 &&
             !(c.name.trim().toLowerCase() === slot.name.trim().toLowerCase() && c.tier === slot.tier),
         );
-        // Install the slot droid as the new companion (owned, single-slot swap).
+        // Install the slot droid as the new companion (owned).
         get().moveToCompanion(slot.name, slot.tier, null);
-        // Park the prior companion (if any) back into the station as "ready";
-        // otherwise the station empties.
+        // Park the prior companion back into the station only if it ACTUALLY
+        // lost its slot — with a spare Nova companion slot nothing is
+        // displaced, so the station just empties.
+        const displaced =
+          !!prior &&
+          !get().cards.some(
+            (c) =>
+              c.name.trim().toLowerCase() === prior.name.trim().toLowerCase() &&
+              c.tier === prior.tier &&
+              c.companion > 0,
+          );
         set((cur) => ({
           craftingStations: cur.craftingStations.filter((c) => c.station !== station),
         }));
-        if (prior) {
+        if (prior && displaced) {
           set((cur) => ({
             craftingStations: [
               ...cur.craftingStations,

@@ -40,6 +40,16 @@ export function loungeCapacity(creditSlots: number, novaSlots: number): number {
   return creditSlots + novaSlots;
 }
 
+/** Companion slots you have before buying any from the Nova Shop. */
+export const COMPANION_BASE_SLOTS = 1;
+/** Nova Shop upgrade id that grants extra Companion slots. */
+export const NOVA_COMPANION_SLOT_ID = "featured.companion-slot";
+
+/** Total Companion capacity = the base slot + purchased Nova Shop slots. */
+export function companionCapacity(novaCompanionSlots: number): number {
+  return COMPANION_BASE_SLOTS + Math.max(0, novaCompanionSlots);
+}
+
 /** The next RB level that unlocks a Lounge credit slot, or null if none left. */
 export function nextLoungeUnlock(rb: number): number | null {
   for (const lvl of LOUNGE_RB_UNLOCKS) if (lvl > rb) return lvl;
@@ -100,11 +110,17 @@ export interface SellCandidate {
 }
 
 export interface CompanionSlot {
-  /** Droids marked as companion (capacity 1; >1 = over-capacity). */
+  /** Droids marked as companion (`deployed` > `capacity` = over-capacity). */
   droids: DeployedDroid[];
   /** The active companion's buff label, or null when none / unknown. */
   bonus: string | null;
   deployed: number;
+  /** Base slot + Nova Shop slots. */
+  capacity: number;
+  /** How many of those slots came from the Nova Shop upgrade. */
+  novaSlots: number;
+  /** Every active companion's buff label (droids with no known buff omitted). */
+  bonuses: string[];
 }
 
 /** View shape for one droid crafting station (single slot). */
@@ -171,6 +187,8 @@ export interface BuildBaseViewArgs {
   chipRates?: ChipRates;
   /** Level of the "Upgrade Chip Station" Nova upgrade (0 = locked). */
   novaChipStationLevel?: number;
+  /** Extra Companion slots bought from the Nova Shop. Defaults to 0. */
+  novaCompanionSlots?: number;
 }
 
 /**
@@ -191,6 +209,7 @@ export function buildBaseView({
   chipStation: chipStationSlot = null,
   chipRates = {},
   novaChipStationLevel = 0,
+  novaCompanionSlots = 0,
 }: BuildBaseViewArgs): BaseView {
   const byKey = new Map<string, DroidDef>();
   for (const d of dict) {
@@ -242,26 +261,30 @@ export function buildBaseView({
     droids: loungeDroids,
   };
 
-  // Companion slot (capacity 1): cards marked as companion. The buff comes
-  // from the droid's ICONIC companionEffect, or the class/rarity/tier table.
+  // Companion slots: cards marked as companion. Capacity is the base slot plus
+  // any bought from the Nova Shop. The buff comes from the droid's ICONIC
+  // companionEffect, or the class/rarity/tier table.
   const companionDroids: DeployedDroid[] = [];
+  const companionBonuses: string[] = [];
   let companionDeployed = 0;
-  let companionBonus: string | null = null;
   for (const c of cards) {
     if (c.companion <= 0) continue;
     const cdef = resolve(c.name);
     companionDeployed += c.companion;
     companionDroids.push({ name: c.name, tier: c.tier, count: c.companion, rarity: cdef?.rarity ?? "COMMON", class: cdef?.class ?? "UNKNOWN" });
-    if (companionBonus === null) {
-      const def = cdef;
-      companionBonus =
-        def?.companionEffect ?? companionBuffLabel(def?.class ?? "UNKNOWN", def?.rarity ?? "COMMON", c.tier);
-    }
+    const label =
+      cdef?.companionEffect ??
+      companionBuffLabel(cdef?.class ?? "UNKNOWN", cdef?.rarity ?? "COMMON", c.tier);
+    if (label) companionBonuses.push(label);
   }
   const companion: CompanionSlot = {
     droids: companionDroids,
-    bonus: companionBonus,
+    // `bonus` stays the first companion's buff for existing single-slot callers.
+    bonus: companionBonuses[0] ?? null,
+    bonuses: companionBonuses,
     deployed: companionDeployed,
+    capacity: companionCapacity(novaCompanionSlots),
+    novaSlots: novaCompanionSlots,
   };
 
   // Crafting stations: one single slot per station (WORKER/ASTROMECH/BATTLE).

@@ -7,6 +7,7 @@ import { droidCycles } from "../../lib/droidCycles";
 import { companionBuffLabel } from "../../data/companionBuffs.seed";
 import { normalizeName } from "../../lib/normalize";
 import { useAppStore } from "../../store/useAppStore";
+import { companionCapacity, NOVA_COMPANION_SLOT_ID } from "../../lib/baseView";
 import { useActiveCycle, useDroidexCompletion } from "../../store/selectors";
 import type { CollectionCard, DroidClass, DroidDef, Rarity, RebirthCycle, Tier } from "../../types";
 import { Stepper } from "../common/Stepper";
@@ -473,6 +474,10 @@ function CellEditor({ def, tier, card, onChange, onClose }: CellEditorProps) {
   const owned = !!card?.owned || working > 0 || lounge > 0 || companion > 0;
   const companionBonus =
     def.companionEffect ?? companionBuffLabel(def.class, def.rarity, tier);
+  // Base slot + any bought from the Nova Shop.
+  const companionCap = useAppStore((s) =>
+    companionCapacity(s.novaUpgrades.find((u) => u.id === NOVA_COMPANION_SLOT_ID)?.level ?? 0),
+  );
 
   return (
     <div
@@ -537,10 +542,14 @@ function CellEditor({ def, tier, card, onChange, onClose }: CellEditorProps) {
       <Stepper
         label="Companion"
         accent="text-tier-galactic"
-        hint={companionBonus ? "1 slot · buff below" : "single companion slot"}
+        hint={
+          companionBonus
+            ? `${companionCap} slot${companionCap === 1 ? "" : "s"} · buff below`
+            : `${companionCap} companion slot${companionCap === 1 ? "" : "s"}`
+        }
         value={companion}
         min={0}
-        max={1}
+        max={companionCap}
         onChange={(n) => onChange({ companion: n })}
       />
       {companion > 0 && companionBonus ? (
