@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   bestSrStop,
   cumulativeCreditsTo,
+  HIGHEST_SAMPLED_LEVEL,
+  OBSERVED_MULTIPLIER_STEP,
   PROJECTION_WARN_LEVELS,
   srTimingTable,
 } from "./srTiming";
+import { observedMultiplierStep } from "../data/rebirthMultipliers.seed";
 import { parseCredits } from "./credits";
 
 const M = 1_000_000n;
@@ -202,5 +205,31 @@ describe("projection distance", () => {
     const far = rows.filter((r) => (r.levelsProjected ?? 0) > PROJECTION_WARN_LEVELS);
     expect(far.length).toBeGreaterThan(0);
     expect(Math.min(...far.map((r) => r.level))).toBeGreaterThan(curve.currentLevel);
+  });
+});
+
+describe("derived multiplier step", () => {
+  it("comes from the recorded samples, not a constant", () => {
+    // RB6 = 18.1x through RB11 = 21.2x -> 3.1 over 5 levels.
+    expect(OBSERVED_MULTIPLIER_STEP).toBeCloseTo(0.62, 2);
+    expect(HIGHEST_SAMPLED_LEVEL).toBe(11);
+  });
+
+  it("uses the end-to-end slope so one rounded reading can't skew it", () => {
+    // Steps are 0.6,0.6,0.6,0.6,0.7 — a mean-of-steps gives the same answer
+    // here, but end-to-end stays stable if a middle sample rounds oddly.
+    const s = observedMultiplierStep([
+      { rbLevel: 5, creditMultiplier: 10, superRebirthCount: 1 },
+      { rbLevel: 6, creditMultiplier: 99, superRebirthCount: 1 }, // bogus middle
+      { rbLevel: 15, creditMultiplier: 20, superRebirthCount: 1 },
+    ]);
+    expect(s).toBeCloseTo(1.0); // (20-10)/(15-5), unaffected by the outlier
+  });
+
+  it("returns null when there aren't enough samples to derive anything", () => {
+    expect(observedMultiplierStep([])).toBeNull();
+    expect(
+      observedMultiplierStep([{ rbLevel: 6, creditMultiplier: 18.1, superRebirthCount: 2 }]),
+    ).toBeNull();
   });
 });

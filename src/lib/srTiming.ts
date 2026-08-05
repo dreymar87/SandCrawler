@@ -1,4 +1,8 @@
 import { SUPER_REBIRTH_BONUSES } from "../data/superRebirthBonuses.seed";
+import {
+  highestSampledLevel,
+  observedMultiplierStep,
+} from "../data/rebirthMultipliers.seed";
 import { parseCredits } from "./credits";
 import { rebirthsForCycle } from "./sellGuidance";
 import type { RebirthCycle } from "../types";
@@ -65,15 +69,25 @@ export interface MultiplierCurve {
   /** The rebirth level they're on right now. */
   currentLevel: number;
   /**
-   * How much the multiplier gains per rebirth level. Observed at a constant
-   * +0.6 across RB6→7→8 for one player; treat as a starting estimate, not a
-   * universal constant — it has not been sampled across accounts or higher
-   * levels, and players report the step isn't always uniform.
+   * How much the multiplier gains per rebirth level. Defaults to the value
+   * derived from the recorded samples — see OBSERVED_MULTIPLIER_STEP.
    */
   perLevel?: number;
 }
 
-export const OBSERVED_MULTIPLIER_STEP = 0.6;
+/**
+ * Per-level multiplier step, derived from the recorded samples rather than
+ * hardcoded, so it moves with the evidence as more are logged.
+ *
+ * It held at exactly +0.6 for RB6→10 and then went +0.7 at RB11, so a fixed
+ * constant was already wrong. The end-to-end slope (~0.62) absorbs that
+ * without over-fitting to a single reading, which matters because the values
+ * are displayed to one decimal and rounding alone can shift a step by 0.1.
+ */
+export const OBSERVED_MULTIPLIER_STEP = observedMultiplierStep() ?? 0.6;
+
+/** Highest rebirth level with a real observation behind it. */
+export const HIGHEST_SAMPLED_LEVEL = highestSampledLevel();
 
 /** One candidate Super Rebirth stopping point. */
 export interface SrStop {
