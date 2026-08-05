@@ -93,9 +93,9 @@ describe("planNovaPurchases", () => {
     expect(p.steps[0]!.id).toBe("core.credits");
   });
 
-  // Scrap Value's swing yield is a multiple of your own base rate, so it's a
-  // whole-economy multiplier for active play — not the niche upgrade it was
-  // first filed as. It's also the only step with a confirmed magnitude.
+  // Scrap Value multiplies the scrap pile, which for an actively-swinging
+  // player is the dominant income source by an order of magnitude. It belongs
+  // in the plan even though it can't join the credits-denominated ranking.
   it("recommends Scrap Value rather than skipping it", () => {
     for (const goal of ["CRYSTALS_PER_HOUR", "CREDIT_THROUGHPUT"] as const) {
       const p = plan([], { goal, limit: 100 });
@@ -114,13 +114,15 @@ describe("planNovaPurchases", () => {
     }
     // Spot-check that the curve, not just a flag, comes through.
     expect(p.steps.find((s) => s.id === "core.credits")!.knownEffect).toMatch(/20%/);
-    expect(p.steps.find((s) => s.id === "workshop.scrap-value")!.knownEffect).toMatch(/0\.5×/);
+    expect(p.steps.find((s) => s.id === "workshop.scrap-value")!.knownEffect).toMatch(/scrap-pile/);
   });
 
-  // The computed ranking (lib/upgradeValue) says Credits L1-5 beat Scrap L1,
-  // which beats Credits L6+. The track's milestone order must not contradict
-  // the arithmetic sitting next to it in the UI.
-  it("orders the measured upgrades to match the computed ranking", () => {
+  // NOTE: this interleaving is judgement again, not arithmetic. It was derived
+  // when Scrap Value was (wrongly) modelled as a share of droid credits/s;
+  // that model is retracted, and re-deriving it needs the open question in
+  // STRATEGY.md — whether the Credits upgrade multiplies scrap income too.
+  // Pinned so the order can't drift silently while it's unresolved.
+  it("keeps the Credits/Scrap interleaving stable while it is unresolved", () => {
     const p = plan([], { limit: 100 });
     const idx = (id: string, toLevel: number) =>
       p.steps.findIndex((s) => s.id === id && s.toLevel === toLevel);

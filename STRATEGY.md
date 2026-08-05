@@ -217,6 +217,39 @@ rather than converted with a made-up number.
 **Credits is confirmed additive.** The shop shows L6 as `+120% → 140%`, which
 is exactly 6 × 20% going to 7 × 20%. No assumption left here.
 
+### Scrapping probably dwarfs your droids
+
+Worked example from a real roster — 13 droids, RB7, Scrap Value L3:
+
+| Source | Rate | Share |
+| --- | --- | --- |
+| Droids (1,570/s base × ICONIC boosters × 18.1) | 46.9K/s | **5%** |
+| Scrap station (1.80M a swing, one swing / 2 s) | 900K/s | **95%** |
+
+One swing is worth **38 seconds** of that entire droid economy. And the swing
+isn't limited by materials — it's gated on your **pickaxe level being at or
+above the scrap pile's**, after which you can keep swinging every ~2 seconds.
+
+Two things follow, if this generalises:
+
+- **Pickaxe Mastery is an income gate**, not a convenience. It decides which
+  piles you can harvest at all.
+- **Droid income may be close to irrelevant while you're actively playing.**
+  It still matters for idle stretches and rebirth requirements.
+
+> **The open question that decides the buy order.** Does the Credits upgrade
+> multiply *all* credit income, or only droid income? It changes the answer
+> completely:
+>
+> | Next level | If Credits is global | If Credits is droids-only |
+> | --- | --- | --- |
+> | Credits L7 (26 ◆) | 7,284 credits/s per ◆ | 361 credits/s per ◆ |
+> | Scrap Value L4 (115 ◆) | 2,609 credits/s per ◆ | 2,609 credits/s per ◆ |
+>
+> Global → Credits stays top. Droids-only → **Scrap Value wins by 7×** and the
+> whole ranking inverts. Buying one Credits level and watching whether your
+> per-swing figure moves would settle it in a minute.
+
 ### Why the Credits ladder specifically
 
 Ten levels of each, compared:

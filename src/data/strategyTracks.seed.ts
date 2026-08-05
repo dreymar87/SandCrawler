@@ -31,7 +31,13 @@ export interface MeasuredEffect {
    * Everything else is recorded but excluded from the ranking — see
    * `whyNotRanked` — rather than converted with an invented exchange rate.
    */
-  unit: "CREDIT_RATE" | "CHIPS" | "BUILD_TIME" | "CRAFT_SPEED" | "SELL_CHANCE";
+  unit:
+    | "CREDIT_RATE"
+    | "CHIPS"
+    | "BUILD_TIME"
+    | "CRAFT_SPEED"
+    | "SELL_CHANCE"
+    | "SCRAP_SWING";
   /** Cumulative gain at `level`, in whatever `unit` says. */
   gainAt: (level: number) => number;
   /** Why this can't join the credit ranking. Required for non-CREDIT_RATE. */
@@ -66,12 +72,17 @@ export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
   },
   {
     id: "workshop.scrap-value",
-    unit: "CREDIT_RATE",
-    // 0.5x base yield per swing per level (L1 = 0.5x, L2 = 1.0x, L3 = 1.5x...).
-    // At the one-swing-per-2s cap that's 0.25x base per second per level.
-    gainAt: (n) => 0.5 * n * SCRAP_SWINGS_PER_SEC,
+    unit: "SCRAP_SWING",
+    // Multiplier on the SCRAP PILE's value, not on your droid income. A player
+    // at L3 (1.5x) reported 1.80M a swing while their droids made 46.9K/s —
+    // the swing base is ~26x their per-second rate, so the two are unrelated.
+    // An earlier model expressed this as a fraction of base credits/s, which
+    // was wrong by that factor.
+    gainAt: (n) => 0.5 * n,
     activeOnly: true,
-    effect: "+0.5× base yield per swing per level (L3 = 1.5×), capped at one full-value swing / 2 s",
+    effect: "×0.5 scrap-pile value per level (L3 = 1.5×), one full-value swing / 2 s while your pickaxe level ≥ the pile's",
+    whyNotRanked:
+      "Multiplies the SCRAP PILE's value, which is independent of your droid credits/s — so it can't be expressed in the same relative currency. Ranking it needs absolute figures: your measured swing value, plus whether the Credits upgrade multiplies scrap income or only droid income.",
     source: "player-reported, in-game",
   },
   {
@@ -327,3 +338,28 @@ export function trackFor(goal: StrategyGoal): StrategyTrack {
 export function levelOf(upgrades: readonly NovaUpgradeState[], id: string): number {
   return upgrades.find((u) => u.id === id)?.level ?? 0;
 }
+
+/**
+ * Observed in-game credit multiplier at a given Standard Rebirth level.
+ *
+ * This is the curve that would remove the known bias from `lib/srTiming.ts`
+ * (see its header): the model assumes a flat credits/s across a run, but this
+ * number climbs as you rebirth. Too few samples to fit anything yet, and the
+ * player reports the step is NOT reliably constant per level — so this is
+ * raw observation, deliberately not interpolated.
+ *
+ * The figure also isn't rebirth-only: extrapolating the RB6→RB7 step back to
+ * RB0 lands around 14.5×, far too high for rebirth bonuses alone, so Nova
+ * upgrades and Super Rebirth carry-over are folded into what the HUD shows.
+ */
+export interface RebirthMultiplierSample {
+  rbLevel: number;
+  creditMultiplier: number;
+  /** Super Rebirths completed when sampled — the carry-over differs by count. */
+  superRebirthCount: number;
+}
+
+export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = [
+  { rbLevel: 6, creditMultiplier: 18.1, superRebirthCount: 2 },
+  { rbLevel: 7, creditMultiplier: 18.7, superRebirthCount: 2 },
+];

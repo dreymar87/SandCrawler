@@ -17,26 +17,39 @@ describe("measured effects", () => {
     expect(e.activeOnly).toBe(false);
   });
 
-  it("Scrap Value is 0.5x base per swing per level, capped at one swing / 2s", () => {
+  // Scrap Value multiplies the SCRAP PILE's value, not your droid income. A
+  // player at L3 reported 1.80M a swing against 46.9K/s of droids — the swing
+  // base is ~26x their per-second rate, so the two have no common currency.
+  it("Scrap Value is a scrap-pile multiplier, not a share of droid income", () => {
     const e = measuredEffectFor("workshop.scrap-value")!;
     expect(SCRAP_SWINGS_PER_SEC).toBe(0.5);
-    // L3 = 1.5x per swing, which at 0.5 swings/s is +0.75x base per second.
-    expect(e.gainAt(3)).toBeCloseTo(0.75);
-    expect(e.gainAt(1)).toBeCloseTo(0.25);
+    expect(e.unit).toBe("SCRAP_SWING");
+    expect(e.gainAt(3)).toBeCloseTo(1.5); // the multiplier the game displays
+    expect(e.gainAt(1)).toBeCloseTo(0.5);
     expect(e.activeOnly).toBe(true);
+    expect(e.whyNotRanked).toBeTruthy();
   });
 });
 
 describe("marginalGain", () => {
   it("is the difference between consecutive levels", () => {
     expect(marginalGain("core.credits", 7, 1)).toBeCloseTo(0.2);
-    expect(marginalGain("workshop.scrap-value", 4, 1)).toBeCloseTo(0.25);
   });
 
-  it("scales active-only upgrades by swing uptime, and passive ones not at all", () => {
-    expect(marginalGain("workshop.scrap-value", 1, 0.5)).toBeCloseTo(0.125);
-    expect(marginalGain("workshop.scrap-value", 1, 0)).toBe(0);
-    expect(marginalGain("core.credits", 1, 0)).toBeCloseTo(0.2); // passive, unaffected
+  it("returns null for anything not denominated in credits/s", () => {
+    // Scrap Value, the crit pair and chips all measure different things.
+    for (const id of [
+      "workshop.scrap-value",
+      "featured.critical-chance",
+      "workshop.upgrade-chip-scrap",
+    ]) {
+      expect(marginalGain(id, 1, 1), id).toBeNull();
+    }
+  });
+
+  it("leaves passive upgrades unaffected by swing uptime", () => {
+    expect(marginalGain("core.credits", 1, 0)).toBeCloseTo(0.2);
+    expect(marginalGain("core.credits", 1, 1)).toBeCloseTo(0.2);
   });
 
   it("returns null for upgrades with no measured effect", () => {
@@ -45,41 +58,18 @@ describe("marginalGain", () => {
 });
 
 describe("efficientOrder", () => {
-  it("leads with Credits L1-5 before any Scrap Value, even at perfect uptime", () => {
-    const order = efficientOrder({ upgrades: [], swingUptime: 1, limit: 6 });
-    expect(order.slice(0, 5).map(key)).toEqual([
+  // Only Credits is currently denominated in credits/s, so it is the whole
+  // ranking. Everything else is measured but in an incompatible unit — the
+  // section is honest about being thin rather than padded with wrong maths.
+  it("ranks only the credit-denominated upgrades", () => {
+    const order = efficientOrder({ upgrades: [], swingUptime: 1, limit: 40 });
+    expect(order.length).toBeGreaterThan(0);
+    expect(order.every((l) => l.id === "core.credits")).toBe(true);
+    expect(order.slice(0, 3).map(key)).toEqual([
       "core.credits@1",
       "core.credits@2",
       "core.credits@3",
-      "core.credits@4",
-      "core.credits@5",
     ]);
-    // Scrap L1 slots in 6th — it interleaves, it doesn't lead.
-    expect(key(order[5]!)).toBe("workshop.scrap-value@1");
-  });
-
-  it("interleaves Scrap L2 after Credits L11 at perfect uptime", () => {
-    const order = efficientOrder({ upgrades: [], swingUptime: 1, limit: 13 });
-    expect(key(order[11]!)).toBe("core.credits@11");
-    expect(key(order[12]!)).toBe("workshop.scrap-value@2");
-  });
-
-  it("pushes Scrap Value later as swing uptime drops", () => {
-    const rank = (uptime: number) =>
-      efficientOrder({ upgrades: [], swingUptime: uptime, limit: 40 }).findIndex(
-        (l) => l.id === "workshop.scrap-value",
-      );
-    const full = rank(1);
-    const half = rank(0.5);
-    const quarter = rank(0.25);
-    expect(half).toBeGreaterThan(full);
-    expect(quarter).toBeGreaterThan(half);
-  });
-
-  it("drops Scrap Value entirely when you never swing", () => {
-    const order = efficientOrder({ upgrades: [], swingUptime: 0, limit: 40 });
-    expect(order.some((l) => l.id === "workshop.scrap-value")).toBe(false);
-    expect(order.every((l) => l.id === "core.credits")).toBe(true);
   });
 
   it("skips levels already owned", () => {
@@ -88,9 +78,8 @@ describe("efficientOrder", () => {
       swingUptime: 1,
       limit: 3,
     });
-    expect(order.some((l) => l.id === "core.credits" && l.level <= 5)).toBe(false);
-    // With Credits L1-5 gone, Scrap L1 is now the best remaining buy.
-    expect(key(order[0]!)).toBe("workshop.scrap-value@1");
+    expect(order.some((l) => l.level <= 5)).toBe(false);
+    expect(key(order[0]!)).toBe("core.credits@6");
   });
 
   it("is sorted by value per crystal, descending", () => {
@@ -126,9 +115,12 @@ describe("non-credit effects", () => {
     expect(measuredEffectFor("core.jawa-bartering")!.gainAt(2)).toBeCloseTo(0.10);
   });
 
-  it("keeps the coupled crit ladders out of the independent ranking", () => {
+  it("keeps every non-credit upgrade out of the ranking", () => {
     const order = efficientOrder({ upgrades: [], swingUptime: 1, limit: 80 });
-    expect(order.some((l) => l.id.startsWith("featured.critical"))).toBe(false);
+    const ranked = new Set(order.map((l) => l.id));
+    for (const e of MEASURED_EFFECTS) {
+      if (e.unit !== "CREDIT_RATE") expect(ranked.has(e.id), e.id).toBe(false);
+    }
   });
 
   it("records Upgrade Chip Scrap as +5 chips per level, capping at +50", () => {
