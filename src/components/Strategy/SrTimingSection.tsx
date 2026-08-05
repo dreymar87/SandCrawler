@@ -6,7 +6,14 @@ import { cycleLabel } from "../../lib/rebirthCycles";
 import { useActiveCycle, useProduction } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
 
-const DEFAULT_SETUP_HOURS = 1;
+/**
+ * Two hours, not one. Getting back to RB12 costs ~2.3B credits — seconds of
+ * grinding at any realistic rate — so the whole early game is droid
+ * acquisition: crafting, tier upgrades, redeploying. Players report that
+ * taking around two hours, and the default matters because it drives the
+ * recommendation.
+ */
+const DEFAULT_SETUP_HOURS = 2;
 
 /** "2.5 h" / "18 min" — run lengths span minutes to days, so scale the unit. */
 function formatHours(h: number): string {
@@ -60,13 +67,24 @@ export function SrTimingSection() {
       </div>
 
       {hasRate && best ? (
-        <p className="font-mono text-[11px] text-muted mb-3">
-          At <span className="text-holo">{formatPerSecond(production.flat)}</span> you earn most
-          crystals by Super Rebirthing at{" "}
-          <span className="font-bold text-ok">RB{best.level}</span> —{" "}
-          <span className="text-ok">{best.crystalsPerHour.toFixed(1)} crystals/hour</span>, a{" "}
-          {formatHours(best.runHours)} run.
-        </p>
+        <>
+          <p className="font-mono text-[11px] text-muted mb-1.5">
+            At <span className="text-holo">{formatPerSecond(production.flat)}</span> you earn most
+            crystals by Super Rebirthing at{" "}
+            <span className="font-bold text-ok">RB{best.level}</span> —{" "}
+            <span className="text-ok">{best.crystalsPerHour.toFixed(1)} crystals/hour</span>, a{" "}
+            {formatHours(best.runHours)} run.
+          </p>
+          {/* When setup dominates the run, pushing further is cheap — the
+              marginal grind is small against overhead you've already paid. */}
+          <p className="font-mono text-[10px] text-muted-alt mb-3">
+            {formatHours(setupHours)} setup + {formatHours(Math.max(0, best.runHours - setupHours))}{" "}
+            grinding
+            {best.runHours > 0 && setupHours / best.runHours >= 0.75
+              ? " — setup is most of that, so pushing a level or two further costs little."
+              : ""}
+          </p>
+        </>
       ) : (
         <p className="font-mono text-[11px] text-warn mb-3">
           Deploy some droids to get a credits/s reading — then this recommends a stopping level.

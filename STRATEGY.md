@@ -56,6 +56,15 @@ Pure crystals-per-credit says stop as early as possible. What stops you is the
 early levels. Those levels cost trivial credits but real wall-clock time, and
 you pay that overhead once per run no matter where you stop.
 
+How trivial: **reaching RB12 costs 2.29B credits in total** — five seconds of
+grinding at 500M/s. The early game is not a credit problem at all, it's a droid
+acquisition problem. Everything Super Rebirth takes from you is deployment
+state: working, lounge and companion counts zeroed, both crafting stations
+emptied (Astromech and Battle re-lock), chip station emptied, credit-bought
+lounge slots reset. Your Droidex, Nova upgrades and ICONIC unlocks survive.
+So setup is however long it takes you to get the right droids crafted, tiered
+and redeployed — realistically **one to three hours**.
+
 So the thing to maximise is:
 
 ```
@@ -69,39 +78,50 @@ sits between, and it **moves with your credit rate**.
 
 Best stopping level (and the crystals/hour it yields):
 
-| your credits/s | 30 min setup | 1 h setup | 2 h setup |
+| your credits/s | 1 h setup | 2 h setup | 4 h setup |
 | --- | --- | --- | --- |
-| 10M/s | RB14 (24.6) | RB14 (15.8) | RB15 (9.7) |
-| 50M/s | RB15 (41.7) | RB16 (24.9) | RB16 (14.9) |
-| 100M/s | RB16 (49.9) | RB16 (29.8) | RB17 (17.7) |
-| 500M/s | RB17 (74.1) | RB18 (43.0) | RB19 (24.4) |
-| 1B/s | RB18 (86.1) | RB19 (48.7) | RB19 (28.2) |
-| 3B/s | RB19 (107.2) | RB20 (60.3) | RB21 (35.5) |
+| 10M/s | RB14 (15.8) | RB15 (9.7) | RB15 (5.8) |
+| 50M/s | RB16 (24.9) | RB16 (14.9) | RB17 (8.8) |
+| 100M/s | RB16 (29.8) | RB17 (17.7) | RB18 (10.2) |
+| 250M/s | RB17 (37.1) | RB18 (21.5) | RB19 (12.2) |
+| 500M/s | RB18 (43.0) | **RB19 (24.4)** | RB19 (14.1) |
+| 1B/s | RB19 (48.7) | RB19 (28.2) | RB20 (16.0) |
+| 2B/s | RB19 (56.4) | RB20 (32.0) | RB22 (19.2) |
 
-**The community's "SR at RB19" is only right above roughly 500M/s.** Below
-that it's actively costly. At 100M/s with an hour of setup:
+**The community's "SR at RB19" is right for a specific player: around 500M/s
+or more, with a realistic couple of hours of setup.** It is not right for a
+mid-game player, where it can cost half your crystal rate.
 
-| Stop at | Run length | Crystals/hour |
-| --- | --- | --- |
-| **RB16** | **1.2 h** | **29.8** |
-| RB17 | 1.6 h | 28.7 |
-| RB18 | 2.5 h | 22.3 |
-| RB19 | 4.8 h | 14.1 |
-| RB20 | 10.3 h | 7.7 |
+### Read your row, then read the split
 
-RB16 earns **more than double** what RB19 does, in a quarter of the time.
+The stopping level matters less than the shape of your run. At 500M/s with 2 h
+of setup:
 
-RB20 is a bad stop for almost everyone — but not literally everyone. It
-overtakes RB19 at about **3B/s**. If you're there, the whole table shifts up
-and RB20–21 becomes correct.
+| Stop at | Run | of which grinding | Crystals/hour |
+| --- | --- | --- | --- |
+| RB16 | 2.0 h | 0.0 h | 18.1 |
+| RB17 | 2.1 h | 0.1 h | 21.7 |
+| RB18 | 2.3 h | 0.3 h | 24.3 |
+| **RB19** | **2.8 h** | **0.8 h** | **24.4** |
+| RB20 | 3.9 h | 1.9 h | 20.5 |
+| RB21 | 5.5 h | 3.5 h | 16.6 |
+
+Stopping at RB16 here means two hours of setup followed by *no grinding at
+all* — 37 crystals for pure overhead. RB17 through RB19 are nearly tied, so
+anywhere in that band is fine; RB20 is where it turns over.
+
+**When setup dominates your run, push further.** The marginal grind is cheap
+against overhead you've already paid. When your credit rate is low enough that
+grinding dominates, stop earlier. The app shows the split so you can see which
+regime you're in.
 
 ### Two things that follow
 
 - **Raising credits/s pays twice.** It shortens the run *and* raises the level
   you should stop at, which raises crystals per run.
-- **Cutting setup time is worth as much as raising income.** Going from 1 h to
-  30 min of setup nearly doubles crystals/hour at every level in the table.
-  That makes Crafting Speed and Collect All progression upgrades, not comfort.
+- **Cutting setup time is worth as much as raising income** — and since the
+  early game is droid acquisition rather than credits, that means Crafting
+  Speed and Collect All are progression upgrades, not comfort.
 
 ---
 

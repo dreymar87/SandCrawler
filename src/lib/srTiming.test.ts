@@ -96,6 +96,22 @@ describe("bestSrStop", () => {
     expect(bestSrStop(table(10n * M, 1))!.level).toBe(14);
   });
 
+  // Reaching RB12 costs ~2.3B credits — seconds of grinding — so the early
+  // game is droid acquisition, and a realistic setup estimate is ~2h, not 1.
+  // At that setting the community's "SR at RB19" is correct from ~500M/s,
+  // which is the reconciliation the doc leans on.
+  it("at a realistic 2h setup, RB19 is right from ~500M/s", () => {
+    expect(bestSrStop(table(500n * M, 2))!.level).toBe(19);
+    expect(bestSrStop(table(B, 2))!.level).toBe(19);
+    // ...but a mid-game player still stops well short.
+    expect(bestSrStop(table(50n * M, 2))!.level).toBe(16);
+  });
+
+  it("getting back to RB12 is negligible in credits", () => {
+    // Under 3B total — the early game is a droid problem, not a credit one.
+    expect(Number(cumulativeCreditsTo(1, 12))).toBeLessThan(3e9);
+  });
+
   it("a faster credit rate never lowers the recommended level", () => {
     let prev = 0;
     for (const rate of [1n * M, 10n * M, 100n * M, B, 5n * B]) {
