@@ -361,6 +361,12 @@ export interface UiPrefs {
    */
   swingUptime?: number;
   /**
+   * The in-game credit multiplier the player currently sees. Combined with
+   * their rebirth level it lets the SR-timing model integrate a climbing rate
+   * rather than assuming a flat one. Unset = flat model.
+   */
+  creditMultiplier?: number;
+  /**
    * Emit device haptics on Droidex taps and other interactions. Defaults
    * on (undefined = true); explicit `false` silences `haptic()`.
    */

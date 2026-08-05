@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
-import { bestSrStop, srTimingTable, type SrStop } from "../../lib/srTiming";
+import {
+  bestSrStop,
+  OBSERVED_MULTIPLIER_STEP,
+  srTimingTable,
+  type SrStop,
+} from "../../lib/srTiming";
 import { formatPerSecond } from "../../lib/production";
 import { formatCredits } from "../../lib/credits";
 import { cycleLabel } from "../../lib/rebirthCycles";
@@ -36,15 +41,28 @@ export function SrTimingSection() {
   const production = useProduction();
   const setUiPref = useAppStore((s) => s.setUiPref);
   const storedSetup = useAppStore((s) => s.ui.srSetupHours);
+  const storedMult = useAppStore((s) => s.ui.creditMultiplier);
   const currentLevel = useAppStore((s) => s.profile.standardRebirth);
 
   const setupHours = storedSetup ?? DEFAULT_SETUP_HOURS;
   const [draft, setDraft] = useState(String(setupHours));
+  const [multDraft, setMultDraft] = useState(storedMult ? String(storedMult) : "");
   const [showAll, setShowAll] = useState(false);
 
   const rows = useMemo(
-    () => srTimingTable({ cycle, creditsPerSec: production.flat, setupHours }),
-    [cycle, production.flat, setupHours],
+    () =>
+      srTimingTable({
+        cycle,
+        creditsPerSec: production.flat,
+        setupHours,
+        // Only integrate a climbing rate once the player has told us what
+        // multiplier they're on; otherwise stay on the flat model.
+        multiplier:
+          storedMult && storedMult > 0
+            ? { atCurrentLevel: storedMult, currentLevel }
+            : undefined,
+      }),
+    [cycle, production.flat, setupHours, storedMult, currentLevel],
   );
   const best = useMemo(() => bestSrStop(rows), [rows]);
 
@@ -114,6 +132,35 @@ export function SrTimingSection() {
         <span className="font-mono text-[10px] text-muted-alt">hours</span>
       </div>
 
+      <div className="flex items-center gap-2 mb-3">
+        <label
+          className="font-mono text-[10px] uppercase tracking-wider text-muted-alt"
+          htmlFor="sr-mult"
+        >
+          Credit multiplier
+        </label>
+        <input
+          id="sr-mult"
+          type="text"
+          inputMode="decimal"
+          className="input w-16 text-right tabular-nums"
+          value={multDraft}
+          placeholder="—"
+          onChange={(e) => setMultDraft(e.target.value)}
+          onBlur={(e) => {
+            const n = Number(e.target.value.trim());
+            setUiPref("creditMultiplier", e.target.value.trim() === "" || !Number.isFinite(n) || n <= 0 ? undefined : n);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          }}
+        />
+        <span className="font-mono text-[10px] text-muted-alt">
+          × at RB{currentLevel}
+          {storedMult ? "" : " · optional"}
+        </span>
+      </div>
+
       <div className="overflow-x-auto -mx-1 px-1">
         <table className="w-full font-mono text-[11px] tabular-nums">
           <thead>
@@ -150,12 +197,23 @@ export function SrTimingSection() {
         crystal reward barely moves — that's why the best stop is usually lower than you'd guess.
         Setup time is your estimate; raising it pushes the answer higher.
       </p>
-      {/* The model can't see the compounding multipliers, and the error is
-          one-directional — say so rather than implying false precision. */}
+      {/* One bias is correctable given the player's multiplier; the other
+          isn't, so the caveat narrows rather than disappearing. */}
       <p className="font-mono text-[10px] text-warn/80 mt-2 leading-snug">
-        Treat this as a floor. It assumes a flat credits/s, but rebirth levels raise your
-        multiplier as you climb, and Super Rebirth raises the floor every future run starts from —
-        so the real best stop is a level or two higher than shown. On a tie, go higher.
+        {storedMult ? (
+          <>
+            Using your {storedMult}× at RB{currentLevel}, climbing ~
+            {OBSERVED_MULTIPLIER_STEP} a level, so the grind figures account for your rate rising as
+            you go. Still a slight floor: Super Rebirth also raises the multiplier every future run
+            starts from, which one run can't show.
+          </>
+        ) : (
+          <>
+            Treat this as a floor. It assumes a flat credits/s, but your multiplier climbs as you
+            rebirth. Enter it above and the grind figures get noticeably more accurate at the top of
+            the ladder.
+          </>
+        )}
       </p>
     </section>
   );

@@ -121,3 +121,53 @@ describe("bestSrStop", () => {
     }
   });
 });
+
+describe("climbing multiplier curve", () => {
+  // Samples: RB6 = 18.1x, RB7 = 18.7x, RB8 = 19.3x -> a constant +0.6 step.
+  const curve = { atCurrentLevel: 19.3, currentLevel: 8, perLevel: 0.6 };
+  const withCurve = (rate: bigint) =>
+    srTimingTable({ cycle: 1, creditsPerSec: rate, setupHours: 2, multiplier: curve });
+  const flat = (rate: bigint) => srTimingTable({ cycle: 1, creditsPerSec: rate, setupHours: 2 });
+
+  it("shortens the grind everywhere, because the rate climbs as you go", () => {
+    const c = withCurve(947_000n);
+    const f = flat(947_000n);
+    for (const row of c) {
+      const same = f.find((r) => r.level === row.level)!;
+      expect(row.runHours, `RB${row.level}`).toBeLessThan(same.runHours);
+    }
+  });
+
+  it("corrects more at the top of the ladder than the bottom", () => {
+    const c = withCurve(947_000n);
+    const f = flat(947_000n);
+    const saving = (lvl: number) => {
+      const a = f.find((r) => r.level === lvl)!.runHours - 2;
+      const b = c.find((r) => r.level === lvl)!.runHours - 2;
+      return (a - b) / a;
+    };
+    // ~5% around RB12 rising past 20% by RB21 — the flat model's bias.
+    expect(saving(12)).toBeGreaterThan(0.02);
+    expect(saving(21)).toBeGreaterThan(saving(12) * 3);
+  });
+
+  it("treats creditsPerSec as the rate AT the current level", () => {
+    // One level of grinding from RB8 should use ~the quoted rate, not a
+    // back-projected base — a sanity check on the multiplier bookkeeping.
+    const c = withCurve(947_000n);
+    const rb12 = c.find((r) => r.level === 12)!;
+    expect(rb12.runHours - 2).toBeGreaterThan(0.5);
+    expect(rb12.runHours - 2).toBeLessThan(0.8);
+  });
+
+  it("falls back to the flat model when no curve is supplied", () => {
+    const a = flat(947_000n);
+    const b = srTimingTable({ cycle: 1, creditsPerSec: 947_000n, setupHours: 2 });
+    expect(a.map((r) => r.runHours)).toEqual(b.map((r) => r.runHours));
+  });
+
+  it("still handles a zero rate without NaN", () => {
+    const rows = withCurve(0n);
+    expect(rows.every((r) => r.crystalsPerHour === 0)).toBe(true);
+  });
+});

@@ -46,6 +46,35 @@ import type { RebirthCycle } from "../types";
  * floor rather than a precise answer, and prefer the higher end of a tie.
  */
 
+/**
+ * How the in-game credit multiplier climbs as you pass rebirth levels.
+ *
+ * Supplying this replaces the flat-rate assumption with a level-by-level
+ * integration: each rebirth's cost is earned at the multiplier you actually
+ * hold when you start it, not at the one you finish the run with. That removes
+ * bias (1) in the header — the flat model overstates grind time at the top of
+ * the ladder, by 5% around RB12 and 25%+ by RB21.
+ *
+ * Derived from the player's own reading rather than a table, because the HUD
+ * figure folds in Nova upgrades and Super Rebirth carry-over as well as
+ * rebirth levels, so it isn't the same for two players at the same RB.
+ */
+export interface MultiplierCurve {
+  /** The multiplier the player sees right now. */
+  atCurrentLevel: number;
+  /** The rebirth level they're on right now. */
+  currentLevel: number;
+  /**
+   * How much the multiplier gains per rebirth level. Observed at a constant
+   * +0.6 across RB6→7→8 for one player; treat as a starting estimate, not a
+   * universal constant — it has not been sampled across accounts or higher
+   * levels, and players report the step isn't always uniform.
+   */
+  perLevel?: number;
+}
+
+export const OBSERVED_MULTIPLIER_STEP = 0.6;
+
 /** One candidate Super Rebirth stopping point. */
 export interface SrStop {
   /** The RB level you'd Super Rebirth from. */
@@ -99,14 +128,42 @@ export function srTimingTable({
   cycle,
   creditsPerSec,
   setupHours,
+  multiplier,
 }: {
   cycle: RebirthCycle;
   creditsPerSec: bigint;
   setupHours: number;
+  /** Optional. Without it the rate is held flat — see the header's bias note. */
+  multiplier?: MultiplierCurve;
 }): SrStop[] {
   const rate = toNum(creditsPerSec);
   const setup = Math.max(0, setupHours);
   const rows: SrStop[] = [];
+
+  // With a curve, `creditsPerSec` is the rate at `currentLevel`; back out the
+  // pre-multiplier base so each level can be earned at its own multiplier.
+  const step = multiplier?.perLevel ?? OBSERVED_MULTIPLIER_STEP;
+  const multAt = (lvl: number): number =>
+    multiplier ? multiplier.atCurrentLevel + step * (lvl - multiplier.currentLevel) : 1;
+  const baseRate =
+    multiplier && multAt(multiplier.currentLevel) > 0 ? rate / multAt(multiplier.currentLevel) : rate;
+
+  /**
+   * Hours of grinding to reach `level`. Each rebirth's cost is earned at the
+   * multiplier held while working toward it — i.e. the PREVIOUS level's — so
+   * a climbing curve shortens the expensive top of the ladder.
+   */
+  const grindHoursTo = (level: number): number => {
+    if (rate <= 0) return Infinity;
+    if (!multiplier) return toNum(cumulativeCreditsTo(cycle, level)) / rate / 3600;
+    let seconds = 0;
+    for (const rb of rebirthsForCycle(cycle)) {
+      if (rb.level > level) break;
+      const m = Math.max(multAt(rb.level - 1), 0.0001); // never divide by ~0
+      seconds += toNum(parseCredits(rb.credits)) / (baseRate * m);
+    }
+    return seconds / 3600;
+  };
 
   let prev: { cumCredits: bigint; crystals: number } | null = null;
   for (const bonus of [...SUPER_REBIRTH_BONUSES].sort((a, b) => a.rbLevel - b.rbLevel)) {
@@ -114,8 +171,7 @@ export function srTimingTable({
     // A cycle that doesn't reach this level yet can't be stopped at.
     if (cumCredits <= 0n) continue;
 
-    const grindHours = rate > 0 ? toNum(cumCredits) / rate / 3600 : Infinity;
-    const runHours = setup + grindHours;
+    const runHours = setup + grindHoursTo(bonus.rbLevel);
 
     let marginal: SrStop["marginal"] = null;
     if (prev) {
