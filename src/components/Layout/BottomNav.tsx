@@ -4,7 +4,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { TAB_ICONS } from "./tabIcons";
 
 /**
- * Fixed bottom navigation — the standard mobile-app pattern. Five
+ * Fixed bottom navigation — the standard mobile-app pattern. Six
  * icon+label destinations, safe-area aware, ≥44px tap targets.
  */
 export function BottomNav() {
@@ -17,7 +17,7 @@ export function BottomNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Primary"
     >
-      <div className="max-w-[760px] mx-auto grid grid-cols-5">
+      <div className="max-w-[760px] mx-auto grid grid-cols-6">
         {TAB_ORDER.map((t) => {
           const Icon = TAB_ICONS[t];
           const isActive = t === active;

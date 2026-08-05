@@ -55,8 +55,16 @@ export const TAB_LABELS: Record<TabKey, string> = {
   base: "Base",
   droidex: "Droidex",
   rebirths: "Rebirths",
+  strategy: "Strategy",
   shop: "Shop",
   profile: "Profile",
 };
 
-export const TAB_ORDER: TabKey[] = ["base", "droidex", "rebirths", "shop", "profile"];
+export const TAB_ORDER: TabKey[] = [
+  "base",
+  "droidex",
+  "rebirths",
+  "strategy",
+  "shop",
+  "profile",
+];

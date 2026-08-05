@@ -217,7 +217,7 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
       })
     : [];
 
-  // Remap old tab keys into the current five-tab set. v8: Home → Base.
+  // Remap old tab keys into the current six-tab set. v8: Home → Base.
   const oldTab = String(uiRaw.activeTab ?? "base");
   const tabMap: Record<string, TabKey> = {
     base: "base",
@@ -225,6 +225,7 @@ function v4FromIntermediate(obj: Record<string, unknown>): PersistedState {
     droidex: "droidex",
     profile: "profile",
     rebirths: "rebirths",
+    strategy: "strategy",
     standard: "rebirths",
     super: "rebirths",
     "next-unlock": "rebirths",

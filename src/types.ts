@@ -347,6 +347,13 @@ export interface UiPrefs {
   /** Denser rebirth-list layout — smaller rows, no credit bar / SRB hint. */
   compactRebirths?: boolean;
   /**
+   * Estimated fixed per-run overhead in HOURS — re-crafting droids and
+   * grinding back through the early levels, whose credit cost is negligible
+   * but whose wall-clock cost isn't. The one input the SR-timing model can't
+   * measure. Defaults to 1.
+   */
+  srSetupHours?: number;
+  /**
    * Emit device haptics on Droidex taps and other interactions. Defaults
    * on (undefined = true); explicit `false` silences `haptic()`.
    */
@@ -365,7 +372,7 @@ export interface UiPrefs {
 }
 
 /** The five primary bottom-nav destinations. */
-export type TabKey = "base" | "droidex" | "rebirths" | "shop" | "profile";
+export type TabKey = "base" | "droidex" | "rebirths" | "strategy" | "shop" | "profile";
 
 /**
  * Export envelope. The "app" field is a guard against importing random JSON.

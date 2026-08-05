@@ -26,6 +26,14 @@ export const TAB_ICONS: Record<TabKey, (props: { className?: string }) => JSX.El
       <path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v3.5h-3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  // Rising trend line with a target — "where do I aim next".
+  strategy: ({ className }) => (
+    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M3 17.5 9 11l3.5 3.5L20 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 6h5v5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="9" cy="11" r="1.5" fill="currentColor" />
+    </svg>
+  ),
   shop: ({ className }) => (
     <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path d="M12 3 4 8.2 12 13l8-4.8L12 3ZM4 8.2V16l8 5 8-5V8.2M12 13v8" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />

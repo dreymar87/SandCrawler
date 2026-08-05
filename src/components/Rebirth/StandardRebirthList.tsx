@@ -6,8 +6,6 @@ import { cycleLabel } from "../../lib/rebirthCycles";
 import { useAppStore } from "../../store/useAppStore";
 import { GapList } from "../NextUnlock/GapList";
 import { ProgressBar } from "../common/ProgressBar";
-import { CycleStrategySection } from "./CycleStrategySection";
-import { CreditStrategySection } from "./CreditStrategySection";
 import { RebirthDetailModal } from "./RebirthDetailModal";
 import type { StandardRebirth } from "../../types";
 
@@ -68,10 +66,6 @@ export function StandardRebirthList() {
       </section>
 
       <ClosestSection credits={credits} />
-
-      <CycleStrategySection />
-
-      <CreditStrategySection />
 
       {hidePastRebirths && hiddenCount > 0 ? (
         <button

@@ -293,6 +293,13 @@ describe("migrate", () => {
     expect(migrate({ schemaVersion: 11 }).statOverrides).toEqual({});
   });
 
+  it("round-trips the strategy tab and still defaults unknown keys to base", () => {
+    expect(migrate({ schemaVersion: 14, ui: { activeTab: "strategy" } }).ui.activeTab).toBe(
+      "strategy",
+    );
+    expect(migrate({ schemaVersion: 14, ui: { activeTab: "nonsense" } }).ui.activeTab).toBe("base");
+  });
+
   it("bootstraps the chip station slices for payloads that lack them (v14)", () => {
     const m = migrate({ schemaVersion: 13 });
     expect(m.chipStation).toBeNull();
