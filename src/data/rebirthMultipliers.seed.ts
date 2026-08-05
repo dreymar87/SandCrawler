@@ -55,6 +55,10 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // 18.1/18.7/19.3/19.9/20.5/21.2/21.9 even after rounding to one decimal
   // (the best single line misses 4 of the 7). The step really does grow.
   { rbLevel: 12, creditMultiplier: 21.9, superRebirthCount: 2, session: "a" },
+  // Third +0.7 in a row. The step rose from 0.6 to 0.7 around RB10 and has now
+  // held there — settling rather than accelerating, which bounds the error on
+  // projecting it flat.
+  { rbLevel: 13, creditMultiplier: 22.6, superRebirthCount: 2, session: "a" },
   // Read immediately after login, same rebirth level, 1.2 lower — then back to
   // 21.2x after collecting credits with no rebirth in between. Almost certainly
   // a stale HUD rather than a real change, so it sits in its own session and

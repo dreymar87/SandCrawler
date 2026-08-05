@@ -210,9 +210,18 @@ describe("projection distance", () => {
 
 describe("derived multiplier step", () => {
   it("comes from the recorded samples, not a constant", () => {
-    // Windowed to the last 4 levels of session "a": RB9 19.9x -> RB12 21.9x.
-    expect(OBSERVED_MULTIPLIER_STEP).toBeCloseTo(0.65, 2);
-    expect(HIGHEST_SAMPLED_LEVEL).toBe(12);
+    // Windowed to the last 4 levels of session "a": RB10 20.5x -> RB13 22.6x.
+    expect(OBSERVED_MULTIPLIER_STEP).toBeCloseTo(0.675, 3);
+    expect(HIGHEST_SAMPLED_LEVEL).toBe(13);
+  });
+
+  // The step rose 0.6 -> 0.7 around RB10 and has since held for three
+  // consecutive levels. Settling, not accelerating — which bounds the error
+  // from projecting it flat, so the window can stay short without chasing a
+  // runaway trend.
+  it("shows the step settling rather than accelerating", () => {
+    const recent = observedMultiplierStep(undefined, 3)!; // RB10 -> RB13
+    expect(recent).toBeCloseTo(0.7, 2);
   });
 
   // The step is NOT constant: +0.6 through RB10, +0.7 after. A full-history
