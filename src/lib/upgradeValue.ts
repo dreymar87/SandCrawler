@@ -34,7 +34,7 @@ export interface ValuedLevel {
 /** Marginal gain of going from `level - 1` to `level`, scaled for uptime. */
 export function marginalGain(id: string, level: number, swingUptime: number): number | null {
   const effect = measuredEffectFor(id);
-  if (!effect || level < 1) return null;
+  if (!effect || effect.unit !== "CREDIT_RATE" || level < 1) return null;
   const raw = effect.gainAt(level) - effect.gainAt(level - 1);
   return effect.activeOnly ? raw * clampUptime(swingUptime) : raw;
 }
@@ -62,6 +62,10 @@ export function efficientOrder({
   const out: ValuedLevel[] = [];
 
   for (const effect of MEASURED_EFFECTS) {
+    // Only credit-denominated effects share a currency. Chip upgrades are
+    // measured too, but ranking them here would require an invented
+    // chips-to-credits exchange rate.
+    if (effect.unit !== "CREDIT_RATE") continue;
     const def = byId.get(effect.id);
     if (!def) continue;
     const have = owned.get(effect.id) ?? 0;

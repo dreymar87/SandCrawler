@@ -115,6 +115,27 @@ against overhead you've already paid. When your credit rate is low enough that
 grinding dominates, stop earlier. The app shows the split so you can see which
 regime you're in.
 
+### Treat the recommendation as a floor
+
+The model holds your credits/s flat for a whole run. It isn't, and the error
+runs one way — it makes stopping high look worse than it is:
+
+1. **Rebirth levels raise your multiplier as you climb.** So the expensive late
+   levels are earned at a *higher* rate than the early ones, and the grind
+   hours quoted for the top of the ladder are overstated.
+2. **Super Rebirth raises the floor permanently.** The credit multiplier it
+   grants (+22% at RB12, rising to +508% at RB30) applies to every future run.
+   Stopping higher pays forward, and a single-run model can't see that at all.
+
+Both push the same direction: **the true best stop is a level or two above what
+the table says**, and the gap widens the more runs you intend to do. On a tie,
+go higher.
+
+Closing this properly needs the per-rebirth-level multiplier curve — how much
+credit and XP bonus each RB grants, and what base you reset to after a Super
+Rebirth. No community sheet publishes it yet. It's the highest-value unknown
+left in this document.
+
 ### Two things that follow
 
 - **Raising credits/s pays twice.** It shortens the run *and* raises the level
@@ -188,6 +209,11 @@ doing that:
 
 The app computes this ranking live and takes your swing uptime as a setting.
 
+**Upgrade Chip Scrap** is measured too — **+5 chips per level, capping at +50
+at L10** — but chips aren't credits, and there's no honest exchange rate
+between them. It's recorded, and deliberately left out of the ranking above
+rather than converted with a made-up number.
+
 > **One assumption to check.** This treats the Credits bonus as *additive*
 > (L5 = +100%, L25 = +500%). If it's actually multiplicative (1.2^n), Credits
 > is far stronger still and dominates everything. You can tell them apart by
@@ -255,11 +281,17 @@ section 3 would become computable with it.
 It's measurable without much effort: note your credits/s, buy one level, note
 it again. The highest-value measurements, in order:
 
-1. **Critical Amount L1** — decides whether 58% of the shop is a trap or the
+1. **The per-rebirth multiplier curve** — the credit/XP bonus each RB level
+   grants, and the base you reset to after a Super Rebirth. This is the one
+   that would remove the known bias from the timing model, which is the
+   single most consequential number in this document.
+2. **Critical Amount L1** — decides whether 58% of the shop is a trap or the
    main event.
-2. **Credits L1** — calibrates the ladder this whole plan leans on.
 3. **Crafting Speed L1** — converts a setup-time saving into hours, which the
    SR model consumes directly.
+
+Already measured: Credits (+20%/level), Scrap Value (+0.5× per swing per
+level, one full-value swing / 2 s), Upgrade Chip Scrap (+5 chips/level to +50).
 
 If you record those, the Strategy tab can rank the shop on measured returns
 instead of the argument above.

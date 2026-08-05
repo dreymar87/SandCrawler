@@ -150,6 +150,13 @@ export function SrTimingSection() {
         crystal reward barely moves — that's why the best stop is usually lower than you'd guess.
         Setup time is your estimate; raising it pushes the answer higher.
       </p>
+      {/* The model can't see the compounding multipliers, and the error is
+          one-directional — say so rather than implying false precision. */}
+      <p className="font-mono text-[10px] text-warn/80 mt-2 leading-snug">
+        Treat this as a floor. It assumes a flat credits/s, but rebirth levels raise your
+        multiplier as you climb, and Super Rebirth raises the floor every future run starts from —
+        so the real best stop is a level or two higher than shown. On a tie, go higher.
+      </p>
     </section>
   );
 }

@@ -25,7 +25,14 @@ import type { NovaUpgradeState } from "../types";
  */
 export interface MeasuredEffect {
   id: string;
-  /** Cumulative gain at `level`, as a multiple of base credits/s. */
+  /**
+   * What `gainAt` is denominated in. Only `CREDIT_RATE` effects share a
+   * currency and can be ranked against each other by `lib/upgradeValue.ts`;
+   * a chip upgrade and a credit upgrade have no honest exchange rate, so the
+   * ranking excludes anything else rather than inventing one.
+   */
+  unit: "CREDIT_RATE" | "CHIPS";
+  /** Cumulative gain at `level` — a multiple of base credits/s, or flat chips. */
   gainAt: (level: number) => number;
   /**
    * True when the gain only accrues while you're actively playing. Passive
@@ -48,6 +55,7 @@ export const SCRAP_SWINGS_PER_SEC = 0.5;
 export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
   {
     id: "core.credits",
+    unit: "CREDIT_RATE",
     // +20% of base per level, additive: L5 = +100%, L25 = +500%.
     gainAt: (n) => 0.2 * n,
     activeOnly: false,
@@ -56,11 +64,22 @@ export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
   },
   {
     id: "workshop.scrap-value",
+    unit: "CREDIT_RATE",
     // 0.5x base yield per swing per level (L1 = 0.5x, L2 = 1.0x, L3 = 1.5x...).
     // At the one-swing-per-2s cap that's 0.25x base per second per level.
     gainAt: (n) => 0.5 * n * SCRAP_SWINGS_PER_SEC,
     activeOnly: true,
     effect: "+0.5× base yield per swing per level (L3 = 1.5×), capped at one full-value swing / 2 s",
+    source: "player-reported, in-game",
+  },
+  {
+    id: "workshop.upgrade-chip-scrap",
+    unit: "CHIPS",
+    // Flat +5 chips per level, ending at +50 — which is the whole ladder,
+    // so this one is fully mapped rather than partially.
+    gainAt: (n) => 5 * Math.min(n, 10),
+    activeOnly: false,
+    effect: "+5 upgrade chips per level, capping at +50 (L10)",
     source: "player-reported, in-game",
   },
 ];

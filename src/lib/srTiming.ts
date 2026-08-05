@@ -25,6 +25,25 @@ import type { RebirthCycle } from "../types";
  * re-crafting droids and grinding back through the early levels, whose credit
  * costs are rounding errors but whose wall-clock cost is real. It's the one
  * input the app can't measure, so the player estimates it.
+ *
+ * ── Known bias: this UNDER-estimates the best stopping level ──────────────
+ * The model holds `creditsPerSec` constant across a run. In reality it climbs,
+ * for two compounding reasons:
+ *
+ *   1. Passing rebirth levels grants credit/XP multipliers WITHIN a run, so
+ *      the expensive late levels are earned at a higher rate than the early
+ *      ones — the grind hours here are an overestimate at the top of the
+ *      ladder specifically.
+ *   2. Super Rebirth grants a permanent credit multiplier (see
+ *      `SUPER_REBIRTH_BONUSES.creditMult`, +22% at RB12 rising to +508% at
+ *      RB30) which raises the floor every FUTURE run starts from. Stopping
+ *      higher therefore pays forward, and this single-run model can't see it.
+ *
+ * Both errors point the same way: the true optimum is somewhat HIGHER than
+ * what this returns, and the gap widens the more runs you plan to do.
+ * Modelling it properly needs the per-rebirth-level multiplier curve, which
+ * no community sheet publishes yet. Until then, treat the recommendation as a
+ * floor rather than a precise answer, and prefer the higher end of a tie.
  */
 
 /** One candidate Super Rebirth stopping point. */

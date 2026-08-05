@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { planNovaPurchases } from "./novaPlan";
-import { trackFor } from "../data/strategyTracks.seed";
+import { MEASURED_EFFECTS, trackFor } from "../data/strategyTracks.seed";
 import { NOVA_UPGRADES } from "../data/novaShop.seed";
 import type { NovaUpgradeState } from "../types";
 
@@ -104,17 +104,17 @@ describe("planNovaPurchases", () => {
     }
   });
 
-  it("attaches a measured effect only to upgrades that have one", () => {
+  it("attaches a measured effect to exactly the upgrades that have one", () => {
     const p = plan([], { limit: 100 });
-    // Both measured upgrades carry their per-level curve...
-    expect(p.steps.find((s) => s.id === "workshop.scrap-value")!.knownEffect).toMatch(/0\.5×/);
+    const measured = new Set(MEASURED_EFFECTS.map((e) => e.id));
+    expect(measured.size).toBeGreaterThan(1);
+    for (const s of p.steps) {
+      if (measured.has(s.id)) expect(s.knownEffect, s.id).toBeTruthy();
+      else expect(s.knownEffect, s.id).toBeUndefined();
+    }
+    // Spot-check that the curve, not just a flag, comes through.
     expect(p.steps.find((s) => s.id === "core.credits")!.knownEffect).toMatch(/20%/);
-    // ...and everything resting on argument alone carries none.
-    const unmeasured = p.steps.filter(
-      (s) => s.id !== "workshop.scrap-value" && s.id !== "core.credits",
-    );
-    expect(unmeasured.length).toBeGreaterThan(0);
-    for (const s of unmeasured) expect(s.knownEffect).toBeUndefined();
+    expect(p.steps.find((s) => s.id === "workshop.scrap-value")!.knownEffect).toMatch(/0\.5×/);
   });
 
   // The computed ranking (lib/upgradeValue) says Credits L1-5 beat Scrap L1,

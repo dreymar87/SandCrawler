@@ -104,3 +104,19 @@ describe("efficientOrder", () => {
     expect(gain).toBeCloseTo(1.0);
   });
 });
+
+describe("non-credit effects", () => {
+  it("records Upgrade Chip Scrap as +5 chips per level, capping at +50", () => {
+    const e = measuredEffectFor("workshop.upgrade-chip-scrap")!;
+    expect(e.unit).toBe("CHIPS");
+    expect(e.gainAt(1)).toBe(5);
+    expect(e.gainAt(10)).toBe(50);
+    expect(e.gainAt(11)).toBe(50); // capped, not extrapolated
+  });
+
+  it("keeps chip upgrades out of the credit ranking rather than inventing a rate", () => {
+    const order = efficientOrder({ upgrades: [], swingUptime: 1, limit: 60 });
+    expect(order.some((l) => l.id === "workshop.upgrade-chip-scrap")).toBe(false);
+    expect(marginalGain("workshop.upgrade-chip-scrap", 1, 1)).toBeNull();
+  });
+});
