@@ -51,6 +51,10 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // step is now DERIVED from the samples instead of hardcoded, which lets it
   // drift with the evidence rather than needing a decision each time.
   { rbLevel: 11, creditMultiplier: 21.2, superRebirthCount: 2, session: "a" },
+  // Second consecutive +0.7. Beyond rounding now: no constant step reproduces
+  // 18.1/18.7/19.3/19.9/20.5/21.2/21.9 even after rounding to one decimal
+  // (the best single line misses 4 of the 7). The step really does grow.
+  { rbLevel: 12, creditMultiplier: 21.9, superRebirthCount: 2, session: "a" },
   // Read immediately after login, same rebirth level, 1.2 lower — then back to
   // 21.2x after collecting credits with no rebirth in between. Almost certainly
   // a stale HUD rather than a real change, so it sits in its own session and
@@ -65,21 +69,33 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
 ];
 
 /**
- * Multiplier gained per rebirth level, from WITHIN-session differences only.
+ * How many levels back to measure the step over. The step is not constant —
+ * it ran +0.6 through RB10 and +0.7 after — so a slope over the whole history
+ * is a stale average, while a slope over the last few levels tracks the drift.
  *
- * Each session contributes its own endpoint slope; those are then averaged,
- * weighted by how many levels each spans. Cross-session differences are never
- * taken, because the absolute reading drifts between sessions (see the header)
- * and diffing across that gap would measure the boost, not the level.
+ * Four is a compromise: long enough that one-decimal display rounding on a
+ * single reading can't dominate, short enough to follow a real change.
+ */
+export const STEP_WINDOW_LEVELS = 4;
+
+/**
+ * Multiplier gained per rebirth level, from WITHIN-session differences only,
+ * measured over the most recent `windowLevels` of each session.
  *
- * Endpoint slope within a session rather than a mean of adjacent steps, so
- * that one-decimal display rounding on a middle reading washes out.
+ * Cross-session differences are never taken: the absolute reading drifts
+ * between sessions (see the header) and diffing across that gap would measure
+ * the drift rather than the level.
  *
- * Currently ≈0.62 from session "a" over RB6→11. Null if no session has two
+ * Endpoint slope rather than a mean of adjacent steps, so one-decimal display
+ * rounding on a middle reading washes out. Sessions are then combined weighted
+ * by the levels each contributes.
+ *
+ * Currently ≈0.67 from session "a" over RB9→12. Null if no session has two
  * readings at different levels.
  */
 export function observedMultiplierStep(
   samples: readonly RebirthMultiplierSample[] = OBSERVED_REBIRTH_MULTIPLIERS,
+  windowLevels: number = STEP_WINDOW_LEVELS,
 ): number | null {
   const bySession = new Map<string, RebirthMultiplierSample[]>();
   for (const s of samples) {
@@ -92,8 +108,11 @@ export function observedMultiplierStep(
   for (const list of bySession.values()) {
     if (list.length < 2) continue;
     const sorted = [...list].sort((a, b) => a.rbLevel - b.rbLevel);
-    const lo = sorted[0]!;
     const hi = sorted[sorted.length - 1]!;
+    // Walk back to the oldest reading still inside the window, falling back to
+    // the session's own start when it's shorter than the window.
+    const cutoff = hi.rbLevel - Math.max(1, windowLevels);
+    const lo = sorted.find((s) => s.rbLevel >= cutoff) ?? sorted[0]!;
     const span = hi.rbLevel - lo.rbLevel;
     if (span <= 0) continue;
     weighted += hi.creditMultiplier - lo.creditMultiplier;

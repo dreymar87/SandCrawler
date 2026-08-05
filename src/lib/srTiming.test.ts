@@ -210,17 +210,40 @@ describe("projection distance", () => {
 
 describe("derived multiplier step", () => {
   it("comes from the recorded samples, not a constant", () => {
-    // Session "a": RB6 = 18.1x through RB11 = 21.2x -> 3.1 over 5 levels.
-    expect(OBSERVED_MULTIPLIER_STEP).toBeCloseTo(0.62, 2);
-    expect(HIGHEST_SAMPLED_LEVEL).toBe(11);
+    // Windowed to the last 4 levels of session "a": RB9 19.9x -> RB12 21.9x.
+    expect(OBSERVED_MULTIPLIER_STEP).toBeCloseTo(0.65, 2);
+    expect(HIGHEST_SAMPLED_LEVEL).toBe(12);
+  });
+
+  // The step is NOT constant: +0.6 through RB10, +0.7 after. A full-history
+  // slope lags that; a windowed one follows it.
+  it("tracks the drift instead of averaging it away", () => {
+    const recent = observedMultiplierStep(undefined, 4)!;
+    const allTime = observedMultiplierStep(undefined, 99)!;
+    expect(recent).toBeGreaterThan(allTime);
+    expect(allTime).toBeCloseTo(0.633, 2);
+  });
+
+  it("falls back to the session start when it is shorter than the window", () => {
+    const s = observedMultiplierStep(
+      [
+        { rbLevel: 3, creditMultiplier: 10, superRebirthCount: 0, session: "z" },
+        { rbLevel: 5, creditMultiplier: 11, superRebirthCount: 0, session: "z" },
+      ],
+      20, // window far wider than the 2-level session
+    );
+    expect(s).toBeCloseTo(0.5);
   });
 
   it("uses the end-to-end slope so one rounded reading can't skew it", () => {
-    const s = observedMultiplierStep([
-      { rbLevel: 5, creditMultiplier: 10, superRebirthCount: 1, session: "x" },
-      { rbLevel: 6, creditMultiplier: 99, superRebirthCount: 1, session: "x" }, // bogus middle
-      { rbLevel: 15, creditMultiplier: 20, superRebirthCount: 1, session: "x" },
-    ]);
+    const s = observedMultiplierStep(
+      [
+        { rbLevel: 5, creditMultiplier: 10, superRebirthCount: 1, session: "x" },
+        { rbLevel: 6, creditMultiplier: 99, superRebirthCount: 1, session: "x" }, // bogus middle
+        { rbLevel: 15, creditMultiplier: 20, superRebirthCount: 1, session: "x" },
+      ],
+      99, // whole span, to isolate the endpoint behaviour from the window
+    );
     expect(s).toBeCloseTo(1.0); // (20-10)/(15-5), unaffected by the outlier
   });
 
@@ -240,12 +263,15 @@ describe("derived multiplier step", () => {
   });
 
   it("weights each session by the levels it spans", () => {
-    const s = observedMultiplierStep([
-      { rbLevel: 1, creditMultiplier: 1, superRebirthCount: 0, session: "p" },
-      { rbLevel: 11, creditMultiplier: 11, superRebirthCount: 0, session: "p" }, // 1.0 over 10
-      { rbLevel: 1, creditMultiplier: 100, superRebirthCount: 0, session: "q" },
-      { rbLevel: 2, creditMultiplier: 102, superRebirthCount: 0, session: "q" }, // 2.0 over 1
-    ]);
+    const s = observedMultiplierStep(
+      [
+        { rbLevel: 1, creditMultiplier: 1, superRebirthCount: 0, session: "p" },
+        { rbLevel: 11, creditMultiplier: 11, superRebirthCount: 0, session: "p" }, // 1.0 over 10
+        { rbLevel: 1, creditMultiplier: 100, superRebirthCount: 0, session: "q" },
+        { rbLevel: 2, creditMultiplier: 102, superRebirthCount: 0, session: "q" }, // 2.0 over 1
+      ],
+      99, // whole span, to isolate the weighting from the window
+    );
     expect(s).toBeCloseTo(12 / 11); // not the unweighted mean of 1.0 and 2.0
   });
 
