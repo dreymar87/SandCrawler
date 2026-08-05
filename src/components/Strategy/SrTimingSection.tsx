@@ -161,6 +161,14 @@ export function SrTimingSection() {
           {storedMult ? "" : " · optional"}
         </span>
       </div>
+      {/* The reading drifts between sessions — one account saw 21.2x and then
+          20.0x at the same rebirth — so a saved value can quietly go stale. */}
+      {storedMult ? (
+        <p className="font-mono text-[9.5px] text-muted-alt mb-3 leading-snug">
+          Re-check this after each login. The figure shifts with temporary boosts and companion
+          changes, not just rebirth level, so a saved reading goes stale.
+        </p>
+      ) : null}
 
       <div className="overflow-x-auto -mx-1 px-1">
         <table className="w-full font-mono text-[11px] tabular-nums">

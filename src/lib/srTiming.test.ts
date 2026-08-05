@@ -210,26 +210,52 @@ describe("projection distance", () => {
 
 describe("derived multiplier step", () => {
   it("comes from the recorded samples, not a constant", () => {
-    // RB6 = 18.1x through RB11 = 21.2x -> 3.1 over 5 levels.
+    // Session "a": RB6 = 18.1x through RB11 = 21.2x -> 3.1 over 5 levels.
     expect(OBSERVED_MULTIPLIER_STEP).toBeCloseTo(0.62, 2);
     expect(HIGHEST_SAMPLED_LEVEL).toBe(11);
   });
 
   it("uses the end-to-end slope so one rounded reading can't skew it", () => {
-    // Steps are 0.6,0.6,0.6,0.6,0.7 — a mean-of-steps gives the same answer
-    // here, but end-to-end stays stable if a middle sample rounds oddly.
     const s = observedMultiplierStep([
-      { rbLevel: 5, creditMultiplier: 10, superRebirthCount: 1 },
-      { rbLevel: 6, creditMultiplier: 99, superRebirthCount: 1 }, // bogus middle
-      { rbLevel: 15, creditMultiplier: 20, superRebirthCount: 1 },
+      { rbLevel: 5, creditMultiplier: 10, superRebirthCount: 1, session: "x" },
+      { rbLevel: 6, creditMultiplier: 99, superRebirthCount: 1, session: "x" }, // bogus middle
+      { rbLevel: 15, creditMultiplier: 20, superRebirthCount: 1, session: "x" },
     ]);
     expect(s).toBeCloseTo(1.0); // (20-10)/(15-5), unaffected by the outlier
   });
 
-  it("returns null when there aren't enough samples to derive anything", () => {
+  // The absolute reading drifts between sessions — the same account saw 21.2x
+  // and then 20.0x at RB11 — so diffing across that gap measures the drift,
+  // not the per-level step.
+  it("never diffs across sessions", () => {
+    const s = observedMultiplierStep([
+      { rbLevel: 10, creditMultiplier: 20.5, superRebirthCount: 2, session: "a" },
+      { rbLevel: 11, creditMultiplier: 21.2, superRebirthCount: 2, session: "a" },
+      // A later session reading LOWER at a HIGHER level would imply a negative
+      // step if sessions were pooled.
+      { rbLevel: 11, creditMultiplier: 20.0, superRebirthCount: 2, session: "b" },
+    ]);
+    expect(s).toBeCloseTo(0.7); // session "a" only; "b" has one reading
+    expect(s!).toBeGreaterThan(0);
+  });
+
+  it("weights each session by the levels it spans", () => {
+    const s = observedMultiplierStep([
+      { rbLevel: 1, creditMultiplier: 1, superRebirthCount: 0, session: "p" },
+      { rbLevel: 11, creditMultiplier: 11, superRebirthCount: 0, session: "p" }, // 1.0 over 10
+      { rbLevel: 1, creditMultiplier: 100, superRebirthCount: 0, session: "q" },
+      { rbLevel: 2, creditMultiplier: 102, superRebirthCount: 0, session: "q" }, // 2.0 over 1
+    ]);
+    expect(s).toBeCloseTo(12 / 11); // not the unweighted mean of 1.0 and 2.0
+  });
+
+  it("returns null when no session has two readings at different levels", () => {
     expect(observedMultiplierStep([])).toBeNull();
     expect(
-      observedMultiplierStep([{ rbLevel: 6, creditMultiplier: 18.1, superRebirthCount: 2 }]),
+      observedMultiplierStep([
+        { rbLevel: 6, creditMultiplier: 18.1, superRebirthCount: 2, session: "a" },
+        { rbLevel: 9, creditMultiplier: 19.9, superRebirthCount: 2, session: "b" },
+      ]),
     ).toBeNull();
   });
 });
