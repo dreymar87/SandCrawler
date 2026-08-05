@@ -13,14 +13,17 @@
  * `srTimingTable` takes the player's own reading and back-solves from it,
  * rather than looking anything up here.
  *
- * Worse, it isn't even stable at a FIXED rebirth level: the same account read
- * 21.2x at RB11 one session and 20.0x at RB11 the next. Something transient is
- * folded in — a Lobby Boost, a daily/event bonus, or a companion swap.
+ * A reading taken straight after login showed 20.0x at RB11, where the same
+ * account had read 21.2x at RB11 the session before — and it returned to 21.2x
+ * after collecting credits, without rebirthing. So the low reading looks like a
+ * STALE DISPLAY rather than a real change: the HUD hadn't recomputed yet, and
+ * collecting forced it to. Recorded but excluded from the fit for that reason.
  *
- * That's why samples carry a `session` and the step is derived only from
- * WITHIN-session differences. A boost that's constant across a session cancels
- * out when you subtract two readings from it, so the step survives even though
- * the absolute value doesn't. Never diff across sessions.
+ * Samples still carry a `session`, and the step is still derived only from
+ * WITHIN-session differences. That's cheap insurance: whether the drift is
+ * display staleness or a real transient boost, differences taken inside one
+ * session are unaffected by it, while differences across sessions are not.
+ * Never diff across sessions.
  */
 export interface RebirthMultiplierSample {
   rbLevel: number;
@@ -48,14 +51,16 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // step is now DERIVED from the samples instead of hardcoded, which lets it
   // drift with the evidence rather than needing a decision each time.
   { rbLevel: 11, creditMultiplier: 21.2, superRebirthCount: 2, session: "a" },
-  // Next login, same rebirth level, 1.2 lower. Whatever the transient was, it
-  // expired — so this starts a new session rather than extending the old one.
+  // Read immediately after login, same rebirth level, 1.2 lower — then back to
+  // 21.2x after collecting credits with no rebirth in between. Almost certainly
+  // a stale HUD rather than a real change, so it sits in its own session and
+  // contributes nothing to the derived step.
   {
     rbLevel: 11,
     creditMultiplier: 20.0,
     superRebirthCount: 2,
-    session: "b",
-    note: "same RB as the 21.2x reading; player level 171 -> 328 and companions changed between the two",
+    session: "b-login-stale",
+    note: "taken at login; recovered to 21.2x after collecting credits, no rebirth — treat as a display artefact, not a data point",
   },
 ];
 

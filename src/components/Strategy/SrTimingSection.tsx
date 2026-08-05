@@ -165,8 +165,8 @@ export function SrTimingSection() {
           20.0x at the same rebirth — so a saved value can quietly go stale. */}
       {storedMult ? (
         <p className="font-mono text-[9.5px] text-muted-alt mb-3 leading-snug">
-          Re-check this after each login. The figure shifts with temporary boosts and companion
-          changes, not just rebirth level, so a saved reading goes stale.
+          Read this after collecting, not straight after login — the HUD can show a low figure
+          until the first collection refreshes it.
         </p>
       ) : null}
 
