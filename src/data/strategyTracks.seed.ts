@@ -13,6 +13,34 @@
  */
 import type { NovaUpgradeState } from "../types";
 
+/**
+ * Effect magnitudes we actually know, as opposed to the cost data the
+ * workbooks publish. Almost everything here is still unknown — this map exists
+ * so the few confirmed numbers are recorded with their source instead of
+ * living in someone's head, and so a step's placement can cite one.
+ */
+export interface KnownEffect {
+  id: string;
+  level: number;
+  effect: string;
+  source: string;
+}
+
+export const KNOWN_EFFECTS: readonly KnownEffect[] = [
+  {
+    id: "workshop.scrap-value",
+    level: 3,
+    // Not a separate income stream — the swing yield is a multiple of your
+    // OWN base rate, so this scales with everything else you've built.
+    effect: "≈1.5× your base per-second yield, per swing at the scrap station",
+    source: "player-reported, in-game",
+  },
+];
+
+export function knownEffectFor(id: string): KnownEffect | undefined {
+  return KNOWN_EFFECTS.find((e) => e.id === id);
+}
+
 /** What the player is currently optimising for. */
 export type StrategyGoal = "CRYSTALS_PER_HOUR" | "CREDIT_THROUGHPUT";
 
@@ -74,6 +102,11 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
       why: "Re-crafting droids is most of what makes a fresh run slow. Cutting setup time lifts crystals/hour at every stopping level.",
     },
     {
+      id: "workshop.scrap-value",
+      throughLevel: 3,
+      why: "L3 is ~1.5× your base per-second yield PER SWING — a multiplier on your whole economy while you're actively playing, not a separate little income stream. 165 crystals for the first three levels.",
+    },
+    {
       id: "core.credits",
       throughLevel: 10,
       why: "10 levels for 200 crystals total — a fifteenth of what 10 levels of Critical Amount cost.",
@@ -122,10 +155,6 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
       id: "core.flawless-charm",
       why: "500 crystals. Flawless is a cosmetic shiny, not a tier — it does nothing for progression.",
     },
-    {
-      id: "workshop.scrap-value",
-      why: "5,605 to max and it climbs fast. Only worth it if you scrap heavily.",
-    },
     { id: "core.max-health", why: "Combat survivability — doesn't move credits or crystals." },
     { id: "core.damage", why: "Combat damage — doesn't move credits or crystals." },
   ],
@@ -145,6 +174,11 @@ const CREDIT_THROUGHPUT: StrategyTrack = {
       id: "core.credits",
       throughLevel: 10,
       why: "The direct credit multiplier and the cheapest long ladder — 200 crystals for 10 levels.",
+    },
+    {
+      id: "workshop.scrap-value",
+      throughLevel: 5,
+      why: "The only upgrade with a CONFIRMED magnitude: ~1.5× your base per-second yield per swing at L3. If you play actively rather than idling, this multiplies your whole economy.",
     },
     {
       id: "workshop.lounge-slot",
@@ -172,6 +206,8 @@ const CREDIT_THROUGHPUT: StrategyTrack = {
     { id: "featured.critical-chance", why: "58% of the shop's total cost across the two crit ladders." },
     { id: "featured.critical-amount", why: "The most expensive ladder in the game." },
     { id: "core.flawless-charm", why: "Cosmetic shiny — no progression effect." },
+    { id: "core.max-health", why: "Combat survivability — doesn't move credits." },
+    { id: "core.damage", why: "Combat damage — doesn't move credits." },
   ],
 };
 

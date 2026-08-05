@@ -101,7 +101,9 @@ export function NovaPlanSection() {
 
       <p className="font-mono text-[10px] text-muted-alt mt-3 leading-snug">
         This ordering is judgement, not maths — the community sheets publish crystal costs but not
-        how much each level actually does. The reasoning is in STRATEGY.md.
+        how much each level actually does. Steps marked{" "}
+        <span className="text-ok">✓ Measured</span> have a confirmed in-game number behind them.
+        The reasoning is in STRATEGY.md.
       </p>
     </section>
   );
@@ -123,6 +125,11 @@ function Step({ step, index }: { step: PlanStep; index: number }) {
           </span>
         </div>
         <p className="font-mono text-[9.5px] text-muted-alt leading-snug">{step.why}</p>
+        {step.knownEffect ? (
+          <p className="font-mono text-[9.5px] text-ok leading-snug mt-0.5">
+            ✓ Measured: {step.knownEffect}
+          </p>
+        ) : null}
       </div>
       <span
         className={`font-mono text-[11px] tabular-nums shrink-0 ${

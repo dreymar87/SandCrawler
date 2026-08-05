@@ -149,6 +149,27 @@ regime you're in.
    tier upgrades, and tier upgrades do double duty: more credits/s *and*
    satisfying the DIAMOND/RAINBOW requirements that gate RB17+.
 
+### Scrap Value — the one confirmed multiplier
+
+Sitting at #6, and it's the only upgrade in this whole document with a
+**measured** effect rather than an argued one:
+
+> **Scrap Value L3 ≈ 1.5× your base per-second yield, per swing.**
+
+That phrasing matters. The swing isn't a separate trickle of credits — it pays
+out as a multiple of *your own base rate*, so it scales with everything else
+you've built. Each swing at L3 is worth about a second and a half of your
+entire economy.
+
+The catch is that it only pays while you're **actively playing**. If you mostly
+idle, it does nothing; if you're at the screen swinging during a run — which
+you are, if you're grinding a Super Rebirth loop — it multiplies the whole
+thing. The first three levels are 165 ◆ (25 + 55 + 85).
+
+Two things would sharpen this further: the rest of the per-level curve, and how
+many swings a minute you actually land. With both, this stops being a judgement
+call and becomes arithmetic.
+
 ### Why the Credits ladder specifically
 
 Ten levels of each, compared:
@@ -163,6 +184,10 @@ Ten levels of each, compared:
 Credits is **15× cheaper** than Critical Amount for the same number of levels,
 and it's the one that directly shortens every run.
 
+Scrap Value sits mid-table on cost, but note the shape of its ladder: the first
+three levels are 165 ◆ and the last three are over 1,500 ◆. Buy the cheap end
+for the confirmed multiplier above; there's no case yet for chasing the tail.
+
 ---
 
 ## 4. Traps
@@ -175,9 +200,6 @@ this changes — that's the single measurement most worth making.
 
 **Flawless Charm (500 ◆).** Flawless is a cosmetic shiny, not a tier. It does
 nothing for progression.
-
-**Scrap Value (5,605 ◆).** Second-most expensive ladder. Early levels are fine;
-it climbs fast. Only worth it if you scrap heavily.
 
 **Over-grinding.** Pushing to RB20+ below ~3B/s costs you crystals per hour, as
 above. The instinct that "further is better" is wrong here.

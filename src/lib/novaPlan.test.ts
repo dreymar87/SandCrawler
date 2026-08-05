@@ -92,6 +92,29 @@ describe("planNovaPurchases", () => {
     const p = plan([], { goal: "CREDIT_THROUGHPUT" });
     expect(p.steps[0]!.id).toBe("core.credits");
   });
+
+  // Scrap Value's swing yield is a multiple of your own base rate, so it's a
+  // whole-economy multiplier for active play — not the niche upgrade it was
+  // first filed as. It's also the only step with a confirmed magnitude.
+  it("recommends Scrap Value rather than skipping it", () => {
+    for (const goal of ["CRYSTALS_PER_HOUR", "CREDIT_THROUGHPUT"] as const) {
+      const p = plan([], { goal, limit: 100 });
+      expect(p.steps.some((s) => s.id === "workshop.scrap-value")).toBe(true);
+      expect(p.skip.some((s) => s.id === "workshop.scrap-value")).toBe(false);
+    }
+  });
+
+  it("attaches the measured effect only once the block reaches that level", () => {
+    const p = plan([], { limit: 100 });
+    const scrap = p.steps.find((s) => s.id === "workshop.scrap-value")!;
+    expect(scrap.toLevel).toBeGreaterThanOrEqual(3);
+    expect(scrap.knownEffect).toMatch(/1\.5×/);
+    // A block that stops short of the measured level makes no such claim.
+    const short = plan([{ id: "workshop.scrap-value", level: 0 }], { limit: 100 }).steps.find(
+      (s) => s.id === "core.credits",
+    )!;
+    expect(short.knownEffect).toBeUndefined();
+  });
 });
 
 describe("strategy tracks", () => {

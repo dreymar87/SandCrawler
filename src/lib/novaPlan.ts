@@ -1,5 +1,5 @@
 import { NOVA_UPGRADES } from "../data/novaShop.seed";
-import { levelOf, trackFor, type StrategyGoal } from "../data/strategyTracks.seed";
+import { knownEffectFor, levelOf, trackFor, type StrategyGoal } from "../data/strategyTracks.seed";
 import type { NovaUpgradeState } from "../types";
 
 /**
@@ -36,6 +36,12 @@ export interface PlanStep {
   affordable: boolean;
   /** Why this upgrade is on the list at all (from the track). */
   why: string;
+  /**
+   * A confirmed in-game effect magnitude, when one is known. Almost nothing
+   * has one — that's the whole caveat on this feature — so a step that DOES
+   * carry one is worth distinguishing from a step resting on argument alone.
+   */
+  knownEffect?: string;
 }
 
 export interface NovaPlan {
@@ -107,6 +113,13 @@ export function planNovaPurchases({
       cumulative,
       affordable: cumulative <= balance,
       why: step.why,
+      // Only surface the effect when this block actually reaches the level
+      // it was measured at — quoting "1.5× at L3" next to an L1 buy would
+      // overstate what you're getting.
+      knownEffect: (() => {
+        const e = knownEffectFor(step.id);
+        return e && to >= e.level ? e.effect : undefined;
+      })(),
     });
   }
 
