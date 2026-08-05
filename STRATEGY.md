@@ -239,38 +239,28 @@ for the confirmed multiplier above; there's no case yet for chasing the tail.
 
 ## 4. Traps
 
-### The two crit ladders — now settled by arithmetic
+### The two crit ladders — held, not condemned
 
 Both are measured: **Critical Chance +5%/level**, **Critical Amount
-+10%/level**, and the shop text confirms they apply to *pickaxe swings*.
++10%/level**. What took two wrong turns to establish is *what they apply to*.
 
-That's what kills them. Crits only amplify **swing** yield — the same channel
-Scrap Value feeds, already hard-capped at one full-value swing per 2 s. So
-their value is a fraction of a fraction:
+They govern **swinging at a droid while it's building** — each swing removes
+time from the build, and a crit removes more. So they are a **setup-time**
+upgrade, not a credit upgrade.
 
-| Your Scrap Value level | One Critical Chance level returns |
-| --- | --- |
-| L3 (yours) | 0.042 %/crystal |
-| L5 | 0.069 %/crystal |
-| L10 | 0.139 %/crystal |
-| L19 (maxed) | 0.264 %/crystal |
+That matters because setup time is not a minor line item. It's roughly half of
+what a Super Rebirth run costs you, and the model in section 2 shows halving it
+nearly doubles crystals/hour at every stopping level. An upgrade that speeds up
+droid crafting is attacking the right thing.
 
-Against Credits, which is passive and needs no swinging at all:
+They still can't be priced against the Credits ladder, because one number is
+missing: **how many seconds a swing removes from a build**. With that, plus the
+crafting times the app already carries, both ladders become directly comparable
+to everything else.
 
-| | %/crystal |
-| --- | --- |
-| Credits L7 | **0.769** |
-| Credits L25 (the *last* level) | **0.204** |
-
-At your Scrap Value L3 a crit level is **18× worse** than Credits L7 — and
-worse than even the final Credits level until you've pushed Scrap Value past
-about L15, which is thousands of crystals in itself.
-
-Maxing both ladders costs **15,390 ◆ — 58% of the entire 26,630 shop** — to
-take expected swing yield from 1.0× to about 3.5×. Skip them.
-
-*(Assumes a critical hit is 2× base. If it's higher the crit ladders improve,
-but they'd need a base crit near 10× to catch Credits at your scrap level.)*
+Until then: don't buy 15,390 ◆ worth on faith, but don't write them off either.
+Measure the per-swing time cut first — it's the cheapest high-value measurement
+left.
 
 **Flawless Charm (500 ◆).** Flawless is a cosmetic shiny, not a tier. It does
 nothing for progression.
@@ -309,8 +299,8 @@ it again. The highest-value measurements, in order:
    grants, and the base you reset to after a Super Rebirth. This is the one
    that would remove the known bias from the timing model, and it's now the
    single most consequential unknown left.
-2. **The base critical multiplier** — is a crit 2× base, or more? It only
-   changes the crit verdict if it's near 10×, but it's cheap to check.
+2. **Seconds a build-swing removes** — the one number that would let the two
+   crit ladders (15,390 ◆, 58% of the shop) be priced instead of held.
 3. **Baseline droid crafting rate** — Crafting Speed adds +0.1/sec per level,
    but without the baseline that can't be turned into hours saved, which is
    what the Super Rebirth model actually consumes.

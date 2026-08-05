@@ -31,7 +31,7 @@ export interface MeasuredEffect {
    * Everything else is recorded but excluded from the ranking — see
    * `whyNotRanked` — rather than converted with an invented exchange rate.
    */
-  unit: "CREDIT_RATE" | "CHIPS" | "SWING_CRIT" | "CRAFT_SPEED" | "SELL_CHANCE";
+  unit: "CREDIT_RATE" | "CHIPS" | "BUILD_TIME" | "CRAFT_SPEED" | "SELL_CHANCE";
   /** Cumulative gain at `level`, in whatever `unit` says. */
   gainAt: (level: number) => number;
   /** Why this can't join the credit ranking. Required for non-CREDIT_RATE. */
@@ -85,25 +85,30 @@ export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
     whyNotRanked: "Chips aren't credits, and there's no honest exchange rate between them.",
     source: "player-reported, in-game",
   },
+  // Crits apply to swinging at DROIDS WHILE BUILDING — each swing removes time
+  // from the build. They buy setup time, not credits. An earlier pass priced
+  // them as a credit multiplier and called them a trap; that arithmetic was
+  // measuring the wrong thing.
   {
     id: "featured.critical-chance",
-    unit: "SWING_CRIT",
+    unit: "BUILD_TIME",
     // In-game at L1: "+5% -> 10% Critical Chance" — 5 percentage points a level.
     gainAt: (n) => 0.05 * n,
     activeOnly: true,
-    effect: "+5% critical chance per level on pickaxe swings (L18 = 90%)",
+    effect: "+5% critical chance per level when swinging at a droid under construction",
     whyNotRanked:
-      "Crits multiply SWING yield, so their value depends on your Scrap Value level and on Critical Amount — not an independent purchase the greedy ranking can price.",
+      "Buys BUILD TIME, not credits/s — setup time, which the SR model says is worth as much as credit rate. Pricing it needs the seconds a swing removes, which nobody has measured.",
     source: "in-game shop text",
   },
   {
     id: "featured.critical-amount",
-    unit: "SWING_CRIT",
+    unit: "BUILD_TIME",
     // In-game at L0: "+10% Critical Amount" — 10 percentage points a level.
     gainAt: (n) => 0.1 * n,
     activeOnly: true,
-    effect: "+10% critical amount per level on pickaxe swings",
-    whyNotRanked: "Same coupling as Critical Chance — worthless without chance, and both scale off Scrap Value.",
+    effect: "+10% critical amount per level — a bigger time cut when a build swing crits",
+    whyNotRanked:
+      "Same as Critical Chance: build time, not credits, and worth nothing without chance to trigger it.",
     source: "in-game shop text",
   },
   {
@@ -243,11 +248,11 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
   skip: [
     {
       id: "featured.critical-chance",
-      why: "Now measurable, and it loses badly: +5% crit chance a level only amplifies SWING yield, so at Scrap Value L3 one level returns 0.04% of base per crystal against Credits' 0.77%. Roughly 18× worse, and it needs you swinging.",
+      why: "HELD, not dismissed. Crits speed up droid BUILDS (each swing cuts build time), and setup time is worth as much as credit rate in the SR model — so these may be good. Nobody has measured the seconds a swing removes, so they can't be priced against the Credits ladder yet.",
     },
     {
       id: "featured.critical-amount",
-      why: "+10% crit amount a level, and worth nothing without crit chance to trigger it. Maxing both ladders is 15,390 crystals — 58% of the shop — for ~3.5× swing yield that's already capped at one swing per 2 s.",
+      why: "Same: a build-time upgrade, unpriceable until the per-swing time cut is measured. Worth nothing without Critical Chance to trigger it, and the pair is 15,390 crystals — 58% of the shop — so it's worth measuring before committing.",
     },
     {
       id: "core.flawless-charm",
