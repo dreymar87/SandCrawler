@@ -149,26 +149,50 @@ regime you're in.
    tier upgrades, and tier upgrades do double duty: more credits/s *and*
    satisfying the DIAMOND/RAINBOW requirements that gate RB17+.
 
-### Scrap Value — the one confirmed multiplier
+### Credits vs Scrap Value — this part is arithmetic
 
-Sitting at #6, and it's the only upgrade in this whole document with a
-**measured** effect rather than an argued one:
+Two upgrades now have measured effects, so their order doesn't need arguing:
 
-> **Scrap Value L3 ≈ 1.5× your base per-second yield, per swing.**
+| Upgrade | Effect | Passive? |
+| --- | --- | --- |
+| **Credits** | +20% of base credits/s per level, additive | yes |
+| **Scrap Value** | +0.5× base yield *per swing* per level (L3 = 1.5×) | no — active only |
 
-That phrasing matters. The swing isn't a separate trickle of credits — it pays
-out as a multiple of *your own base rate*, so it scales with everything else
-you've built. Each swing at L3 is worth about a second and a half of your
-entire economy.
+Scrap Value's swing yield is a multiple of *your own base rate*, so it scales
+with everything else you've built. But the game hard-caps full-value swings at
+**one every two seconds**, which puts a ceiling on it: at 0.5 swings/second,
+each level is worth `0.5 × 0.5 = +25%` of base credits/s.
 
-The catch is that it only pays while you're **actively playing**. If you mostly
-idle, it does nothing; if you're at the screen swinging during a run — which
-you are, if you're grinding a Super Rebirth loop — it multiplies the whole
-thing. The first three levels are 165 ◆ (25 + 55 + 85).
+Converting both to *percent of base gained per crystal spent* gives a single
+ranking:
 
-Two things would sharpen this further: the rest of the per-level curve, and how
-many swings a minute you actually land. With both, this stops being a judgement
-call and becomes arithmetic.
+| Buy | Cost | Gain | Per crystal |
+| --- | --- | --- | --- |
+| Credits L1–5 | 50 ◆ | +100% | 10.0 → 1.11 |
+| **Scrap Value L1** | 25 ◆ | +25% | 1.00 |
+| Credits L6–11 | 192 ◆ | +120% | 0.91 → 0.48 |
+| **Scrap Value L2** | 55 ◆ | +25% | 0.45 |
+| Credits L12+ | … | … | 0.43 → 0.20 |
+
+**Scrap Value interleaves; it doesn't lead.** Credits L1–5 beat it outright —
+50 crystals doubles your base rate, which nothing else in the shop comes close
+to. Scrap L1 then slots in ahead of Credits L6.
+
+And that's at *perfect* uptime. Scrap Value only pays while you're at the
+screen swinging, so its real value scales with the fraction of a run you spend
+doing that:
+
+- **Always swinging** — Scrap L1 ranks 6th, just after Credits L5.
+- **Half the time** — it falls behind Credits L11.
+- **Never** — it's worth nothing; buy Credits only.
+
+The app computes this ranking live and takes your swing uptime as a setting.
+
+> **One assumption to check.** This treats the Credits bonus as *additive*
+> (L5 = +100%, L25 = +500%). If it's actually multiplicative (1.2^n), Credits
+> is far stronger still and dominates everything. You can tell them apart by
+> watching the displayed multiplier from L1 to L2: additive goes 20% → 40%,
+> multiplicative goes 1.20× → 1.44×.
 
 ### Why the Credits ladder specifically
 

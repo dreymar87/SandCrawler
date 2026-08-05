@@ -104,16 +104,29 @@ describe("planNovaPurchases", () => {
     }
   });
 
-  it("attaches the measured effect only once the block reaches that level", () => {
+  it("attaches a measured effect only to upgrades that have one", () => {
     const p = plan([], { limit: 100 });
-    const scrap = p.steps.find((s) => s.id === "workshop.scrap-value")!;
-    expect(scrap.toLevel).toBeGreaterThanOrEqual(3);
-    expect(scrap.knownEffect).toMatch(/1\.5×/);
-    // A block that stops short of the measured level makes no such claim.
-    const short = plan([{ id: "workshop.scrap-value", level: 0 }], { limit: 100 }).steps.find(
-      (s) => s.id === "core.credits",
-    )!;
-    expect(short.knownEffect).toBeUndefined();
+    // Both measured upgrades carry their per-level curve...
+    expect(p.steps.find((s) => s.id === "workshop.scrap-value")!.knownEffect).toMatch(/0\.5×/);
+    expect(p.steps.find((s) => s.id === "core.credits")!.knownEffect).toMatch(/20%/);
+    // ...and everything resting on argument alone carries none.
+    const unmeasured = p.steps.filter(
+      (s) => s.id !== "workshop.scrap-value" && s.id !== "core.credits",
+    );
+    expect(unmeasured.length).toBeGreaterThan(0);
+    for (const s of unmeasured) expect(s.knownEffect).toBeUndefined();
+  });
+
+  // The computed ranking (lib/upgradeValue) says Credits L1-5 beat Scrap L1,
+  // which beats Credits L6+. The track's milestone order must not contradict
+  // the arithmetic sitting next to it in the UI.
+  it("orders the measured upgrades to match the computed ranking", () => {
+    const p = plan([], { limit: 100 });
+    const idx = (id: string, toLevel: number) =>
+      p.steps.findIndex((s) => s.id === id && s.toLevel === toLevel);
+    expect(idx("core.credits", 5)).toBeLessThan(idx("workshop.scrap-value", 1));
+    expect(idx("workshop.scrap-value", 1)).toBeLessThan(idx("core.credits", 11));
+    expect(idx("core.credits", 11)).toBeLessThan(idx("workshop.scrap-value", 2));
   });
 });
 

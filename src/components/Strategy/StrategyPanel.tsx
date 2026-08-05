@@ -1,4 +1,5 @@
 import { SrTimingSection } from "./SrTimingSection";
+import { MeasuredValueSection } from "./MeasuredValueSection";
 import { NovaPlanSection } from "./NovaPlanSection";
 import { CycleStrategySection } from "./CycleStrategySection";
 import { CreditStrategySection } from "./CreditStrategySection";
@@ -8,9 +9,13 @@ import { CreditStrategySection } from "./CreditStrategySection";
  * actually matter:
  *
  *   1. When to Super Rebirth   — sets your crystal income for everything else
- *   2. What to buy with them   — the Nova Shop ordering
- *   3. Which droids to keep    — the cycle's keeper set
- *   4. How to raise credits/s  — deployment moves, which feed back into (1)
+ *   2. Measured value          — computed ranking, where effects are known
+ *   3. What to buy with them   — the rest of the Nova Shop, ordered by argument
+ *   4. Which droids to keep    — the cycle's keeper set
+ *   5. How to raise credits/s  — deployment moves, which feed back into (1)
+ *
+ * (2) and (3) are deliberately separate: one is arithmetic, the other is
+ * judgement, and the UI shouldn't blur which is which.
  *
  * The first two are new; the last two moved here from the Rebirths tab, which
  * had grown to six sections and mixed "what IS my state" with "what SHOULD I
@@ -20,6 +25,7 @@ export function StrategyPanel() {
   return (
     <>
       <SrTimingSection />
+      <MeasuredValueSection />
       <NovaPlanSection />
       <CycleStrategySection />
       <CreditStrategySection />

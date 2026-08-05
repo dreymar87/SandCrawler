@@ -354,6 +354,13 @@ export interface UiPrefs {
    */
   srSetupHours?: number;
   /**
+   * Fraction of a run (0..1) you actually spend swinging at the scrap station.
+   * Scales active-only upgrades in the measured-value ranking — Scrap Value is
+   * worth +25% of base per level at full uptime and nothing at zero.
+   * Defaults to 0.5.
+   */
+  swingUptime?: number;
+  /**
    * Emit device haptics on Droidex taps and other interactions. Defaults
    * on (undefined = true); explicit `false` silences `haptic()`.
    */

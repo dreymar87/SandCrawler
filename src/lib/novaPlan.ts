@@ -1,5 +1,5 @@
 import { NOVA_UPGRADES } from "../data/novaShop.seed";
-import { knownEffectFor, levelOf, trackFor, type StrategyGoal } from "../data/strategyTracks.seed";
+import { levelOf, measuredEffectFor, trackFor, type StrategyGoal } from "../data/strategyTracks.seed";
 import type { NovaUpgradeState } from "../types";
 
 /**
@@ -113,13 +113,7 @@ export function planNovaPurchases({
       cumulative,
       affordable: cumulative <= balance,
       why: step.why,
-      // Only surface the effect when this block actually reaches the level
-      // it was measured at — quoting "1.5× at L3" next to an L1 buy would
-      // overstate what you're getting.
-      knownEffect: (() => {
-        const e = knownEffectFor(step.id);
-        return e && to >= e.level ? e.effect : undefined;
-      })(),
+      knownEffect: measuredEffectFor(step.id)?.effect,
     });
   }
 

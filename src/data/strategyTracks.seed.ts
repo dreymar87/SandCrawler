@@ -14,31 +14,59 @@
 import type { NovaUpgradeState } from "../types";
 
 /**
- * Effect magnitudes we actually know, as opposed to the cost data the
- * workbooks publish. Almost everything here is still unknown — this map exists
- * so the few confirmed numbers are recorded with their source instead of
- * living in someone's head, and so a step's placement can cite one.
+ * Effect magnitudes we actually KNOW, as opposed to the cost data the
+ * workbooks publish.
+ *
+ * Almost every upgrade is still unmeasured — that's why the tracks below are
+ * judgement. For the handful with real numbers, `gainAt` expresses the effect
+ * in one common currency: **the fraction of your base credits/s it adds at
+ * that level**. That makes different upgrades directly comparable, so
+ * `lib/upgradeValue.ts` can rank them by gain-per-crystal instead of arguing.
  */
-export interface KnownEffect {
+export interface MeasuredEffect {
   id: string;
-  level: number;
+  /** Cumulative gain at `level`, as a multiple of base credits/s. */
+  gainAt: (level: number) => number;
+  /**
+   * True when the gain only accrues while you're actively playing. Passive
+   * upgrades bank value while you're away; active ones are scaled by how much
+   * of a run you actually spend at the screen.
+   */
+  activeOnly: boolean;
+  /** Human-readable statement of the effect. */
   effect: string;
   source: string;
 }
 
-export const KNOWN_EFFECTS: readonly KnownEffect[] = [
+/**
+ * Full-value swings per second at the scrap station. The game hard-caps this
+ * at roughly one swing every two seconds — swinging faster doesn't pay full
+ * value — so it's the ceiling on what Scrap Value can be worth.
+ */
+export const SCRAP_SWINGS_PER_SEC = 0.5;
+
+export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
+  {
+    id: "core.credits",
+    // +20% of base per level, additive: L5 = +100%, L25 = +500%.
+    gainAt: (n) => 0.2 * n,
+    activeOnly: false,
+    effect: "+20% of base credits/s per level",
+    source: "player-reported, in-game",
+  },
   {
     id: "workshop.scrap-value",
-    level: 3,
-    // Not a separate income stream — the swing yield is a multiple of your
-    // OWN base rate, so this scales with everything else you've built.
-    effect: "≈1.5× your base per-second yield, per swing at the scrap station",
+    // 0.5x base yield per swing per level (L1 = 0.5x, L2 = 1.0x, L3 = 1.5x...).
+    // At the one-swing-per-2s cap that's 0.25x base per second per level.
+    gainAt: (n) => 0.5 * n * SCRAP_SWINGS_PER_SEC,
+    activeOnly: true,
+    effect: "+0.5× base yield per swing per level (L3 = 1.5×), capped at one full-value swing / 2 s",
     source: "player-reported, in-game",
   },
 ];
 
-export function knownEffectFor(id: string): KnownEffect | undefined {
-  return KNOWN_EFFECTS.find((e) => e.id === id);
+export function measuredEffectFor(id: string): MeasuredEffect | undefined {
+  return MEASURED_EFFECTS.find((e) => e.id === id);
 }
 
 /** What the player is currently optimising for. */
@@ -89,7 +117,7 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
     {
       id: "core.credits",
       throughLevel: 5,
-      why: "The direct credit multiplier, and the flattest long ladder in the shop — 5 levels for 50 crystals.",
+      why: "+20% of base credits/s per level, so L5 DOUBLES your rate for 50 crystals. The best value per crystal of anything measured.",
     },
     {
       id: "workshop.collect-all",
@@ -103,13 +131,18 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
     },
     {
       id: "workshop.scrap-value",
-      throughLevel: 3,
-      why: "L3 is ~1.5× your base per-second yield PER SWING — a multiplier on your whole economy while you're actively playing, not a separate little income stream. 165 crystals for the first three levels.",
+      throughLevel: 1,
+      why: "Computed, not guessed: at the one-swing-per-2s cap L1 is worth +25% of base credits/s for 25 crystals — better per crystal than Credits L6 onward, but NOT better than Credits L1-5. Only pays while you're actively swinging.",
     },
     {
       id: "core.credits",
-      throughLevel: 10,
-      why: "10 levels for 200 crystals total — a fifteenth of what 10 levels of Critical Amount cost.",
+      throughLevel: 11,
+      why: "Every level here still beats the next Scrap Value level per crystal. +20% of base each, additively.",
+    },
+    {
+      id: "workshop.scrap-value",
+      throughLevel: 2,
+      why: "L2 overtakes Credits L12 per crystal — the point where interleaving pays.",
     },
     {
       id: "core.double-daily-quests",
@@ -177,8 +210,8 @@ const CREDIT_THROUGHPUT: StrategyTrack = {
     },
     {
       id: "workshop.scrap-value",
-      throughLevel: 5,
-      why: "The only upgrade with a CONFIRMED magnitude: ~1.5× your base per-second yield per swing at L3. If you play actively rather than idling, this multiplies your whole economy.",
+      throughLevel: 2,
+      why: "+25% of base credits/s per level at the swing cap — worth interleaving with the Credits ladder, but only while you're actively at the screen.",
     },
     {
       id: "workshop.lounge-slot",
