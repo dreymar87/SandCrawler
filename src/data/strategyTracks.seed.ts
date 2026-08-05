@@ -364,4 +364,15 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   { rbLevel: 7, creditMultiplier: 18.7, superRebirthCount: 2 },
   { rbLevel: 8, creditMultiplier: 19.3, superRebirthCount: 2 },
   { rbLevel: 9, creditMultiplier: 19.9, superRebirthCount: 2 },
+  { rbLevel: 10, creditMultiplier: 20.5, superRebirthCount: 2 },
 ];
+
+/**
+ * Least-squares-free fit over the samples above: every observed step is
+ * exactly +0.6, with zero residual against `14.5 + 0.6 x rbLevel` across
+ * RB6-10. Solid within that range — and deliberately not treated as valid
+ * beyond it, since the sampling player reports the step becoming less
+ * consistent at higher rebirths. `SrStop.levelsProjected` exists so the UI
+ * can show how far past observation any given row is reaching.
+ */
+export const OBSERVED_MULTIPLIER_FIT = { intercept: 14.5, perLevel: 0.6 } as const;
