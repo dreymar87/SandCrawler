@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   bestSrStop,
   OBSERVED_MULTIPLIER_STEP,
+  PROJECTION_WARN_LEVELS,
   srTimingTable,
   type SrStop,
 } from "../../lib/srTiming";
@@ -204,8 +205,10 @@ export function SrTimingSection() {
           <>
             Using your {storedMult}× at RB{currentLevel}, climbing ~
             {OBSERVED_MULTIPLIER_STEP} a level, so the grind figures account for your rate rising as
-            you go. Still a slight floor: Super Rebirth also raises the multiplier every future run
-            starts from, which one run can't show.
+            you go. Rows marked <span className="text-warn">~</span> project that step more than{" "}
+            {PROJECTION_WARN_LEVELS} levels past where you are — the correction is largest exactly
+            where it's least observed, so treat those as rough. Still a floor besides: Super Rebirth
+            raises the multiplier every future run starts from, which one run can't show.
           </>
         ) : (
           <>
@@ -239,6 +242,14 @@ function Row({
       <td className="py-1.5 text-left">
         RB{row.level}
         {isBest ? <span className="ml-1.5 text-[9px] uppercase tracking-wider">best</span> : null}
+        {(row.levelsProjected ?? 0) > PROJECTION_WARN_LEVELS ? (
+          <span
+            className="ml-1 text-[9px] text-warn"
+            title={`Multiplier projected ${row.levelsProjected} levels past anything you've observed`}
+          >
+            ~
+          </span>
+        ) : null}
       </td>
       <td className="py-1.5 text-right">{row.crystals}</td>
       <td className="py-1.5 text-right">{hasRate ? formatHours(row.runHours) : "—"}</td>

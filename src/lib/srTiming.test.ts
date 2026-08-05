@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { bestSrStop, cumulativeCreditsTo, srTimingTable } from "./srTiming";
+import {
+  bestSrStop,
+  cumulativeCreditsTo,
+  PROJECTION_WARN_LEVELS,
+  srTimingTable,
+} from "./srTiming";
 import { parseCredits } from "./credits";
 
 const M = 1_000_000n;
@@ -169,5 +174,33 @@ describe("climbing multiplier curve", () => {
   it("still handles a zero rate without NaN", () => {
     const rows = withCurve(0n);
     expect(rows.every((r) => r.crystalsPerHour === 0)).toBe(true);
+  });
+});
+
+describe("projection distance", () => {
+  const curve = { atCurrentLevel: 19.9, currentLevel: 9, perLevel: 0.6 };
+  const rows = srTimingTable({
+    cycle: 1,
+    creditsPerSec: 947_000n,
+    setupHours: 2,
+    multiplier: curve,
+  });
+
+  it("reports how far past the player each row projects", () => {
+    expect(rows.find((r) => r.level === 12)!.levelsProjected).toBe(3);
+    expect(rows.find((r) => r.level === 25)!.levelsProjected).toBe(16);
+  });
+
+  it("is unset on the flat model, which projects nothing", () => {
+    const flat = srTimingTable({ cycle: 1, creditsPerSec: 947_000n, setupHours: 2 });
+    expect(flat.every((r) => r.levelsProjected === undefined)).toBe(true);
+  });
+
+  // The correction and the uncertainty grow together: the rows the climbing
+  // model helps most are the ones furthest from anything observed.
+  it("flags the far rows, where the correction is largest", () => {
+    const far = rows.filter((r) => (r.levelsProjected ?? 0) > PROJECTION_WARN_LEVELS);
+    expect(far.length).toBeGreaterThan(0);
+    expect(Math.min(...far.map((r) => r.level))).toBeGreaterThan(curve.currentLevel);
   });
 });

@@ -96,7 +96,24 @@ export interface SrStop {
   runHours: number;
   /** The figure to maximise: crystals ÷ runHours. */
   crystalsPerHour: number;
+  /**
+   * How many rebirth levels past the player's current one this row projects
+   * the multiplier curve. Only set when a curve is in use.
+   *
+   * Worth surfacing because the correction and the uncertainty grow together:
+   * the climbing model helps most at the top of the ladder, which is exactly
+   * where it's extrapolating furthest from anything observed. A row 16 levels
+   * out is a straight-line guess, and players report the per-level step gets
+   * less consistent at higher rebirths.
+   */
+  levelsProjected?: number;
 }
+
+/**
+ * Beyond this many levels past the player's current one, a projected
+ * multiplier is far enough from observation to be worth flagging in the UI.
+ */
+export const PROJECTION_WARN_LEVELS = 6;
 
 const TRILLION = 1e12;
 
@@ -193,6 +210,9 @@ export function srTimingTable({
       marginal,
       runHours,
       crystalsPerHour: Number.isFinite(runHours) && runHours > 0 ? bonus.crystals / runHours : 0,
+      levelsProjected: multiplier
+        ? Math.max(0, bonus.rbLevel - multiplier.currentLevel)
+        : undefined,
     });
     prev = { cumCredits, crystals: bonus.crystals };
   }

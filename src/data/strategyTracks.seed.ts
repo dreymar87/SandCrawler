@@ -362,4 +362,6 @@ export interface RebirthMultiplierSample {
 export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = [
   { rbLevel: 6, creditMultiplier: 18.1, superRebirthCount: 2 },
   { rbLevel: 7, creditMultiplier: 18.7, superRebirthCount: 2 },
+  { rbLevel: 8, creditMultiplier: 19.3, superRebirthCount: 2 },
+  { rbLevel: 9, creditMultiplier: 19.9, superRebirthCount: 2 },
 ];
