@@ -214,11 +214,8 @@ at L10** — but chips aren't credits, and there's no honest exchange rate
 between them. It's recorded, and deliberately left out of the ranking above
 rather than converted with a made-up number.
 
-> **One assumption to check.** This treats the Credits bonus as *additive*
-> (L5 = +100%, L25 = +500%). If it's actually multiplicative (1.2^n), Credits
-> is far stronger still and dominates everything. You can tell them apart by
-> watching the displayed multiplier from L1 to L2: additive goes 20% → 40%,
-> multiplicative goes 1.20× → 1.44×.
+**Credits is confirmed additive.** The shop shows L6 as `+120% → 140%`, which
+is exactly 6 × 20% going to 7 × 20%. No assumption left here.
 
 ### Why the Credits ladder specifically
 
@@ -242,11 +239,38 @@ for the confirmed multiplier above; there's no case yet for chasing the tail.
 
 ## 4. Traps
 
-**The two crit ladders.** Critical Chance (5,670 ◆) and Critical Amount
-(9,720 ◆) total **15,390 ◆ — 58% of the entire shop's 26,630**. At RB19 rates
-that's over 200 Super Rebirths for two upgrades with no established effect on
-credit throughput. If you learn that crits drive mining income substantially,
-this changes — that's the single measurement most worth making.
+### The two crit ladders — now settled by arithmetic
+
+Both are measured: **Critical Chance +5%/level**, **Critical Amount
++10%/level**, and the shop text confirms they apply to *pickaxe swings*.
+
+That's what kills them. Crits only amplify **swing** yield — the same channel
+Scrap Value feeds, already hard-capped at one full-value swing per 2 s. So
+their value is a fraction of a fraction:
+
+| Your Scrap Value level | One Critical Chance level returns |
+| --- | --- |
+| L3 (yours) | 0.042 %/crystal |
+| L5 | 0.069 %/crystal |
+| L10 | 0.139 %/crystal |
+| L19 (maxed) | 0.264 %/crystal |
+
+Against Credits, which is passive and needs no swinging at all:
+
+| | %/crystal |
+| --- | --- |
+| Credits L7 | **0.769** |
+| Credits L25 (the *last* level) | **0.204** |
+
+At your Scrap Value L3 a crit level is **18× worse** than Credits L7 — and
+worse than even the final Credits level until you've pushed Scrap Value past
+about L15, which is thousands of crystals in itself.
+
+Maxing both ladders costs **15,390 ◆ — 58% of the entire 26,630 shop** — to
+take expected swing yield from 1.0× to about 3.5×. Skip them.
+
+*(Assumes a critical hit is 2× base. If it's higher the crit ladders improve,
+but they'd need a base crit near 10× to catch Credits at your scrap level.)*
 
 **Flawless Charm (500 ◆).** Flawless is a cosmetic shiny, not a tier. It does
 nothing for progression.
@@ -283,15 +307,30 @@ it again. The highest-value measurements, in order:
 
 1. **The per-rebirth multiplier curve** — the credit/XP bonus each RB level
    grants, and the base you reset to after a Super Rebirth. This is the one
-   that would remove the known bias from the timing model, which is the
-   single most consequential number in this document.
-2. **Critical Amount L1** — decides whether 58% of the shop is a trap or the
-   main event.
-3. **Crafting Speed L1** — converts a setup-time saving into hours, which the
-   SR model consumes directly.
+   that would remove the known bias from the timing model, and it's now the
+   single most consequential unknown left.
+2. **The base critical multiplier** — is a crit 2× base, or more? It only
+   changes the crit verdict if it's near 10×, but it's cheap to check.
+3. **Baseline droid crafting rate** — Crafting Speed adds +0.1/sec per level,
+   but without the baseline that can't be turned into hours saved, which is
+   what the Super Rebirth model actually consumes.
 
-Already measured: Credits (+20%/level), Scrap Value (+0.5× per swing per
-level, one full-value swing / 2 s), Upgrade Chip Scrap (+5 chips/level to +50).
+**Already measured**, all confirmed against the live shop:
+
+| Upgrade | Effect |
+| --- | --- |
+| Credits | +20% of base credits/s per level (additive) |
+| Scrap Value | +0.5× base yield per swing per level; 1 full-value swing / 2 s |
+| Critical Chance | +5% crit chance per level, on pickaxe swings |
+| Critical Amount | +10% crit amount per level, on pickaxe swings |
+| Upgrade Chip Scrap | +5 chips per level, capping at +50 (L10) |
+| Crafting Speed | +0.1/sec droid crafting per level |
+| Jawa Bartering | +5% chance of double rewards per droid sold, per level |
+
+Every crystal cost in this document has also been spot-checked against the
+in-game shop — Credits L6→7 (26 ◆), Jawa Bartering L1→2 (15 ◆), Critical
+Chance L1→2 (90 ◆), Critical Amount L0→1 (30 ◆) and Crafting Speed L1→2
+(18 ◆) all match the imported sheet data exactly.
 
 If you record those, the Strategy tab can rank the shop on measured returns
 instead of the argument above.

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { cumulativeValue, efficientOrder, marginalGain } from "./upgradeValue";
-import { measuredEffectFor, SCRAP_SWINGS_PER_SEC } from "../data/strategyTracks.seed";
+import {
+  measuredEffectFor,
+  MEASURED_EFFECTS,
+  SCRAP_SWINGS_PER_SEC,
+} from "../data/strategyTracks.seed";
 
 const key = (l: { id: string; level: number }) => `${l.id}@${l.level}`;
 
@@ -106,6 +110,27 @@ describe("efficientOrder", () => {
 });
 
 describe("non-credit effects", () => {
+  it("every non-credit effect explains why it can't be ranked", () => {
+    for (const e of MEASURED_EFFECTS) {
+      if (e.unit === "CREDIT_RATE") expect(e.whyNotRanked, e.id).toBeUndefined();
+      else expect(e.whyNotRanked, e.id).toBeTruthy();
+    }
+  });
+
+  it("records the shop's stated per-level effects", () => {
+    // Straight from the in-game upgrade panels.
+    expect(measuredEffectFor("featured.critical-chance")!.gainAt(1)).toBeCloseTo(0.05);
+    expect(measuredEffectFor("featured.critical-chance")!.gainAt(2)).toBeCloseTo(0.10);
+    expect(measuredEffectFor("featured.critical-amount")!.gainAt(1)).toBeCloseTo(0.10);
+    expect(measuredEffectFor("workshop.crafting-speed")!.gainAt(2)).toBeCloseTo(0.2);
+    expect(measuredEffectFor("core.jawa-bartering")!.gainAt(2)).toBeCloseTo(0.10);
+  });
+
+  it("keeps the coupled crit ladders out of the independent ranking", () => {
+    const order = efficientOrder({ upgrades: [], swingUptime: 1, limit: 80 });
+    expect(order.some((l) => l.id.startsWith("featured.critical"))).toBe(false);
+  });
+
   it("records Upgrade Chip Scrap as +5 chips per level, capping at +50", () => {
     const e = measuredEffectFor("workshop.upgrade-chip-scrap")!;
     expect(e.unit).toBe("CHIPS");

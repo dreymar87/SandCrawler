@@ -27,13 +27,15 @@ export interface MeasuredEffect {
   id: string;
   /**
    * What `gainAt` is denominated in. Only `CREDIT_RATE` effects share a
-   * currency and can be ranked against each other by `lib/upgradeValue.ts`;
-   * a chip upgrade and a credit upgrade have no honest exchange rate, so the
-   * ranking excludes anything else rather than inventing one.
+   * currency and can be ranked against each other by `lib/upgradeValue.ts`.
+   * Everything else is recorded but excluded from the ranking — see
+   * `whyNotRanked` — rather than converted with an invented exchange rate.
    */
-  unit: "CREDIT_RATE" | "CHIPS";
-  /** Cumulative gain at `level` — a multiple of base credits/s, or flat chips. */
+  unit: "CREDIT_RATE" | "CHIPS" | "SWING_CRIT" | "CRAFT_SPEED" | "SELL_CHANCE";
+  /** Cumulative gain at `level`, in whatever `unit` says. */
   gainAt: (level: number) => number;
+  /** Why this can't join the credit ranking. Required for non-CREDIT_RATE. */
+  whyNotRanked?: string;
   /**
    * True when the gain only accrues while you're actively playing. Passive
    * upgrades bank value while you're away; active ones are scaled by how much
@@ -80,7 +82,51 @@ export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
     gainAt: (n) => 5 * Math.min(n, 10),
     activeOnly: false,
     effect: "+5 upgrade chips per level, capping at +50 (L10)",
+    whyNotRanked: "Chips aren't credits, and there's no honest exchange rate between them.",
     source: "player-reported, in-game",
+  },
+  {
+    id: "featured.critical-chance",
+    unit: "SWING_CRIT",
+    // In-game at L1: "+5% -> 10% Critical Chance" — 5 percentage points a level.
+    gainAt: (n) => 0.05 * n,
+    activeOnly: true,
+    effect: "+5% critical chance per level on pickaxe swings (L18 = 90%)",
+    whyNotRanked:
+      "Crits multiply SWING yield, so their value depends on your Scrap Value level and on Critical Amount — not an independent purchase the greedy ranking can price.",
+    source: "in-game shop text",
+  },
+  {
+    id: "featured.critical-amount",
+    unit: "SWING_CRIT",
+    // In-game at L0: "+10% Critical Amount" — 10 percentage points a level.
+    gainAt: (n) => 0.1 * n,
+    activeOnly: true,
+    effect: "+10% critical amount per level on pickaxe swings",
+    whyNotRanked: "Same coupling as Critical Chance — worthless without chance, and both scale off Scrap Value.",
+    source: "in-game shop text",
+  },
+  {
+    id: "workshop.crafting-speed",
+    unit: "CRAFT_SPEED",
+    // In-game at L1: "+0.1 -> 0.2/sec Droid crafting".
+    gainAt: (n) => 0.1 * n,
+    activeOnly: false,
+    effect: "+0.1/sec droid crafting per level",
+    whyNotRanked:
+      "Buys setup TIME, not credits/s — it feeds the Super Rebirth timing model instead, where cutting setup is worth as much as raising income.",
+    source: "in-game shop text",
+  },
+  {
+    id: "core.jawa-bartering",
+    unit: "SELL_CHANCE",
+    // In-game at L1: "5% -> 10% chance to get double rewards when selling a Droid."
+    gainAt: (n) => 0.05 * n,
+    activeOnly: false,
+    effect: "+5% chance of double rewards when selling a droid, per level (L5 = 25%)",
+    whyNotRanked:
+      "Pays on droid sales, not on your per-second rate — a different denominator from everything in the ranking.",
+    source: "in-game shop text",
   },
 ];
 
@@ -197,11 +243,11 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
   skip: [
     {
       id: "featured.critical-chance",
-      why: "5,670 crystals to max — with Critical Amount that's 58% of the entire shop, for no established effect on credit throughput.",
+      why: "Now measurable, and it loses badly: +5% crit chance a level only amplifies SWING yield, so at Scrap Value L3 one level returns 0.04% of base per crystal against Credits' 0.77%. Roughly 18× worse, and it needs you swinging.",
     },
     {
       id: "featured.critical-amount",
-      why: "9,720 crystals to max, the single most expensive ladder in the game.",
+      why: "+10% crit amount a level, and worth nothing without crit chance to trigger it. Maxing both ladders is 15,390 crystals — 58% of the shop — for ~3.5× swing yield that's already capped at one swing per 2 s.",
     },
     {
       id: "core.flawless-charm",
