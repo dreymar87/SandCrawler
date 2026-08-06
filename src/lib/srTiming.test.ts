@@ -9,6 +9,7 @@ import {
 } from "./srTiming";
 import {
   observedMultiplierStep,
+  observedStepAtLevel,
   OBSERVED_REBIRTH_MULTIPLIERS,
 } from "../data/rebirthMultipliers.seed";
 import { parseCredits } from "./credits";
@@ -231,18 +232,17 @@ describe("derived multiplier step", () => {
 
   // The step is NOT constant: +0.6 through RB10, +0.7 after. A full-history
   // slope lags that; a windowed one follows it.
-  // Pooling mixes two cycles with genuinely different steps, so it lands
-  // between them and matches neither. Asserted as a property rather than a
-  // literal — every one of these numbers moves when a sample is recorded.
-  it("pooling across cycles matches neither cycle", () => {
+  // A single pooled scalar can't describe a step that varies by level. This
+  // asserts the SPREAD, which is the durable fact — an earlier version
+  // compared the current cycle against the pooled average and broke the moment
+  // the current cycle climbed into the same step range as the previous one.
+  it("no single pooled figure covers the whole ladder", () => {
     const pooled = observedMultiplierStep(undefined, 99)!;
-    const current = observedMultiplierStep(undefined, 4, 0)!;
-    const previous = observedMultiplierStep(
-      OBSERVED_REBIRTH_MULTIPLIERS.filter((s) => s.session === "a"),
-      4,
-    )!;
-    expect(current).toBeLessThan(pooled);
-    expect(previous).toBeGreaterThan(pooled);
+    const low = observedStepAtLevel(0)!;
+    const high = observedStepAtLevel(12)!;
+    expect(low).toBeLessThan(pooled);
+    expect(high).toBeGreaterThan(pooled);
+    expect(high - low).toBeGreaterThan(0.2);
   });
 
   it("falls back to the session start when it is shorter than the window", () => {

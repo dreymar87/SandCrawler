@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import {
   bestSrStop,
-  OBSERVED_MULTIPLIER_STEP,
   PROJECTION_WARN_LEVELS,
   srTimingTable,
   type SrStop,
