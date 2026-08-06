@@ -226,11 +226,13 @@ describe("derived multiplier step", () => {
 
   // The step is NOT constant: +0.6 through RB10, +0.7 after. A full-history
   // slope lags that; a windowed one follows it.
+  // Asserts the RELATIONSHIP, not a literal: the all-time average moves every
+  // time a sample lands, and hardcoding it here made this test stale the
+  // moment RB13 was recorded.
   it("tracks the drift instead of averaging it away", () => {
     const recent = observedMultiplierStep(undefined, 4)!;
     const allTime = observedMultiplierStep(undefined, 99)!;
     expect(recent).toBeGreaterThan(allTime);
-    expect(allTime).toBeCloseTo(0.633, 2);
   });
 
   it("falls back to the session start when it is shorter than the window", () => {
