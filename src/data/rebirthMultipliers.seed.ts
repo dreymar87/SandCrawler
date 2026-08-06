@@ -129,6 +129,10 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // So SUPER_REBIRTH_BONUSES.creditMult is simply ADDED to the multiplier and
   // persists at every level. That is bias (2) in srTiming, measured at last.
   { rbLevel: 7, creditMultiplier: 19.0, superRebirthCount: 3, session: "c-post-srb3" },
+  // Third consecutive level holding the +0.3 offset against cycle 2 (19.6 vs
+  // 19.3), and the +0.6 step the level table predicted. The parallel-cycles
+  // model is now confirmed rather than inferred.
+  { rbLevel: 8, creditMultiplier: 19.6, superRebirthCount: 3, session: "c-post-srb3" },
 ];
 
 /**
