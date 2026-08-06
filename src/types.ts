@@ -367,6 +367,16 @@ export interface UiPrefs {
    */
   creditMultiplier?: number;
   /**
+   * The player's ACTUAL credits/s, entered by hand.
+   *
+   * The app can only see flat droid income from the Droidex — it can't see the
+   * rebirth multiplier, the Nova Credits upgrade, or scrap-station income,
+   * which together dominate. One player's real rate was ~460x what the seed
+   * sum implied. When set, this replaces the derived figure everywhere the
+   * Super Rebirth model needs a rate.
+   */
+  measuredCreditsPerSec?: number;
+  /**
    * Emit device haptics on Droidex taps and other interactions. Defaults
    * on (undefined = true); explicit `false` silences `haptic()`.
    */

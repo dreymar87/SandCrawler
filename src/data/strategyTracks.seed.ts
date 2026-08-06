@@ -72,18 +72,22 @@ export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
   },
   {
     id: "workshop.scrap-value",
-    unit: "SCRAP_SWING",
-    // Multiplier on the SCRAP PILE's value, not on your droid income. A player
-    // at L3 (1.5x) reported 1.80M a swing while their droids made 46.9K/s —
-    // the swing base is ~26x their per-second rate, so the two are unrelated.
-    // An earlier model expressed this as a fraction of base credits/s, which
-    // was wrong by that factor.
-    gainAt: (n) => 0.5 * n,
+    unit: "CREDIT_RATE",
+    // The shop states it outright: L3 pays "credits based on 1.5 seconds of
+    // base credit generation" per swing. So it IS denominated in your credit
+    // rate — 0.5 seconds per level, and at the one-swing-per-2s cap that is
+    // 0.25x your rate per second per level.
+    //
+    // A previous pass moved this OUT of the credit ranking after a player's
+    // 1.80M swing failed to reconcile with their apparent 46.9K/s. The wording
+    // shows the model was fine and the RATE ESTIMATE was wrong: 1.80M / 1.5s
+    // implies 1.20M/s of real generation, which is what the app should have
+    // been using all along.
+    gainAt: (n) => 0.5 * n * SCRAP_SWINGS_PER_SEC,
     activeOnly: true,
-    effect: "×0.5 scrap-pile value per level (L3 = 1.5×), one full-value swing / 2 s while your pickaxe level ≥ the pile's",
-    whyNotRanked:
-      "Multiplies the SCRAP PILE's value, which is independent of your droid credits/s — so it can't be expressed in the same relative currency. Ranking it needs absolute figures: your measured swing value, plus whether the Credits upgrade multiplies scrap income or only droid income.",
-    source: "player-reported, in-game",
+    effect:
+      "+0.5 seconds of base credit generation per swing per level (L3 = 1.5 s), one full-value swing / 2 s while your pickaxe level ≥ the pile's",
+    source: "in-game shop text",
   },
   {
     id: "workshop.upgrade-chip-scrap",

@@ -17,17 +17,17 @@ describe("measured effects", () => {
     expect(e.activeOnly).toBe(false);
   });
 
-  // Scrap Value multiplies the SCRAP PILE's value, not your droid income. A
-  // player at L3 reported 1.80M a swing against 46.9K/s of droids — the swing
-  // base is ~26x their per-second rate, so the two have no common currency.
-  it("Scrap Value is a scrap-pile multiplier, not a share of droid income", () => {
+  // The shop states it: L3 pays "credits based on 1.5 SECONDS of base credit
+  // generation" per swing. So it shares a currency with Credits after all.
+  it("Scrap Value is seconds of your own generation per swing", () => {
     const e = measuredEffectFor("workshop.scrap-value")!;
     expect(SCRAP_SWINGS_PER_SEC).toBe(0.5);
-    expect(e.unit).toBe("SCRAP_SWING");
-    expect(e.gainAt(3)).toBeCloseTo(1.5); // the multiplier the game displays
-    expect(e.gainAt(1)).toBeCloseTo(0.5);
+    expect(e.unit).toBe("CREDIT_RATE");
+    // L3 = 1.5s a swing; at one swing / 2s that's +0.75x your rate per second.
+    expect(e.gainAt(3)).toBeCloseTo(0.75);
+    expect(e.gainAt(1)).toBeCloseTo(0.25);
     expect(e.activeOnly).toBe(true);
-    expect(e.whyNotRanked).toBeTruthy();
+    expect(e.whyNotRanked).toBeUndefined();
   });
 });
 
@@ -37,14 +37,20 @@ describe("marginalGain", () => {
   });
 
   it("returns null for anything not denominated in credits/s", () => {
-    // Scrap Value, the crit pair and chips all measure different things.
+    // Crits buy build time; chip scrap pays in chips; Jawa pays per sale.
     for (const id of [
-      "workshop.scrap-value",
       "featured.critical-chance",
       "workshop.upgrade-chip-scrap",
+      "core.jawa-bartering",
     ]) {
       expect(marginalGain(id, 1, 1), id).toBeNull();
     }
+  });
+
+  it("scales the active-only Scrap Value by swing uptime", () => {
+    expect(marginalGain("workshop.scrap-value", 1, 1)).toBeCloseTo(0.25);
+    expect(marginalGain("workshop.scrap-value", 1, 0.5)).toBeCloseTo(0.125);
+    expect(marginalGain("workshop.scrap-value", 1, 0)).toBe(0);
   });
 
   it("leaves passive upgrades unaffected by swing uptime", () => {
@@ -58,18 +64,28 @@ describe("marginalGain", () => {
 });
 
 describe("efficientOrder", () => {
-  // Only Credits is currently denominated in credits/s, so it is the whole
-  // ranking. Everything else is measured but in an incompatible unit — the
-  // section is honest about being thin rather than padded with wrong maths.
-  it("ranks only the credit-denominated upgrades", () => {
-    const order = efficientOrder({ upgrades: [], swingUptime: 1, limit: 40 });
-    expect(order.length).toBeGreaterThan(0);
-    expect(order.every((l) => l.id === "core.credits")).toBe(true);
-    expect(order.slice(0, 3).map(key)).toEqual([
+  // Credits L1-5 are cheap enough to beat everything; Scrap L1 then slots in
+  // ahead of Credits L6. It interleaves rather than leading.
+  it("leads with Credits L1-5, then interleaves Scrap Value", () => {
+    const order = efficientOrder({ upgrades: [], swingUptime: 1, limit: 7 });
+    expect(order.slice(0, 5).map(key)).toEqual([
       "core.credits@1",
       "core.credits@2",
       "core.credits@3",
+      "core.credits@4",
+      "core.credits@5",
     ]);
+    expect(key(order[5]!)).toBe("workshop.scrap-value@1");
+    expect(key(order[6]!)).toBe("core.credits@6");
+  });
+
+  it("pushes Scrap Value later as swing uptime drops, and out entirely at zero", () => {
+    const rank = (u: number) =>
+      efficientOrder({ upgrades: [], swingUptime: u, limit: 40 }).findIndex(
+        (l) => l.id === "workshop.scrap-value",
+      );
+    expect(rank(0.5)).toBeGreaterThan(rank(1));
+    expect(rank(0)).toBe(-1);
   });
 
   it("skips levels already owned", () => {
@@ -78,8 +94,9 @@ describe("efficientOrder", () => {
       swingUptime: 1,
       limit: 3,
     });
-    expect(order.some((l) => l.level <= 5)).toBe(false);
-    expect(key(order[0]!)).toBe("core.credits@6");
+    expect(order.some((l) => l.id === "core.credits" && l.level <= 5)).toBe(false);
+    // Credits L1-5 gone, so Scrap L1 is the best remaining buy.
+    expect(key(order[0]!)).toBe("workshop.scrap-value@1");
   });
 
   it("is sorted by value per crystal, descending", () => {

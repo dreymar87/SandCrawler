@@ -43,18 +43,35 @@ export function SrTimingSection() {
   const setUiPref = useAppStore((s) => s.setUiPref);
   const storedSetup = useAppStore((s) => s.ui.srSetupHours);
   const storedMult = useAppStore((s) => s.ui.creditMultiplier);
+  const storedRate = useAppStore((s) => s.ui.measuredCreditsPerSec);
   const currentLevel = useAppStore((s) => s.profile.standardRebirth);
 
   const setupHours = storedSetup ?? DEFAULT_SETUP_HOURS;
   const [draft, setDraft] = useState(String(setupHours));
   const [multDraft, setMultDraft] = useState(storedMult ? String(storedMult) : "");
+  const [rateDraft, setRateDraft] = useState(storedRate ? String(storedRate) : "");
+
+  /**
+   * `production.flat` is only the flat droid income the Droidex knows about —
+   * before the rebirth multiplier, before the Nova Credits upgrade, and with
+   * no scrap-station income at all. Feeding that straight in understated one
+   * player's real rate by ~460x, so a measured figure wins whenever it's given,
+   * and the multiplier is applied to the estimate when it isn't.
+   */
+  const effectiveRate =
+    storedRate && storedRate > 0
+      ? BigInt(Math.round(storedRate))
+      : storedMult && storedMult > 0
+        ? BigInt(Math.round(Number(production.flat) * storedMult))
+        : production.flat;
+  const rateIsMeasured = !!(storedRate && storedRate > 0);
   const [showAll, setShowAll] = useState(false);
 
   const rows = useMemo(
     () =>
       srTimingTable({
         cycle,
-        creditsPerSec: production.flat,
+        creditsPerSec: effectiveRate,
         setupHours,
         // Only integrate a climbing rate once the player has told us what
         // multiplier they're on; otherwise stay on the flat model.
@@ -63,7 +80,7 @@ export function SrTimingSection() {
             ? { atCurrentLevel: storedMult, currentLevel }
             : undefined,
       }),
-    [cycle, production.flat, setupHours, storedMult, currentLevel],
+    [cycle, effectiveRate, setupHours, storedMult, currentLevel],
   );
   const best = useMemo(() => bestSrStop(rows), [rows]);
 
@@ -74,7 +91,7 @@ export function SrTimingSection() {
 
   // Without deployed droids there's no rate, so the per-hour column is
   // meaningless — fall back to showing the efficiency ratio only.
-  const hasRate = production.flat > 0n;
+  const hasRate = effectiveRate > 0n;
   const visible = showAll ? rows : rows.filter((r) => r.level <= (best?.level ?? 20) + 3);
 
   return (
@@ -88,7 +105,7 @@ export function SrTimingSection() {
       {hasRate && best ? (
         <>
           <p className="font-mono text-[11px] text-muted mb-1.5">
-            At <span className="text-holo">{formatPerSecond(production.flat)}</span> you earn most
+            At <span className="text-holo">{formatPerSecond(effectiveRate)}</span> you earn most
             crystals by Super Rebirthing at{" "}
             <span className="font-bold text-ok">RB{best.level}</span> —{" "}
             <span className="text-ok">{best.crystalsPerHour.toFixed(1)} crystals/hour</span>, a{" "}
@@ -161,6 +178,42 @@ export function SrTimingSection() {
           {storedMult ? "" : " · optional"}
         </span>
       </div>
+      <div className="flex items-center gap-2 mb-1.5">
+        <label
+          className="font-mono text-[10px] uppercase tracking-wider text-muted-alt"
+          htmlFor="sr-rate"
+        >
+          Your credits/s
+        </label>
+        <input
+          id="sr-rate"
+          type="text"
+          inputMode="decimal"
+          className="input w-24 text-right tabular-nums"
+          value={rateDraft}
+          placeholder="measure it"
+          onChange={(e) => setRateDraft(e.target.value)}
+          onBlur={(e) => {
+            const n = Number(e.target.value.trim().replace(/[,_]/g, ""));
+            setUiPref(
+              "measuredCreditsPerSec",
+              e.target.value.trim() === "" || !Number.isFinite(n) || n <= 0 ? undefined : n,
+            );
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          }}
+        />
+        <span className="font-mono text-[10px] text-muted-alt">
+          {rateIsMeasured ? "measured" : "estimated from droids"}
+        </span>
+      </div>
+      {!rateIsMeasured ? (
+        <p className="font-mono text-[9.5px] text-warn/80 mb-3 leading-snug">
+          Estimated from Droidex income only — it can't see scrap-station credits, which can be
+          most of your total. Enter your real rate for an accurate answer.
+        </p>
+      ) : null}
       {/* The reading drifts between sessions — one account saw 21.2x and then
           20.0x at the same rebirth — so a saved value can quietly go stale. */}
       {storedMult ? (

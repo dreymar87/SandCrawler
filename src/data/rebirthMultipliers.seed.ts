@@ -59,6 +59,20 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // held there — settling rather than accelerating, which bounds the error on
   // projecting it flat.
   { rbLevel: 13, creditMultiplier: 22.6, superRebirthCount: 2, session: "a" },
+  // First DIRECT reading at RB0, taken right after Super Rebirthing from RB13.
+  // Every prior intercept was extrapolated backwards; this one is measured.
+  //
+  // Against the old cycle's extrapolated 14.5x at RB0 (2 SRBs) this is +0.9
+  // for one Super Rebirth that granted +32% credits — the first handle anyone
+  // has on bias (2) in srTiming, the carry-over a single-run model can't see.
+  // One pair of intercepts isn't a rule; a second SR would confirm the shape.
+  {
+    rbLevel: 0,
+    creditMultiplier: 15.4,
+    superRebirthCount: 3,
+    session: "c-post-srb3",
+    note: "measured at RB0 immediately after SR from RB13 (+32% credits, +160% XP, 16 crystals)",
+  },
   // Read immediately after login, same rebirth level, 1.2 lower — then back to
   // 21.2x after collecting credits with no rebirth in between. Almost certainly
   // a stale HUD rather than a real change, so it sits in its own session and
