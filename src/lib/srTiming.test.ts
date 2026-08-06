@@ -209,18 +209,20 @@ describe("projection distance", () => {
 });
 
 describe("derived multiplier step", () => {
-  it("comes from the recorded samples, not a constant", () => {
-    // Windowed to the last 4 levels of session "a": RB10 20.5x -> RB13 22.6x.
-    expect(OBSERVED_MULTIPLIER_STEP).toBeCloseTo(0.675, 3);
+  // OBSERVED_MULTIPLIER_STEP pools every session, which is only a fallback for
+  // callers with no level in hand. It sits between the low-RB (~0.4) and
+  // high-RB (~0.7) steps and describes neither — hence the level-local API.
+  it("exposes a pooled fallback and the highest sampled level", () => {
+    expect(OBSERVED_MULTIPLIER_STEP).toBeGreaterThan(0.4);
+    expect(OBSERVED_MULTIPLIER_STEP).toBeLessThan(0.7);
     expect(HIGHEST_SAMPLED_LEVEL).toBe(13);
   });
 
-  // The step rose 0.6 -> 0.7 around RB10 and has since held for three
-  // consecutive levels. Settling, not accelerating — which bounds the error
-  // from projecting it flat, so the window can stay short without chasing a
-  // runaway trend.
-  it("shows the step settling rather than accelerating", () => {
-    const recent = observedMultiplierStep(undefined, 3)!; // RB10 -> RB13
+  // The step rose 0.6 -> 0.7 around RB10 and then held for three consecutive
+  // levels. Settling, not accelerating — which bounds the error from
+  // projecting it flat over the levels just ahead.
+  it("shows the step settling rather than accelerating near the top", () => {
+    const recent = observedMultiplierStep(undefined, 3, 13)!; // RB10 -> RB13
     expect(recent).toBeCloseTo(0.7, 2);
   });
 
@@ -294,5 +296,48 @@ describe("derived multiplier step", () => {
         { rbLevel: 9, creditMultiplier: 19.9, superRebirthCount: 2, session: "b" },
       ]),
     ).toBeNull();
+  });
+});
+
+describe("level-dependent step", () => {
+  // ~0.4 at RB0-1 (this cycle) against ~0.7 at RB10-13 (last cycle). Pooling
+  // them gives 0.62, which describes neither end of the ladder.
+  it("picks the step from samples nearest the level asked about", () => {
+    expect(observedMultiplierStep(undefined, 4, 1)).toBeCloseTo(0.4, 2);
+    expect(observedMultiplierStep(undefined, 4, 12)).toBeCloseTo(0.675, 3);
+  });
+
+  it("defaults the curve's step to whatever fits the player's current level", () => {
+    // A player at RB1 should project with the low-RB step, not the high one.
+    const low = srTimingTable({
+      cycle: 1,
+      creditsPerSec: 947_000n,
+      setupHours: 2,
+      multiplier: { atCurrentLevel: 15.8, currentLevel: 1 },
+    });
+    const explicitLow = srTimingTable({
+      cycle: 1,
+      creditsPerSec: 947_000n,
+      setupHours: 2,
+      multiplier: { atCurrentLevel: 15.8, currentLevel: 1, perLevel: 0.4 },
+    });
+    low.forEach((r, i) => expect(r.runHours).toBeCloseTo(explicitLow[i]!.runHours, 10));
+  });
+
+  it("still honours an explicitly supplied step", () => {
+    const rows = srTimingTable({
+      cycle: 1,
+      creditsPerSec: 947_000n,
+      setupHours: 2,
+      multiplier: { atCurrentLevel: 15.8, currentLevel: 1, perLevel: 2.0 },
+    });
+    const dflt = srTimingTable({
+      cycle: 1,
+      creditsPerSec: 947_000n,
+      setupHours: 2,
+      multiplier: { atCurrentLevel: 15.8, currentLevel: 1 },
+    });
+    // A much larger step means a much faster climb, so shorter runs.
+    expect(rows[0]!.runHours).toBeLessThan(dflt[0]!.runHours);
   });
 });

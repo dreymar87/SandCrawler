@@ -2,6 +2,7 @@ import { SUPER_REBIRTH_BONUSES } from "../data/superRebirthBonuses.seed";
 import {
   highestSampledLevel,
   observedMultiplierStep,
+  STEP_WINDOW_LEVELS,
 } from "../data/rebirthMultipliers.seed";
 import { parseCredits } from "./credits";
 import { rebirthsForCycle } from "./sellGuidance";
@@ -69,8 +70,10 @@ export interface MultiplierCurve {
   /** The rebirth level they're on right now. */
   currentLevel: number;
   /**
-   * How much the multiplier gains per rebirth level. Defaults to the value
-   * derived from the recorded samples — see OBSERVED_MULTIPLIER_STEP.
+   * How much the multiplier gains per rebirth level. Defaults to the step
+   * observed NEAR `currentLevel`, because the step is level-dependent: about
+   * +0.4 at RB0 rising to +0.7 by RB10. A single figure for the whole ladder
+   * would be wrong at both ends.
    */
   perLevel?: number;
 }
@@ -173,7 +176,12 @@ export function srTimingTable({
 
   // With a curve, `creditsPerSec` is the rate at `currentLevel`; back out the
   // pre-multiplier base so each level can be earned at its own multiplier.
-  const step = multiplier?.perLevel ?? OBSERVED_MULTIPLIER_STEP;
+  const step =
+    multiplier?.perLevel ??
+    (multiplier
+      ? (observedMultiplierStep(undefined, STEP_WINDOW_LEVELS, multiplier.currentLevel) ??
+        OBSERVED_MULTIPLIER_STEP)
+      : OBSERVED_MULTIPLIER_STEP);
   const multAt = (lvl: number): number =>
     multiplier ? multiplier.atCurrentLevel + step * (lvl - multiplier.currentLevel) : 1;
   const baseRate =

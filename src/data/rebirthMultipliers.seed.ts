@@ -73,6 +73,11 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
     session: "c-post-srb3",
     note: "measured at RB0 immediately after SR from RB13 (+32% credits, +160% XP, 16 crystals)",
   },
+  // +0.4 from RB0, against +0.6 around RB6 and +0.7 from RB10 last cycle. The
+  // step is a function of WHERE you are on the ladder — small low down,
+  // growing, flattening near 0.7 — so a single scalar can't serve the whole
+  // range. Hence `nearLevel` below.
+  { rbLevel: 1, creditMultiplier: 15.8, superRebirthCount: 3, session: "c-post-srb3" },
   // Read immediately after login, same rebirth level, 1.2 lower — then back to
   // 21.2x after collecting credits with no rebirth in between. Almost certainly
   // a stale HUD rather than a real change, so it sits in its own session and
@@ -108,18 +113,38 @@ export const STEP_WINDOW_LEVELS = 4;
  * rounding on a middle reading washes out. Sessions are then combined weighted
  * by the levels each contributes.
  *
- * Currently ≈0.67 from session "a" over RB9→12. Null if no session has two
- * readings at different levels.
+ * `nearLevel` restricts the calculation to the session closest to that
+ * rebirth level, which matters because the step is level-dependent: ~0.4 at
+ * RB0 rising to ~0.7 by RB10. Without it, sessions are pooled.
+ *
+ * Null if no session has two readings at different levels.
  */
 export function observedMultiplierStep(
   samples: readonly RebirthMultiplierSample[] = OBSERVED_REBIRTH_MULTIPLIERS,
   windowLevels: number = STEP_WINDOW_LEVELS,
+  nearLevel?: number,
 ): number | null {
   const bySession = new Map<string, RebirthMultiplierSample[]>();
   for (const s of samples) {
     const list = bySession.get(s.session) ?? [];
     list.push(s);
     bySession.set(s.session, list);
+  }
+
+  // The step depends on rebirth level (~0.4 at RB0, ~0.7 by RB10), so when a
+  // level is given, use only the session whose readings sit closest to it.
+  // Averaging a low-RB session with a high-RB one produces a figure that
+  // describes neither.
+  if (nearLevel !== undefined) {
+    let best: { list: RebirthMultiplierSample[]; distance: number } | null = null;
+    for (const list of bySession.values()) {
+      if (list.length < 2) continue;
+      const levels = list.map((s) => s.rbLevel);
+      if (Math.max(...levels) === Math.min(...levels)) continue;
+      const distance = Math.min(...levels.map((l) => Math.abs(l - nearLevel)));
+      if (!best || distance < best.distance) best = { list, distance };
+    }
+    if (best) return observedMultiplierStep(best.list, windowLevels);
   }
   let weighted = 0;
   let levels = 0;
