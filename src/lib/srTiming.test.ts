@@ -231,13 +231,18 @@ describe("derived multiplier step", () => {
 
   // The step is NOT constant: +0.6 through RB10, +0.7 after. A full-history
   // slope lags that; a windowed one follows it.
-  // Asserts the RELATIONSHIP, not a literal: the all-time average moves every
-  // time a sample lands, and hardcoding it here made this test stale the
-  // moment RB13 was recorded.
-  it("tracks the drift instead of averaging it away", () => {
-    const recent = observedMultiplierStep(undefined, 4)!;
-    const allTime = observedMultiplierStep(undefined, 99)!;
-    expect(recent).toBeGreaterThan(allTime);
+  // Pooling mixes two cycles with genuinely different steps, so it lands
+  // between them and matches neither. Asserted as a property rather than a
+  // literal — every one of these numbers moves when a sample is recorded.
+  it("pooling across cycles matches neither cycle", () => {
+    const pooled = observedMultiplierStep(undefined, 99)!;
+    const current = observedMultiplierStep(undefined, 4, 0)!;
+    const previous = observedMultiplierStep(
+      OBSERVED_REBIRTH_MULTIPLIERS.filter((s) => s.session === "a"),
+      4,
+    )!;
+    expect(current).toBeLessThan(pooled);
+    expect(previous).toBeGreaterThan(pooled);
   });
 
   it("falls back to the session start when it is shorter than the window", () => {
@@ -308,8 +313,16 @@ describe("level-dependent step", () => {
   // rather than guess which drives it, the current session wins outright —
   // correct under either explanation.
   it("prefers the current session over older ones at any level", () => {
+    // Derived, not hardcoded — the expected value moves with every sample.
+    const currentOnly = observedMultiplierStep(
+      OBSERVED_REBIRTH_MULTIPLIERS.filter((s) => s.session === "c-post-srb3"),
+      4,
+    )!;
     for (const level of [0, 2, 5, 8, 13]) {
-      expect(observedMultiplierStep(undefined, 4, level), `RB${level}`).toBeCloseTo(0.45, 2);
+      expect(observedMultiplierStep(undefined, 4, level), `RB${level}`).toBeCloseTo(
+        currentOnly,
+        6,
+      );
     }
   });
 
@@ -355,7 +368,11 @@ describe("level-dependent step", () => {
       cycle: 1,
       creditsPerSec: 947_000n,
       setupHours: 2,
-      multiplier: { atCurrentLevel: 15.8, currentLevel: 1, perLevel: 0.45 },
+      multiplier: {
+        atCurrentLevel: 15.8,
+        currentLevel: 1,
+        perLevel: observedMultiplierStep(undefined, 4, 1)!,
+      },
     });
     low.forEach((r, i) => expect(r.runHours).toBeCloseTo(explicitLow[i]!.runHours, 10));
   });

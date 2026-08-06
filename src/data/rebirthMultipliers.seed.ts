@@ -93,6 +93,10 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // levels.
   { rbLevel: 1, creditMultiplier: 15.8, superRebirthCount: 3, session: "c-post-srb3" },
   { rbLevel: 2, creditMultiplier: 16.3, superRebirthCount: 3, session: "c-post-srb3" },
+  // Fourth reading narrows the surviving constant-step range from 0.401-0.500
+  // to 0.451-0.500 — still no evidence the step varies WITHIN this cycle, only
+  // that it differs from the previous one.
+  { rbLevel: 3, creditMultiplier: 16.8, superRebirthCount: 3, session: "c-post-srb3" },
 ];
 
 /**
