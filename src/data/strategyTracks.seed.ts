@@ -62,18 +62,27 @@ export const SCRAP_SWINGS_PER_SEC = 0.5;
 
 /**
  * Seconds removed from a droid build by one swing, at pickaxe level 10.
- *
- * Measured in-game. The figure is large enough to reframe crafting entirely:
- * at a 2-second cadence that's 6.6 seconds removed per real second, so the
- * effective build rate is ~7.6x and a 38-minute RAINBOW craft finishes in
- * about five. Setup time is therefore dominated by swinging, not by the
- * printed crafting times — and setup is roughly half of a Super Rebirth run.
- *
- * Two things are still unmeasured: whether build swings share the scrap
- * station's 2-second cap (assumed here), and how the value scales with pickaxe
- * level, which is what would let Pickaxe Mastery be priced.
+ * Measured in-game.
  */
 export const BUILD_SWING_SECONDS_AT_PICKAXE_10 = 13.2;
+
+/**
+ * Build swings per second. Unlike the scrap station there is NO 2-second gate
+ * here — players report 2-3 swings a second.
+ *
+ * That makes crafting a non-issue. At 2.5 swings/s the effective build rate is
+ * ~36x, so a 6-hour RAINBOW craft finishes in about ten minutes and a
+ * 38-minute one in about a minute. The crafting times in `craftingTimes.seed`
+ * describe the un-swung case, which is not the case anyone plays.
+ *
+ * The consequence for the buy order is counter-intuitive: because swings
+ * dominate the build rate, upgrades that scale swings (the crit ladders) beat
+ * the flat +0.1/sec of Crafting Speed by ~3x per crystal — the reverse of the
+ * ranking at a 2s cadence. But BOTH are low priority anyway, since build time
+ * has stopped being the setup bottleneck. Setup is acquisition, deployment and
+ * the early rebirth grind, none of which a build-speed upgrade touches.
+ */
+export const BUILD_SWINGS_PER_SEC = 2.5;
 
 export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
   {
@@ -127,7 +136,7 @@ export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
     activeOnly: true,
     effect: "+5% critical chance per level when swinging at a droid under construction",
     whyNotRanked:
-      "Buys BUILD TIME, not credits/s, so it has no place in a credits-per-crystal ranking. It is now priceable though: at 13.2s per swing and a 2s cadence the build rate is ~7.6x, and one crit-chance level adds ~4% to that for 90 crystals — the same order as Crafting Speed's ~1.3% for 18. No longer a trap, just second-best.",
+      "Buys BUILD TIME, not credits/s. Priceable now: at 13.2s a swing and 2-3 swings/s the build rate is ~36x, and one crit-chance level adds ~4.6% for 90 crystals — about 3x better per crystal than Crafting Speed. Still low priority, because at 36x a six-hour craft already takes ten minutes, so build time is no longer what makes setup long.",
     source: "in-game shop text",
   },
   {
@@ -149,7 +158,7 @@ export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
     activeOnly: false,
     effect: "+0.1/sec droid crafting per level",
     whyNotRanked:
-      "Buys setup TIME, not credits/s — it feeds the Super Rebirth timing model instead, where cutting setup is worth as much as raising income.",
+      "Buys setup TIME, not credits/s. And very little of it: +0.1/sec against an effective build rate of ~36x is +0.3%, which is why the crit ladders beat it despite costing 5x more per level.",
     source: "in-game shop text",
   },
   {
@@ -222,12 +231,12 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
     {
       id: "workshop.collect-all",
       throughLevel: 1,
-      why: "3 crystals off the fixed per-run overhead. Setup time is worth as much as credit rate in the crystals/hour model.",
+      why: "3 crystals, and it cuts real setup time — collection is manual work that swinging can't speed up, unlike crafting.",
     },
     {
       id: "workshop.crafting-speed",
       throughLevel: 3,
-      why: "Re-crafting droids is most of what makes a fresh run slow. Cutting setup time lifts crystals/hour at every stopping level.",
+      why: "DEMOTED by measurement: +0.1/sec against a swung build rate of ~36x is +0.3%. Re-crafting is not what makes a run slow once you swing at builds. Kept only because L1-3 are cheap.",
     },
     {
       id: "workshop.scrap-value",
@@ -278,7 +287,7 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
   skip: [
     {
       id: "featured.critical-chance",
-      why: "Now priced, and it survives: at 13.2s removed per build swing the effective build rate is ~7.6x, and one crit-chance level adds ~4% to that. Real, but Crafting Speed buys ~1.3% for 18 crystals against this 90 — better value per crystal, so crits stay behind it rather than being skipped outright.",
+      why: "Priced at last, and the verdict is 'low priority for a new reason'. Crits scale build swings, which at 2-3 swings/s dominate the build rate (~36x) — so per crystal they beat Crafting Speed ~3x. But at 36x a six-hour craft takes ten minutes, so build time is no longer what makes a run long. Buy these only once setup is genuinely crafting-bound.",
     },
     {
       id: "featured.critical-amount",
