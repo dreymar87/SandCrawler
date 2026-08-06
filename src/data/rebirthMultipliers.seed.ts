@@ -147,6 +147,19 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // of a 0.1 display boundary depending on the fractional part.
   { rbLevel: 11, creditMultiplier: 21.5, superRebirthCount: 3, session: "c-post-srb3" },
   { rbLevel: 12, creditMultiplier: 22.2, superRebirthCount: 3, session: "c-post-srb3" },
+  // Confirms both open questions at the top of the sampled range.
+  //
+  // The RB12->13 step is +0.7, which is exactly what cycle 2 showed at the same
+  // levels (21.9 -> 22.6). That is the level-driven argument replicating at
+  // RB13, having previously rested on +0.6 appearing at RB5->6 in one cycle and
+  // RB6->10 in the other.
+  //
+  // The cross-cycle offset also returns to +0.3 (22.9 - 22.6), the modal value
+  // for a true 0.32 carry-over under one-decimal rounding. Cycle 3's steps now
+  // read 0.4 0.5 0.5 0.5 0.5 0.6 0.6 0.6 0.6 0.7 0.6 0.7 0.7 — the lone 0.6 at
+  // RB10->11 is bracketed by +0.7s, so it is safely the rounding artefact this
+  // file already called it rather than a decaying step.
+  { rbLevel: 13, creditMultiplier: 22.9, superRebirthCount: 3, session: "c-post-srb3" },
 ];
 
 /**
