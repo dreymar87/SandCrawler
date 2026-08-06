@@ -37,7 +37,10 @@ export interface MeasuredEffect {
     | "BUILD_TIME"
     | "CRAFT_SPEED"
     | "SELL_CHANCE"
-    | "SCRAP_SWING";
+    | "SCRAP_SWING"
+    | "CRYSTALS_PER_DAY"
+    | "CONVENIENCE"
+    | "DROP_QUALITY";
   /** Cumulative gain at `level`, in whatever `unit` says. */
   gainAt: (level: number) => number;
   /** Why this can't join the credit ranking. Required for non-CREDIT_RATE. */
@@ -162,6 +165,59 @@ export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
     source: "in-game shop text",
   },
   {
+    id: "featured.daily-crystals",
+    unit: "CRYSTALS_PER_DAY",
+    // One crystal per daily quest, three quests a day.
+    gainAt: () => 3,
+    activeOnly: false,
+    effect: "3 Nova Crystals a day (1 per daily quest, 3 quests)",
+    whyNotRanked:
+      "Pays in crystals, not credits/s. Convertible though: at 3/day it beats a Credits level per crystal spent for anyone playing under ~6h a day, which is most people. 30 crystals returning 3/day breaks even in 10 days.",
+    source: "player-reported, in-game",
+  },
+  {
+    id: "core.double-daily-quests",
+    unit: "CRYSTALS_PER_DAY",
+    // Doubles the three daily quests to six, so +3/day over Daily Crystals.
+    gainAt: () => 3,
+    activeOnly: false,
+    effect: "+3 Nova Crystals a day (doubles 3 daily quests to 6)",
+    whyNotRanked:
+      "Crystals, not credits/s — but directly comparable once converted. At 2h play/day it returns 20 crystals-per-hour per 1000 spent against a Credits level's 6.4; they cross at ~6.3h/day. Quests also RESET on Super Rebirth, so an SR day can yield 12 rather than 6, which pushes the crossover higher still.",
+    source: "player-reported, in-game",
+  },
+  {
+    id: "workshop.collect-all",
+    unit: "CONVENIENCE",
+    // L1 Battle, L2 Astromech, L3 Workers.
+    gainAt: (n) => Math.min(n, 3),
+    activeOnly: false,
+    effect: "Collect a whole squad's credits without walking the base — L1 Battle, L2 Astromech, L3 Workers",
+    whyNotRanked:
+      "Saves real minutes per collection cycle rather than changing any rate. Unlike crafting — which swinging already makes near-instant — walking the base is time no upgrade otherwise removes, so this is one of the few genuine setup-time buys.",
+    source: "player-reported, in-game",
+  },
+  {
+    id: "workshop.blueprint-scrap",
+    unit: "DROP_QUALITY",
+    gainAt: (n) => n,
+    activeOnly: false,
+    effect: "Chance of better blueprints from the scrap station, per level",
+    whyNotRanked:
+      "Shifts a drop distribution with no published rates, so there's nothing to convert. Matters only insofar as blueprint scarcity gates droid acquisition, which is the actual setup bottleneck.",
+    source: "in-game shop text",
+  },
+  {
+    id: "core.super-crates",
+    unit: "DROP_QUALITY",
+    gainAt: (n) => n,
+    activeOnly: true,
+    effect: "Better crates found around Tatooine, per level",
+    whyNotRanked:
+      "Drop quality with no published rates. Also throughput-capped by the world: only a handful of crates exist and a full map circuit takes 2-3 minutes, so the ceiling is low regardless of quality.",
+    source: "player-reported, in-game",
+  },
+  {
     id: "core.jawa-bartering",
     unit: "SELL_CHANCE",
     // In-game at L1: "5% -> 10% chance to get double rewards when selling a Droid."
@@ -219,6 +275,11 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
       why: "The only upgrade in the shop that PRODUCES crystals — every other one is a sink. Costs less than a single SR at RB15.",
     },
     {
+      id: "core.double-daily-quests",
+      throughLevel: 1,
+      why: "6 crystals a day instead of 3. Converted to crystals/hour it returns ~20 per 1000 spent at 2h play/day against a Credits level's 6.4 — it only loses past ~6.3h/day. Quests also reset on Super Rebirth, so an SR day can pay 12.",
+    },
+    {
       id: "workshop.lounge-slot",
       throughLevel: 1,
       why: "1 crystal. Lounge droids satisfy rebirth requirements without occupying a working slot, so your income droids stay deployed.",
@@ -231,7 +292,7 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
     {
       id: "workshop.collect-all",
       throughLevel: 1,
-      why: "3 crystals, and it cuts real setup time — collection is manual work that swinging can't speed up, unlike crafting.",
+      why: "3 crystals for the Battle squad; L2 adds Astromech, L3 Workers. Walking the base to collect is time no other upgrade removes — crafting is already near-instant if you swing, so this is one of the few real setup-time buys.",
     },
     {
       id: "workshop.crafting-speed",
@@ -253,11 +314,7 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
       throughLevel: 2,
       why: "L2 overtakes Credits L12 per crystal — the point where interleaving pays.",
     },
-    {
-      id: "core.double-daily-quests",
-      throughLevel: 1,
-      why: "Doubles a daily reward stream that runs independently of the SR loop.",
-    },
+
     {
       id: "workshop.upgrade-chip-scrap",
       throughLevel: 5,

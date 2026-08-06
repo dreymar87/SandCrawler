@@ -19,9 +19,12 @@ describe("planNovaPurchases", () => {
   });
 
   it("skips milestones the player already owns outright", () => {
-    const p = plan([{ id: "featured.daily-crystals", level: 1 }]);
-    expect(p.steps.some((s) => s.id === "featured.daily-crystals")).toBe(false);
-    expect(p.steps[0]!.id).toBe("workshop.lounge-slot");
+    // Asserts the skipping, not what happens to be next — the track order
+    // changes as effects get measured.
+    const first = plan([]).steps[0]!.id;
+    const p = plan([{ id: first, level: 99 }]);
+    expect(p.steps.some((s) => s.id === first)).toBe(false);
+    expect(p.steps.length).toBeGreaterThan(0);
   });
 
   it("groups a milestone's levels into one row priced as a block", () => {
@@ -57,8 +60,11 @@ describe("planNovaPurchases", () => {
   });
 
   it("marks affordability against the balance and stops counting after it runs out", () => {
-    // 30 (Daily Crystals) + 1 (Lounge L1) = 31, then Credits L0→L5 is +50.
-    const p = plan([], { balance: 31 });
+    // Budget derived from the plan itself so it survives track reordering:
+    // exactly enough for the first two steps and not the third.
+    const full = plan([], { limit: 5 });
+    const budget = full.steps[1]!.cumulative;
+    const p = plan([], { balance: budget, limit: 5 });
     expect(p.steps[0]!.affordable).toBe(true);
     expect(p.steps[1]!.affordable).toBe(true);
     expect(p.steps[2]!.affordable).toBe(false);
