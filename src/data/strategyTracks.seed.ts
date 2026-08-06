@@ -60,6 +60,21 @@ export interface MeasuredEffect {
  */
 export const SCRAP_SWINGS_PER_SEC = 0.5;
 
+/**
+ * Seconds removed from a droid build by one swing, at pickaxe level 10.
+ *
+ * Measured in-game. The figure is large enough to reframe crafting entirely:
+ * at a 2-second cadence that's 6.6 seconds removed per real second, so the
+ * effective build rate is ~7.6x and a 38-minute RAINBOW craft finishes in
+ * about five. Setup time is therefore dominated by swinging, not by the
+ * printed crafting times — and setup is roughly half of a Super Rebirth run.
+ *
+ * Two things are still unmeasured: whether build swings share the scrap
+ * station's 2-second cap (assumed here), and how the value scales with pickaxe
+ * level, which is what would let Pickaxe Mastery be priced.
+ */
+export const BUILD_SWING_SECONDS_AT_PICKAXE_10 = 13.2;
+
 export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
   {
     id: "core.credits",
@@ -112,7 +127,7 @@ export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
     activeOnly: true,
     effect: "+5% critical chance per level when swinging at a droid under construction",
     whyNotRanked:
-      "Buys BUILD TIME, not credits/s — setup time, which the SR model says is worth as much as credit rate. Pricing it needs the seconds a swing removes, which nobody has measured.",
+      "Buys BUILD TIME, not credits/s, so it has no place in a credits-per-crystal ranking. It is now priceable though: at 13.2s per swing and a 2s cadence the build rate is ~7.6x, and one crit-chance level adds ~4% to that for 90 crystals — the same order as Crafting Speed's ~1.3% for 18. No longer a trap, just second-best.",
     source: "in-game shop text",
   },
   {
@@ -263,7 +278,7 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
   skip: [
     {
       id: "featured.critical-chance",
-      why: "HELD, not dismissed. Crits speed up droid BUILDS (each swing cuts build time), and setup time is worth as much as credit rate in the SR model — so these may be good. Nobody has measured the seconds a swing removes, so they can't be priced against the Credits ladder yet.",
+      why: "Now priced, and it survives: at 13.2s removed per build swing the effective build rate is ~7.6x, and one crit-chance level adds ~4% to that. Real, but Crafting Speed buys ~1.3% for 18 crystals against this 90 — better value per crystal, so crits stay behind it rather than being skipped outright.",
     },
     {
       id: "featured.critical-amount",
