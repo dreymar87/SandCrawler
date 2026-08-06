@@ -3,16 +3,17 @@ import { useAppStore } from "../../store/useAppStore";
 import { SetupForm } from "./SetupForm";
 
 const SECTIONS: { title: string; body: string }[] = [
-  { title: "Home", body: "Your base at a glance — current rebirth, production, crystals, and what to chase next." },
+  { title: "Base", body: "Your squads, lounge, companions and crafting stations — who's deployed where, and what's safe to sell." },
   { title: "Droidex", body: "Tap a droid's tier cell to set owned / working / lounge counts. Working droids mine credits; both count toward rebirths." },
-  { title: "Rebirths", body: "The 27-level plan for your cycle, a keep/upgrade/sell strategy, and what's closest to ready up top." },
+  { title: "Rebirths", body: "Every level of your current cycle with its credit cost and required droids, and what's closest to ready." },
+  { title: "Strategy", body: "When to Super Rebirth, what to buy next, and which droids to keep — computed from your own numbers." },
   { title: "Shop", body: "Nova Crystal upgrades and the cosmetics catalogue, with what you can afford." },
-  { title: "Profile", body: "Set your rebirth, super-rebirth count, credits, and chips. Preferences and backups live here too." },
+  { title: "Profile", body: "Set your rebirth, super-rebirth count, credits, chips and pickaxe. Preferences and backups live here too." },
 ];
 
 /**
  * First-run onboarding. Two steps sharing one modal shell:
- *   intro  — explains the five tabs (genuine first launch)
+ *   intro  — explains the six tabs (genuine first launch)
  *   setup  — collects current RB / SRB / credits / nova / chips
  *
  * Shown while `ui.hasOnboarded` is falsy. `ui.pendingSetup` (set by a
@@ -47,7 +48,7 @@ export function OnboardingSheet() {
             </div>
             <h2 className="font-display font-bold text-xl mb-1">SandCrawler</h2>
             <p className="text-[13px] text-muted mb-4">
-              Your Droid Tycoon rebirth companion. Five tabs along the bottom:
+              Your Droid Tycoon rebirth companion. Six tabs along the bottom:
             </p>
             <ul className="space-y-2.5 mb-5">
               {SECTIONS.map((s) => (

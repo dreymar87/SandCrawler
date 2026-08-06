@@ -26,10 +26,8 @@ export function NovaPlanSection() {
   );
 
   return (
-    <section className="card p-4 mb-4">
+    <div>
       <div className="flex items-baseline gap-2 mb-2">
-        <h2 className="font-display font-bold text-base">What to buy next</h2>
-        <span className="flex-1" />
         <span className="font-mono text-[10px] text-muted-alt">{balance} ◆ available</span>
       </div>
 
@@ -105,7 +103,7 @@ export function NovaPlanSection() {
         <span className="text-ok">✓ Measured</span> have a confirmed in-game number behind them.
         The reasoning is in STRATEGY.md.
       </p>
-    </section>
+    </div>
   );
 }
 

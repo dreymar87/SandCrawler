@@ -1,14 +1,17 @@
 /**
- * Pins the headline figures quoted in STRATEGY.md to the seed data they were
- * derived from.
+ * Pins the cost figures quoted in MECHANICS.md to the seeds they came from.
  *
- * STRATEGY.md states specific numbers ("15,390 ◆ — 58% of the shop", "ten
- * levels of Credits for 200 ◆"). Those come from seeds that DO change: Pass 30
- * moved every rebirth credit cost, Pass 31 rewrote the Nova FEATURED ladders.
- * Without this, a future sheet import would silently leave the prose wrong.
+ * These numbers ("15,390 ◆ — 58% of the shop", "ten levels of Credits for
+ * 200 ◆") derive from seeds that DO change: one pass moved every rebirth
+ * credit cost, another rewrote the Nova FEATURED ladders. Without a guard, a
+ * future import silently leaves the prose wrong.
+ *
+ * They live in MECHANICS.md rather than STRATEGY.md because they are facts.
+ * STRATEGY.md is decisions now and deliberately restates nothing, which is
+ * what stopped it drifting.
  *
  * A failure here means the doc needs updating, not that the import is bad —
- * fix STRATEGY.md in the same commit as the seed change.
+ * fix MECHANICS.md in the same commit as the seed change.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
@@ -24,9 +27,9 @@ const firstN = (id: string, n: number): number =>
 
 // vitest runs under jsdom, where import.meta.url isn't a file: URL — resolve
 // from the project root instead (vitest's cwd).
-const DOC = readFileSync(resolve(process.cwd(), "STRATEGY.md"), "utf8");
+const DOC = readFileSync(resolve(process.cwd(), "MECHANICS.md"), "utf8");
 
-describe("STRATEGY.md figures still match the seeds", () => {
+describe("MECHANICS.md cost figures still match the seeds", () => {
   it("whole-shop total is 26,630 crystals", () => {
     const shop = NOVA_UPGRADES.reduce((n, u) => n + u.costs.reduce<number>((a, c) => a + (c ?? 0), 0), 0);
     expect(shop).toBe(26_630);

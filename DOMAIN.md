@@ -161,6 +161,22 @@ Stored in `src/data/superRebirthBonuses.seed.ts` as decimals
 (`creditMult: 0.22` = `22%`), looked up via `srbBonusAt(rbLevel)`.
 The UI renders them as percentages (`22%`) to match the sheet exactly.
 
+## Pickaxe
+
+Levelled at a merchant, and the app tracks it as `profile.pickaxeLevel` plus a
+`pickaxePeak` that survives resets.
+
+It matters because it gates **both** income streams. The scrap station only
+pays while your level is at or above the pile's, and a swing at a droid under
+construction removes `1.2 × (level + 1)` seconds from the build.
+
+**It resets on Super Rebirth**, down to whatever Pickaxe Mastery preserves
+(`5 + 2 × (mastery − 1)` levels). `performSuperRebirth` models this: the level
+drops, the peak does not. Mastery should be bought up to the peak and no
+further.
+
+Measurements and their provenance: `MECHANICS.md` §2–3.
+
 ## Chip-upgrade costs
 
 Per-rarity chip costs (and cantina-upgrade odds) — `chipCosts.seed.ts`.
@@ -209,12 +225,13 @@ them.
   Flawless Charm (L1), Movement Speed (L18), Double Daily Quests (L1),
   Pickaxe Mastery (L11), Jawa Bartering (L5), Super Crates (L3).
 - **Workshop**: Lounge Slot (L4), Upgrade Chip Scrap (L10),
-  Scrap Value (L10), Blueprint Scrap (L4), Crafting Speed (L10),
+  Scrap Value (L19), Blueprint Scrap (L4), Crafting Speed (L11),
   Blueprint Storage (L3), Collect All (L3), Rebirth Droid Alert (L1),
   Blueprint Vendor (L1).
 - **ICONIC Droids** (Nova Shop purchase): BB8 / MISTER BONES /
   IG-11 MARSHAL / DJ-R3X at **30 crystals each**, CB-23 at **75
-  crystals**. One-shot purchase. (R2-D2 is event-only — not purchasable.)
+  crystals**. One-shot purchase. R2-D2 and C-3PO are sold here too (30
+  crystals each) — event-locked as DROIDS, but still purchasable unlocks.
 
 `crystalsSpent(upgrades, defs, iconicOwned)` sums the player's spent
 total across both. `balance = novaEarned − crystalsSpent`. Unknown

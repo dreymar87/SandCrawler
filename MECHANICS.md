@@ -156,6 +156,23 @@ compound: `total = base × (1 + 0.2c) × (1 + 0.25n)`.
 **Daily quests reset on Super Rebirth**, so a day you SR can pay 12 crystals
 rather than 6.
 
+### Cost structure worth knowing
+
+Maxing the whole shop is **26,630 crystals**, which nobody will ever reach on
+Super Rebirth income alone — so relative cost matters more than absolute.
+
+Ten levels of each, for comparison:
+
+| Upgrade | Ten levels |
+| --- | --- |
+| **Credits** | **200 ◆** |
+| Scrap Value | 1,600 ◆ |
+| Critical Chance | 1,950 ◆ |
+| Critical Amount | 3,000 ◆ |
+
+Credits is **15× cheaper** than Critical Amount for the same number of levels.
+The two crit ladders together are **15,390 ◆ — 58% of the entire shop**.
+
 ### Still unmeasured
 
 Companion Slot, Upgrade Chip Station, Max Health, Damage, Flawless Charm,

@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { SCHEMA_VERSION } from "../data/version";
 import { idbStorage } from "../lib/idbStorage";
 import { companionCapacity, NOVA_COMPANION_SLOT_ID } from "../lib/baseView";
+import { pickaxeLevelsKept } from "../data/strategyTracks.seed";
 import { setStatOverrides } from "../lib/droidStats";
 import { defaultProfile, emptyState, migrate } from "../lib/migrate";
 import { srbBonusAt } from "../lib/novaCrystals";
@@ -103,6 +104,13 @@ interface Actions {
   grabStation(station: StationType, target?: Slot | null): void;
   /** Empty a station without granting ownership (cancel / eject). */
   clearStation(station: StationType): void;
+
+  /**
+   * Set the current pickaxe level. Raises `pickaxePeak` when it exceeds it;
+   * never lowers the peak, since that's the figure Pickaxe Mastery should be
+   * bought up to and the level itself is wiped every Super Rebirth.
+   */
+  setPickaxeLevel(level: number): void;
 
   // ── Upgrade Chip Station (Nova unlock, one slot) ──────────────────────
   /** Assign the chip station's single occupant (replaces any current one). */
@@ -468,6 +476,17 @@ export const useAppStore = create<AppStore>()(
         }));
       },
 
+      setPickaxeLevel(level) {
+        const next = Math.max(0, Math.floor(Number(level) || 0));
+        set((s) => ({
+          profile: {
+            ...s.profile,
+            pickaxeLevel: next,
+            pickaxePeak: Math.max(next, s.profile.pickaxePeak ?? 0),
+          },
+        }));
+      },
+
       setChipStationDroid(name, tier) {
         const trimmed = name.trim();
         if (!trimmed) return;
@@ -658,6 +677,12 @@ export const useAppStore = create<AppStore>()(
               // Credit-bought lounge slots reset on Super Rebirth; Nova
               // slots persist (tracked via novaUpgrades, untouched here).
               loungeCreditSlots: 0,
+              // The pickaxe resets to whatever Pickaxe Mastery preserves —
+              // the peak is untouched, because that's what Mastery is bought
+              // against and it survives the reset by definition.
+              pickaxeLevel: pickaxeLevelsKept(
+                s.novaUpgrades.find((u) => u.id === "core.pickaxe-mastery")?.level ?? 0,
+              ),
               novaEarned: s.profile.novaEarned + crystalsAwarded,
             },
           };

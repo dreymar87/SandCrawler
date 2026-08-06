@@ -5,12 +5,6 @@ import { useNovaBalance } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
 
 const DEFAULT_UPTIME = 0.5;
-const UPTIME_CHOICES = [
-  { value: 1, label: "Always" },
-  { value: 0.5, label: "Half" },
-  { value: 0.25, label: "Rarely" },
-  { value: 0, label: "Never" },
-];
 
 /**
  * The computed half of the buy order.
@@ -23,7 +17,6 @@ const UPTIME_CHOICES = [
  */
 export function MeasuredValueSection() {
   const upgrades = useAppStore((s) => s.novaUpgrades);
-  const setUiPref = useAppStore((s) => s.setUiPref);
   const stored = useAppStore((s) => s.ui.swingUptime);
   const { balance } = useNovaBalance();
   const uptime = stored ?? DEFAULT_UPTIME;
@@ -48,37 +41,12 @@ export function MeasuredValueSection() {
   const totals = cumulativeValue(order);
 
   return (
-    <section className="card p-4 mb-4">
-      <div className="flex items-baseline gap-2 mb-1">
-        <h2 className="font-display font-bold text-base">Measured value</h2>
-        <span className="flex-1" />
-        <span className="font-mono text-[10px] text-ok">✓ computed</span>
-      </div>
+    <div>
       <p className="font-mono text-[10px] text-muted-alt mb-3 leading-snug">
         Ranked by percent of your base credits/s gained per crystal spent. Covers only the{" "}
         {MEASURED_EFFECTS.length} upgrades whose in-game effect has actually been measured —
         everything else is in the list above, ordered by argument.
       </p>
-
-      <div className="flex items-center gap-1.5 flex-wrap mb-3">
-        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-alt mr-1">
-          Swinging
-        </span>
-        {UPTIME_CHOICES.map((c) => (
-          <button
-            key={c.value}
-            type="button"
-            onClick={() => setUiPref("swingUptime", c.value)}
-            className={`font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border transition ${
-              uptime === c.value
-                ? "border-holo bg-holo/10 text-holo"
-                : "border-line-alt text-muted hover:text-ink hover:border-holo-dim"
-            }`}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
 
       <div className="overflow-x-auto -mx-1 px-1">
         <table className="w-full font-mono text-[11px] tabular-nums">
@@ -134,6 +102,6 @@ export function MeasuredValueSection() {
           Every measured upgrade is maxed out for this playstyle.
         </p>
       )}
-    </section>
+    </div>
   );
 }

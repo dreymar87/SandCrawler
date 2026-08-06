@@ -108,6 +108,21 @@ export interface Profile {
    * slots are tracked separately (they persist) and added on top.
    */
   loungeCreditSlots: number;
+  /**
+   * Current pickaxe level (levelled at the merchant).
+   *
+   * Drives both income streams: the scrap station only pays while your level
+   * is at or above the pile's, and build swings remove `1.2 × (level + 1)`
+   * seconds each. RESETS on Super Rebirth down to whatever Pickaxe Mastery
+   * preserves — see `pickaxeLevelsKept` in strategyTracks.seed.
+   */
+  pickaxeLevel?: number;
+  /**
+   * Highest pickaxe level ever reached. Survives Super Rebirth, unlike
+   * `pickaxeLevel`, and is the number Pickaxe Mastery should be bought up to:
+   * mastery beyond your peak preserves levels you never reach.
+   */
+  pickaxePeak?: number;
 }
 
 export interface RebirthReq {
@@ -376,6 +391,11 @@ export interface UiPrefs {
    * Super Rebirth model needs a rate.
    */
   measuredCreditsPerSec?: number;
+  /**
+   * Which Strategy-tab sections the player has open, keyed by section id.
+   * Absent keys fall back to each section's own default.
+   */
+  openStrategySections?: Record<string, boolean>;
   /**
    * Emit device haptics on Droidex taps and other interactions. Defaults
    * on (undefined = true); explicit `false` silences `haptic()`.

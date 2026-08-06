@@ -48,5 +48,9 @@ export const SEED_VERSION = 9;
  * v14 — Adds the Upgrade Chip Station: `chipStation` (its single occupant,
  *      reset on Super Rebirth) and `chipRates` (observed chips/min per
  *      droid+tier, kept across Super Rebirths as reference data).
+ * v15 — Adds `profile.pickaxeLevel` and `profile.pickaxePeak`. The pickaxe
+ *      gates the scrap station and sets the build-swing rate, and it RESETS
+ *      on Super Rebirth to whatever Pickaxe Mastery preserves — so the level
+ *      is transient and the peak is what Mastery should be bought up to.
  */
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 15;

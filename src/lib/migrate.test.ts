@@ -300,6 +300,21 @@ describe("migrate", () => {
     expect(migrate({ schemaVersion: 14, ui: { activeTab: "nonsense" } }).ui.activeTab).toBe("base");
   });
 
+  it("bootstraps the pickaxe fields for payloads that lack them (v15)", () => {
+    const m = migrate({ schemaVersion: 14 });
+    expect(m.profile.pickaxeLevel).toBe(0);
+    expect(m.profile.pickaxePeak).toBe(0);
+  });
+
+  it("never lets the recorded peak sit below the current level", () => {
+    const m = migrate({
+      schemaVersion: 15,
+      profile: { pickaxeLevel: 11, pickaxePeak: 4 },
+    });
+    expect(m.profile.pickaxeLevel).toBe(11);
+    expect(m.profile.pickaxePeak).toBe(11);
+  });
+
   it("bootstraps the chip station slices for payloads that lack them (v14)", () => {
     const m = migrate({ schemaVersion: 13 });
     expect(m.chipStation).toBeNull();

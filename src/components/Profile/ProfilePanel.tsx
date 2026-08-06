@@ -16,6 +16,7 @@ import { useAppStore } from "../../store/useAppStore";
 import type { RebirthCycle } from "../../types";
 import { DataPanel } from "../Data/DataPanel";
 import { Stepper } from "../common/Stepper";
+import { buildSwingSeconds } from "../../data/strategyTracks.seed";
 
 /**
  * The Profile tab: the editable record of the player's base — name,
@@ -25,6 +26,9 @@ import { Stepper } from "../common/Stepper";
 export function ProfilePanel() {
   const baseName = useAppStore((s) => s.profile.baseName ?? "");
   const upgradeChips = useAppStore((s) => s.profile.upgradeChips);
+  const pickaxeLevel = useAppStore((s) => s.profile.pickaxeLevel);
+  const pickaxePeak = useAppStore((s) => s.profile.pickaxePeak);
+  const setPickaxeLevel = useAppStore((s) => s.setPickaxeLevel);
   const standardRebirth = useAppStore((s) => s.profile.standardRebirth);
   const superRebirthCount = useAppStore((s) => s.profile.superRebirthCount);
   const cycleOverride = useAppStore((s) => s.profile.cycleOverride);
@@ -90,6 +94,26 @@ export function ProfilePanel() {
         />
         <p className="font-mono text-[10.5px] text-muted-alt mt-1.5">
           Track your chip stash to plan tier upgrades. Resets on Super Rebirth.
+        </p>
+      </section>
+
+      {/* Pickaxe — gates the scrap station and sets the build-swing rate. */}
+      <section className="card p-4">
+        <label className="field-label" htmlFor="p-pickaxe">
+          Pickaxe level
+        </label>
+        <Stepper
+          id="p-pickaxe"
+          size="md"
+          value={pickaxeLevel ?? 0}
+          onChange={(n) => setPickaxeLevel(n)}
+        />
+        <p className="font-mono text-[10.5px] text-muted-alt mt-1.5 leading-snug">
+          Each swing removes {buildSwingSeconds(pickaxeLevel ?? 0).toFixed(1)}s from a droid build,
+          and the scrap station only pays while this is at or above the pile's level.
+          {(pickaxePeak ?? 0) > (pickaxeLevel ?? 0)
+            ? ` Your peak is ${pickaxePeak} — Pickaxe Mastery is bought against that, not this.`
+            : " Resets on Super Rebirth down to whatever Pickaxe Mastery keeps."}
         </p>
       </section>
 

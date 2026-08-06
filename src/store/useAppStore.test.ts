@@ -130,6 +130,30 @@ describe("performSuperRebirth", () => {
     expect(useAppStore.getState().craftingStations).toEqual([]);
   });
 
+  // The pickaxe is the one stat that partially survives: Mastery decides how
+  // much. The PEAK never moves, because that is what Mastery is bought against.
+  it("resets the pickaxe to what Mastery keeps, preserving the peak", () => {
+    useAppStore.getState().setPickaxeLevel(11);
+    useAppStore.getState().setNovaUpgradeLevel("core.pickaxe-mastery", 1); // keeps 5
+    useAppStore.getState().performSuperRebirth();
+    expect(useAppStore.getState().profile.pickaxeLevel).toBe(5);
+    expect(useAppStore.getState().profile.pickaxePeak).toBe(11);
+  });
+
+  it("keeps the whole pickaxe when Mastery covers the peak", () => {
+    useAppStore.getState().setPickaxeLevel(11);
+    useAppStore.getState().setNovaUpgradeLevel("core.pickaxe-mastery", 4); // keeps 11
+    useAppStore.getState().performSuperRebirth();
+    expect(useAppStore.getState().profile.pickaxeLevel).toBe(11);
+  });
+
+  it("drops the pickaxe to zero with no Mastery at all", () => {
+    useAppStore.getState().setPickaxeLevel(9);
+    useAppStore.getState().performSuperRebirth();
+    expect(useAppStore.getState().profile.pickaxeLevel).toBe(0);
+    expect(useAppStore.getState().profile.pickaxePeak).toBe(9);
+  });
+
   it("clears the chip station on Super Rebirth but keeps the recorded rates", () => {
     useAppStore.getState().setChipStationDroid("HAUL-R", "RAINBOW");
     useAppStore.getState().setChipRate("HAUL-R", "RAINBOW", 24);
@@ -138,6 +162,27 @@ describe("performSuperRebirth", () => {
     expect(useAppStore.getState().chipStation).toBeNull();
     // ...but what the player measured is reference data, not deployment state.
     expect(useAppStore.getState().chipRates).toEqual({ "HAUL-R": { RAINBOW: 24 } });
+  });
+});
+
+describe("pickaxe level", () => {
+  beforeEach(() => useAppStore.getState().resetAll());
+
+  it("raises the peak but never lowers it", () => {
+    useAppStore.getState().setPickaxeLevel(7);
+    expect(useAppStore.getState().profile.pickaxePeak).toBe(7);
+    useAppStore.getState().setPickaxeLevel(11);
+    expect(useAppStore.getState().profile.pickaxePeak).toBe(11);
+    useAppStore.getState().setPickaxeLevel(3);
+    expect(useAppStore.getState().profile.pickaxeLevel).toBe(3);
+    expect(useAppStore.getState().profile.pickaxePeak).toBe(11);
+  });
+
+  it("floors at zero and ignores junk", () => {
+    useAppStore.getState().setPickaxeLevel(-5);
+    expect(useAppStore.getState().profile.pickaxeLevel).toBe(0);
+    useAppStore.getState().setPickaxeLevel(NaN);
+    expect(useAppStore.getState().profile.pickaxeLevel).toBe(0);
   });
 });
 

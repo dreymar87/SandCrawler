@@ -78,6 +78,8 @@ export function defaultProfile(): Profile {
     novaEarned: 0,
     novaSpent: 0,
     loungeCreditSlots: LOUNGE_BASE_SLOTS,
+    pickaxeLevel: 0,
+    pickaxePeak: 0,
   };
 }
 
@@ -425,6 +427,10 @@ function coerceProfile(p: Record<string, unknown>, uiCreditsFallback?: string): 
   const chips = Number(p.upgradeChips);
   // v8: loungeCreditSlots — default to the base 5 for pre-v8 payloads.
   const loungeCredit = Number(p.loungeCreditSlots);
+  // v15: pickaxe level + peak. Peak can never sit below the current level,
+  // even if a hand-edited payload says otherwise.
+  const pickLevel = Math.max(0, Math.floor(Number(p.pickaxeLevel) || 0));
+  const pickPeak = Math.max(pickLevel, Math.floor(Number(p.pickaxePeak) || 0));
   return {
     baseName: typeof p.baseName === "string" ? p.baseName : undefined,
     standardRebirth: Math.max(0, Math.floor(std)),
@@ -434,6 +440,8 @@ function coerceProfile(p: Record<string, unknown>, uiCreditsFallback?: string): 
     novaEarned: Math.max(0, Math.floor(Number(p.novaEarned) || 0)),
     novaSpent: Math.max(0, Math.floor(Number(p.novaSpent) || 0)),
     upgradeChips: Number.isFinite(chips) && chips > 0 ? Math.floor(chips) : undefined,
+    pickaxeLevel: pickLevel,
+    pickaxePeak: pickPeak,
     loungeCreditSlots: Number.isFinite(loungeCredit) && loungeCredit >= 0
       ? Math.floor(loungeCredit)
       : LOUNGE_BASE_SLOTS,

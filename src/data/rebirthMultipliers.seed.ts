@@ -141,6 +141,12 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // The carry-over is now confirmed by the rounding PATTERN, not just by the
   // single back-solved value.
   { rbLevel: 10, creditMultiplier: 20.9, superRebirthCount: 3, session: "c-post-srb3" },
+  // Step reads +0.6 where the level table predicted +0.7, and the offset
+  // against cycle 2 returns to +0.3 after the +0.4 at RB10. Both are the same
+  // rounding artefact: a true 0.32 offset and a step near 0.65 sit either side
+  // of a 0.1 display boundary depending on the fractional part.
+  { rbLevel: 11, creditMultiplier: 21.5, superRebirthCount: 3, session: "c-post-srb3" },
+  { rbLevel: 12, creditMultiplier: 22.2, superRebirthCount: 3, session: "c-post-srb3" },
 ];
 
 /**
