@@ -133,6 +133,7 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // 19.3), and the +0.6 step the level table predicted. The parallel-cycles
   // model is now confirmed rather than inferred.
   { rbLevel: 8, creditMultiplier: 19.6, superRebirthCount: 3, session: "c-post-srb3" },
+  { rbLevel: 9, creditMultiplier: 20.2, superRebirthCount: 3, session: "c-post-srb3" },
 ];
 
 /**
