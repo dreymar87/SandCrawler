@@ -117,6 +117,18 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // readings — so the step does vary within a cycle. Six points simply
   // couldn't see a change that slow through one-decimal rounding.
   { rbLevel: 6, creditMultiplier: 18.4, superRebirthCount: 3, session: "c-post-srb3" },
+  // QUANTIFIES THE SUPER REBIRTH CARRY-OVER. The two cycles are parallel: this
+  // one reads 18.4/19.0 at RB6/RB7 against 18.1/18.7, a constant +0.3 offset.
+  //
+  // Walking cycle 2 back to RB0 with the LEVEL-indexed steps gives 15.10 (an
+  // earlier flat-0.6 extrapolation said 14.5, which was too low because the
+  // low-level steps are 0.4-0.5). Against cycle 3's measured 15.40 that is a
+  // +0.30 carry-over — and the Super Rebirth from RB13 granted creditMult
+  // 0.32. 15.10 + 0.32 = 15.42, which displays as 15.4.
+  //
+  // So SUPER_REBIRTH_BONUSES.creditMult is simply ADDED to the multiplier and
+  // persists at every level. That is bias (2) in srTiming, measured at last.
+  { rbLevel: 7, creditMultiplier: 19.0, superRebirthCount: 3, session: "c-post-srb3" },
 ];
 
 /**

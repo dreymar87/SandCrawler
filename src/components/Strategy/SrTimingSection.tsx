@@ -264,12 +264,11 @@ export function SrTimingSection() {
       <p className="font-mono text-[10px] text-warn/80 mt-2 leading-snug">
         {storedMult ? (
           <>
-            Using your {storedMult}× at RB{currentLevel}, climbing ~
-            {OBSERVED_MULTIPLIER_STEP} a level, so the grind figures account for your rate rising as
-            you go. Rows marked <span className="text-warn">~</span> project that step more than{" "}
-            {PROJECTION_WARN_LEVELS} levels past where you are — the correction is largest exactly
-            where it's least observed, so treat those as rough. Still a floor besides: Super Rebirth
-            raises the multiplier every future run starts from, which one run can't show.
+            Using your {storedMult}× at RB{currentLevel} and the observed per-level step (+0.4 low
+            down, rising to +0.7 by RB10), so the grind figures follow your rate as it climbs. Rows
+            marked <span className="text-warn">~</span> project more than {PROJECTION_WARN_LEVELS}{" "}
+            levels past where you are — treat those as rough. Super Rebirth's permanent bonus isn't
+            scored here; it favours stopping higher, but not enough to move the answer.
           </>
         ) : (
           <>

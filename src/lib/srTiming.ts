@@ -31,24 +31,25 @@ import type { RebirthCycle } from "../types";
  * costs are rounding errors but whose wall-clock cost is real. It's the one
  * input the app can't measure, so the player estimates it.
  *
- * ── Known bias: this UNDER-estimates the best stopping level ──────────────
- * The model holds `creditsPerSec` constant across a run. In reality it climbs,
- * for two compounding reasons:
+ * ── The two biases, both now measured ─────────────────────────────────────
+ * This model once held `creditsPerSec` flat across a run and warned that the
+ * answer was therefore a floor. Both sources of that bias have since been
+ * quantified from player samples:
  *
- *   1. Passing rebirth levels grants credit/XP multipliers WITHIN a run, so
- *      the expensive late levels are earned at a higher rate than the early
- *      ones — the grind hours here are an overestimate at the top of the
- *      ladder specifically.
- *   2. Super Rebirth grants a permanent credit multiplier (see
- *      `SUPER_REBIRTH_BONUSES.creditMult`, +22% at RB12 rising to +508% at
- *      RB30) which raises the floor every FUTURE run starts from. Stopping
- *      higher therefore pays forward, and this single-run model can't see it.
+ *   1. WITHIN a run, passing rebirth levels raises the multiplier. Handled:
+ *      pass a `MultiplierCurve` and the grind is integrated level by level
+ *      against the observed per-level step (+0.4 at RB0 rising to +0.7 by
+ *      RB10). Worth 6% around RB12 and 25%+ by RB21.
+ *   2. ACROSS runs, Super Rebirth adds `SUPER_REBIRTH_BONUSES.creditMult`
+ *      directly to the multiplier, permanently. Confirmed by two parallel
+ *      cycles offset by exactly the granted 0.32.
  *
- * Both errors point the same way: the true optimum is somewhat HIGHER than
- * what this returns, and the gap widens the more runs you plan to do.
- * Modelling it properly needs the per-rebirth-level multiplier curve, which
- * no community sheet publishes yet. Until then, treat the recommendation as a
- * floor rather than a precise answer, and prefer the higher end of a tie.
+ * (2) is deliberately NOT folded into the score. It would reward stopping
+ * higher, but checked against real numbers it doesn't change the answer:
+ * ranking stops by multiplier-gained-per-hour picks the same level as ranking
+ * by crystals-per-hour, because the run length grows faster than the bonus.
+ * A caveat that doesn't move a decision is noise, so the old "treat this as a
+ * floor" warning is retired rather than restated.
  */
 
 /**
