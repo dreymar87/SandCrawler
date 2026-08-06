@@ -51,18 +51,19 @@ describe("MECHANICS.md covers everything we've measured", () => {
   });
 
   /**
-   * The pile tiers are the most inviting wrong turn in the data — 1/2/4/8 reads
-   * as a payout multiplier and isn't. If the write-up ever loses the "swings to
-   * empty" half, the next reader takes that turn.
+   * Pile tiers took two revisions to get right — payout ladder, then swings to
+   * break — so the doc has to carry BOTH halves or the next reader re-derives
+   * one of the wrong answers.
    */
-  it("documents all four scrap pile tiers as capacity, not payout", () => {
+  it("documents all four scrap pile tiers, payout and swings", () => {
     for (const t of SCRAP_TIERS) {
       expect(DOC, `${t.label} pile tier undocumented`).toContain(t.label);
-      expect(DOC, `${t.label} swings-per-pile undocumented`).toContain(String(t.swingsPerPile));
+      expect(DOC, `${t.label} payout multiple undocumented`).toContain(`${t.payoutMultiple}×`);
     }
-    // The finding itself, not just the numbers.
     expect(DOC).toMatch(/health bar/i);
     expect(DOC).toMatch(/per swing/i);
+    // Swings to break is the half that decides whether tier matters at all.
+    expect(DOC).toMatch(/swings to break/i);
   });
 
   it("states how to turn a pile reading into a credits/s figure", () => {

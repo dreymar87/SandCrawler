@@ -32,19 +32,19 @@ describe("measured effects", () => {
   });
 
   /**
-   * Guards a correction, not a calculation.
+   * Pins this to the COMMON-pile baseline, which is a deliberate floor.
    *
-   * Scrap piles come in four tiers worth 1x/2x/4x/8x, which reads as a reason
-   * to multiply this effect by an expected tier value. It isn't: the tiers take
-   * 1/2/4/8 swings to empty, so the per-swing payout is flat and the rate is
-   * unchanged. Any plausible tier mix sits between 1x and 8x, so if someone
-   * folds one in this assertion fails and points them at MECHANICS.md §6.
+   * Higher tiers pay 1x/2x/4x/8x and break in fewer swings than that, so a real
+   * tier mix pays more per swing. It is not folded in because gold and diamond
+   * swing counts are unmeasured and the plausible range is wide — anywhere from
+   * 1x to 8x — which would swing Scrap Value's ranking around on no evidence.
+   * If someone multiplies it in, this fails and sends them to MECHANICS.md §1.
    */
-  it("is NOT multiplied by scrap pile tier", () => {
+  it("stays on the common-pile baseline rather than a guessed tier mix", () => {
     const e = measuredEffectFor("workshop.scrap-value")!;
     const perLevel = e.gainAt(1);
     expect(perLevel).toBeCloseTo(0.5 * SCRAP_SWINGS_PER_SEC);
-    for (const tierMultiple of SCRAP_TIERS.map((t) => t.swingsPerPile)) {
+    for (const tierMultiple of SCRAP_TIERS.map((t) => t.payoutMultiple)) {
       if (tierMultiple === 1) continue;
       expect(perLevel).not.toBeCloseTo(0.5 * SCRAP_SWINGS_PER_SEC * tierMultiple);
     }

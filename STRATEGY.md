@@ -125,9 +125,10 @@ That's what puts the levers in this order:
 5. **Scrap Value.** Only after the above: it's the same currency as Credits and
    loses to it per crystal for most of the ladder.
 
-What does *not* help: chasing rainbow scrap piles for their value. They pay 8×
-per pile because they take 8× the swings — the rate is identical. Chase them
-only because walking between piles is dead time.
+And **do** chase rainbow piles. They pay 8× a common one but break in two or
+three swings rather than eight, so they're worth roughly 3× per swing. The same
+logic makes pickaxe level a credit lever, not just a build-speed one — it's what
+keeps the big piles at two swings instead of five.
 
 ---
 

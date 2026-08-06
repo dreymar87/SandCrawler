@@ -4,18 +4,22 @@ import {
   SCRAP_TIERS,
   scrapSwingSeconds,
 } from "../data/strategyTracks.seed";
-import { creditsPerSecFromPile, reconcileRate, scrapIncome } from "./scrapRate";
+import {
+  creditsPerSecFromPile,
+  perSwingMultiple,
+  reconcileRate,
+  scrapIncome,
+} from "./scrapRate";
 
 describe("creditsPerSecFromPile", () => {
   /**
-   * The measurement that established the whole pile model, and the reason it
-   * counts as one: a player at Scrap Value L3 reported 5M / 10M / 20M / 40M
-   * from the four tiers. If tier were a payout multiplier those would imply
-   * four different credit rates. Because it is pile CAPACITY — 1/2/4/8 swings
-   * — all four collapse onto the same figure.
+   * A pile pays once, and the payout is a pure function of tier and your
+   * generation — so the four tier readings a player gave at Scrap Value L3
+   * (5M / 10M / 20M / 40M) must all invert to the same rate.
    *
-   * A future change that reintroduces a tier multiplier breaks this test,
-   * which is exactly what it's here for.
+   * Note this is about the PAYOUT ladder, which is well measured. How many
+   * swings each tier costs is a separate, much weaker measurement, and it is
+   * deliberately not part of this calculation.
    */
   it("derives one rate from all four of the tiers", () => {
     const readings = [
@@ -24,37 +28,18 @@ describe("creditsPerSecFromPile", () => {
       { tier: "DIAMOND" as const, pileValue: "20M" },
       { tier: "RAINBOW" as const, pileValue: "40M" },
     ];
-    const rates = readings.map((r) =>
-      creditsPerSecFromPile({ ...r, scrapValueLevel: 3 }),
-    );
+    const rates = readings.map((r) => creditsPerSecFromPile({ ...r, scrapValueLevel: 3 }));
 
     // 5,000,000 credits over 1.5 seconds of generation.
     const expected = 5_000_000 / scrapSwingSeconds(3);
     for (const rate of rates) expect(rate).toBeCloseTo(expected, 3);
   });
 
-  it("scales with Scrap Value level, since the swing buys more seconds", () => {
+  it("scales with Scrap Value level, since a pile pays more seconds", () => {
     const at = (level: number) =>
       creditsPerSecFromPile({ pileValue: "5M", tier: "COMMON", scrapValueLevel: level })!;
-    // Twice the seconds per swing means the same pile implies half the rate.
+    // Twice the seconds per pile means the same payout implies half the rate.
     expect(at(6)).toBeCloseTo(at(3) / 2, 3);
-  });
-
-  it("reads a lower rate when the pile took extra swings", () => {
-    // Below the pile's level you pay more swings for the same credits, so the
-    // per-swing payout — and the rate it implies — drops proportionally.
-    const clean = creditsPerSecFromPile({
-      pileValue: "5M",
-      tier: "COMMON",
-      scrapValueLevel: 3,
-    })!;
-    const struggling = creditsPerSecFromPile({
-      pileValue: "5M",
-      tier: "COMMON",
-      scrapValueLevel: 3,
-      swings: 2,
-    })!;
-    expect(struggling).toBeCloseTo(clean / 2, 3);
   });
 
   it("returns null rather than a wrong number on unusable input", () => {
@@ -111,8 +96,34 @@ describe("scrapIncome", () => {
 });
 
 describe("SCRAP_TIERS", () => {
-  it("doubles pile capacity per tier", () => {
-    expect(SCRAP_TIERS.map((t) => t.swingsPerPile)).toEqual([1, 2, 4, 8]);
+  it("doubles the payout per tier", () => {
+    expect(SCRAP_TIERS.map((t) => t.payoutMultiple)).toEqual([1, 2, 4, 8]);
+  });
+});
+
+describe("perSwingMultiple", () => {
+  /**
+   * The finding that overturned the first version of this model. Payout climbs
+   * 8x from common to rainbow, but swings to break only climb to "2 or 3,
+   * usually" at pickaxe 10-11 — so tier really does raise your rate, and a
+   * rainbow pile is worth walking to.
+   */
+  it("makes rainbow worth several common swings", () => {
+    expect(perSwingMultiple("COMMON")).toBeCloseTo(1, 6);
+    expect(perSwingMultiple("RAINBOW")).toBeGreaterThan(2.5);
+  });
+
+  it("takes an observed swing count over the seeded one", () => {
+    // A better pickaxe breaks it faster, so the tier is worth more to you.
+    expect(perSwingMultiple("RAINBOW", 2)).toBeCloseTo(4, 6);
+    expect(perSwingMultiple("RAINBOW", 8)).toBeCloseTo(1, 6);
+  });
+
+  it("says nothing where nobody has counted swings", () => {
+    // Gold and diamond are unmeasured — a guess here would silently reprice
+    // Scrap Value, so they return null instead.
+    expect(perSwingMultiple("GOLD")).toBeNull();
+    expect(perSwingMultiple("DIAMOND")).toBeNull();
   });
 });
 

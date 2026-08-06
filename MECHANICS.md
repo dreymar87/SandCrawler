@@ -57,34 +57,47 @@ share   = L·u/4 ÷ (1 + L·u/4)
 At Scrap L3 and constant swinging that's **43%** of income; at a maxed L19,
 **83%**. It cannot reach the "95%" an earlier pass recorded — see §6.
 
-#### Pile tiers — the trap
+#### Pile tiers
 
-Piles come in four tiers worth **1× / 2× / 4× / 8×**, and each has a
-**health bar**: the higher tiers take proportionally **more swings** to empty.
-So the doubling is pile *capacity*, and the **per-swing payout is identical
-across all four**.
+Piles come in four tiers, and each has a **health bar**. A pile pays **once**,
+when it breaks — the payout is not cumulative across the swings it took. Two
+separate quantities matter, and conflating them produced two wrong models in a
+row:
 
-A player at Scrap Value L3 (1.5 s a swing) reported:
+| Tier | Pays | Swings to break | Per swing |
+| --- | --- | --- | --- |
+| Common | **1×** (5M) | 1 | 1.0× |
+| Gold | **2×** (10M) | ? | ? |
+| Diamond | **4×** (20M) | ? | ? |
+| Rainbow | **8×** (40M) | 2–3 | **~3.2×** |
 
-| Tier | Pile pays | Swings | Per swing | Implied rate |
-| --- | --- | --- | --- | --- |
-| Common | 5M | 1 | 5M | 3.33M/s |
-| Gold | 10M | 2 | 5M | 3.33M/s |
-| Diamond | 20M | 4 | 5M | 3.33M/s |
-| Rainbow | 40M | 8 | 5M | 3.33M/s |
+Payouts measured at Scrap Value L3; swing counts observed at pickaxe 10–11.
 
-All four agree, which is what makes this a measurement. **Tier does not change
-credits per second.** A rainbow pile is eight swings standing in one place — it
-saves walking, not time. Chase them for convenience, not for rate.
+**The payout ladder is solid.** All four readings invert to the same generation
+figure — 5M ÷ 1, 10M ÷ 2, 20M ÷ 4, 40M ÷ 8, each 1.5 s of a 3.33M/s rate.
+
+**Swings to break is the weak half, and it's the one that decides whether tier
+matters.** It's driven by pile health against pickaxe damage, *not* by the
+payout — which is why rainbow pays 8× for only ~2.5× the swings. So higher
+tiers really are worth more per swing, and rainbow piles are worth going out of
+your way for. Gold and diamond are uncounted, so the expected value of a swing
+across a real tier mix can't be computed yet; the app's Scrap Value model stays
+on the common-pile baseline and is documented as a **floor**.
+
+Two consequences, both of which invert earlier conclusions here: **pickaxe level
+is a credit lever** (it cuts swings on high-tier piles), and hunting rainbow
+piles buys income, not just less walking.
 
 #### The pile is a credits/s meter
 
 The game displays no rate anywhere, so this is the only practical way to get
-one:
+one. Swings don't appear — a pile pays the same however long it took:
 
 ```
-credits/s = pilePayout ÷ swingsTaken ÷ (0.5 × scrapValueLevel)
+credits/s = pilePayout ÷ payoutMultiple(tier) ÷ (0.5 × scrapValueLevel)
 ```
+
+A **common** pile is the cleanest reading, since its multiple is 1.
 
 The app takes this reading on the Strategy tab and feeds it to the Super
 Rebirth model. It also compares it against Droidex income × your multiplier;
@@ -92,10 +105,12 @@ a large gap means the recorded roster no longer matches the base.
 
 #### Pickaxe level
 
-Not a gate — a **tax**. Below the pile's level a swing doesn't fail, it just
-doesn't finish the pile: you pay extra swings for the same credits, so your
-effective rate falls in proportion. The size of the penalty per level of
-shortfall is unmeasured.
+Not a gate — a **tax**, and a bigger lever than it looks. Below the pile's level
+a swing doesn't fail, it just doesn't finish the pile: you pay extra swings for
+the same payout, so your rate falls in proportion. Since the high-tier piles are
+the ones that take multiple swings, pickaxe level is what turns rainbow's 8×
+payout into a rate rather than a slog. The penalty per level of shortfall is
+unmeasured.
 
 ---
 
@@ -233,15 +248,15 @@ drop rates for anything in the "drop quality" category.
 
 On the scrap station specifically:
 
+- **Swings to break a gold and a diamond pile.** The one gap actually blocking
+  a number: with those two counted, expected credits per swing across a real
+  tier mix becomes computable and Scrap Value can be priced properly instead of
+  floored at the common-pile baseline.
 - **Pile spawn frequencies** by tier. Reported as "common dominates, rainbow is
-  rare". Under the pile model this doesn't affect credits/s at all — only
-  walking — so it's low priority.
-- **Pile level distribution**, and how many extra swings a pile costs per level
-  your pickaxe falls short. This one *does* move the rate.
-- **Whether a gold pile really takes two swings.** The entire pile model rests
-  on it, and it's a thirty-second check: swing a gold pile once. Two swings of
-  ~5M confirms it; one swing of 10M means tier *is* a per-swing multiplier, and
-  Scrap Value roughly doubles in value and moves up the buy order.
+  rare". Needed alongside the swing counts — payout per swing is worthless
+  without knowing how often each tier turns up.
+- **How many extra swings a pile costs per level your pickaxe falls short.**
+  Would price pickaxe levelling against everything else in the shop.
 
 ---
 
@@ -259,7 +274,8 @@ the failure modes recur.
 | The step differs by cycle | Differs by **level**; cycles agree | Watch for confounded variables |
 | "Do not sell" is a global freeze | Scoped to that row's droids | Read the source's own definition |
 | Daily Crystals out-earns the SR loop | 15–30% of income | Payback ≠ dominance |
-| Four pile tiers at 1/2/4/8× multiply scrap income | They multiply credits per **pile**; the pile holds that many swings. Rate unchanged | A bigger number per event isn't a bigger rate until you price the event |
+| Four pile tiers at 1/2/4/8× multiply scrap income | Not directly — a pile pays once, so what matters is payout ÷ swings to break | A bigger number per event isn't a bigger rate until you price the event |
+| …so swings must scale 1/2/4/8 too, and tier is rate-neutral | Rainbow breaks in 2–3 swings, not 8 — it *is* worth ~3.2× per swing | Symmetry is a hypothesis, not a measurement. Two revisions in one session came from assuming it |
 | Scrapping is 95% of income | Bounded at 83%, and 43% at Scrap L3 | The pair compared a post-multiplier figure against a pre-multiplier one |
 
 A recurring one worth stating on its own: **two readings that differ by 0.1

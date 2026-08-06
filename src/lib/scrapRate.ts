@@ -1,7 +1,8 @@
 import {
   SCRAP_SWINGS_PER_SEC,
   SCRAP_TIERS,
-  scrapPileSwings,
+  scrapPayoutMultiple,
+  scrapSwingsToBreak,
   scrapSwingSeconds,
   type ScrapTierKey,
 } from "../data/strategyTracks.seed";
@@ -52,29 +53,45 @@ export function scrapReadingFrom(ui: UiPrefs | undefined): ScrapReading {
 }
 
 /**
- * Credits/s implied by a scrap pile, or null when the inputs can't support one.
+ * Your droid generation, implied by what a scrap pile paid.
  *
- * `swings` defaults to the tier's expected count. Override it when your pickaxe
- * level is below the pile's — the pile is worth the same but costs extra swings,
- * so the per-swing payout (and therefore the implied rate) is lower.
+ * The payout is a pure function of tier and your generation — swings to break
+ * don't enter into it, because a pile pays once regardless of how long it took:
+ *
+ *     payout = 0.5 s × scrapValueLevel × creditsPerSec × payoutMultiple(tier)
+ *
+ * A common pile is the cleanest anchor (multiple of 1), which is why the UI
+ * nudges toward one.
  */
 export function creditsPerSecFromPile({
   pileValue,
   tier,
   scrapValueLevel,
-  swings,
 }: {
   /** What the pile paid — accepts the app's usual "5M" notation. */
   pileValue: string;
   tier: ScrapTierKey;
   scrapValueLevel: number;
-  swings?: number;
 }): number | null {
   const total = Number(parseCredits(pileValue));
   const seconds = scrapSwingSeconds(scrapValueLevel);
-  const hits = swings && swings > 0 ? swings : scrapPileSwings(tier);
   if (!Number.isFinite(total) || total <= 0 || seconds <= 0) return null;
-  return total / hits / seconds;
+  return total / scrapPayoutMultiple(tier) / seconds;
+}
+
+/**
+ * Credits per swing from a tier, relative to a common pile, using an observed
+ * swing count.
+ *
+ * This is where tier stops being cosmetic. Payout climbs 1/2/4/8 while swings
+ * to break climb far more slowly — a player at pickaxe 10-11 one-shots common
+ * and breaks rainbow in "2 or 3, usually", making a rainbow swing worth ~3.2
+ * common ones. It scales with pickaxe, so it's per-player, not a constant.
+ */
+export function perSwingMultiple(tier: ScrapTierKey, observedSwings?: number | null): number | null {
+  const swings = observedSwings && observedSwings > 0 ? observedSwings : scrapSwingsToBreak(tier);
+  if (!swings || swings <= 0) return null;
+  return scrapPayoutMultiple(tier) / swings;
 }
 
 export interface ScrapIncome {
@@ -96,12 +113,15 @@ export interface ScrapIncome {
 /**
  * Split a credit rate into its passive and active halves.
  *
- * Both halves scale with the same droid generation — the swing pays a multiple
- * of it — so the split is a pure function of Scrap Value level and how much of
- * a run you spend swinging. It is NOT something to measure separately, and an
- * earlier "95% of income comes from scrapping" reading turned out to be
- * impossible under this arithmetic: the share is bounded by Scrap Value's own
- * ladder, at 83% for a maxed L19 player swinging constantly.
+ * Both halves scale with the same droid generation — the payout is a multiple
+ * of it — so the split is a function of Scrap Value level and how much of a run
+ * you spend swinging, rather than something to measure separately. An earlier
+ * "95% of income comes from scrapping" reading turned out to be impossible
+ * under this arithmetic.
+ *
+ * Computed on COMMON piles, so the scrap half is a floor: higher tiers pay more
+ * per swing than a common pile does (see `perSwingMultiple`), and how much more
+ * depends on unmeasured swing counts for gold and diamond.
  */
 export function scrapIncome({
   creditsPerSec,

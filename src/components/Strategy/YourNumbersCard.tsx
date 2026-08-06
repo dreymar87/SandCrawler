@@ -4,7 +4,7 @@ import {
   BUILD_SWINGS_PER_SEC,
   pickaxeLevelsKept,
   SCRAP_TIERS,
-  scrapPileSwings,
+  scrapPayoutMultiple,
   scrapSwingSeconds,
   type ScrapTierKey,
 } from "../../data/strategyTracks.seed";
@@ -12,6 +12,7 @@ import { formatCredits, parseCredits } from "../../lib/credits";
 import { formatPerSecond } from "../../lib/production";
 import {
   creditsPerSecFromPile,
+  perSwingMultiple,
   reconcileRate,
   scrapReadingFrom,
 } from "../../lib/scrapRate";
@@ -81,13 +82,13 @@ export function YourNumbersCard() {
     return raw.trim() === "" || !Number.isFinite(n) || n <= 0 ? undefined : n;
   };
 
-  const expectedSwings = scrapPileSwings(reading.tier);
-  const swings = reading.swings ?? expectedSwings;
-
   /**
    * Inverting the pile into a rate. The pile is the only credits/s meter the
-   * game gives you — a swing pays a stated number of seconds of generation, so
-   * dividing back out recovers the rate the whole tab depends on.
+   * game gives you — a pile pays a stated number of seconds of generation when
+   * it breaks, so dividing back out recovers the rate the whole tab depends on.
+   *
+   * Swings to break deliberately DON'T enter this: a pile pays once, whatever
+   * it cost to break.
    */
   const derived = useMemo(
     () =>
@@ -95,10 +96,13 @@ export function YourNumbersCard() {
         pileValue: reading.pileValue,
         tier: reading.tier,
         scrapValueLevel: scrapLevel,
-        swings: reading.swings ?? undefined,
       }),
-    [reading.pileValue, reading.tier, reading.swings, scrapLevel],
+    [reading.pileValue, reading.tier, scrapLevel],
   );
+
+  // How good this tier is per swing — where tier stops being cosmetic.
+  const perSwing = perSwingMultiple(reading.tier, reading.swings);
+  const swingChoices = reading.tier === "COMMON" ? [1, 2, 3] : [2, 3, 4, 6];
 
   // The Droidex's own view, multiplier applied, for the sanity check below.
   const estimated = storedMult && storedMult > 0 ? Number(production.flat) * storedMult : 0;
@@ -115,7 +119,6 @@ export function YourNumbersCard() {
       pileValue: next.pileValue,
       tier: next.tier,
       scrapValueLevel: scrapLevel,
-      swings: next.swings ?? undefined,
     });
     // A cleared or unreadable pile shouldn't silently keep an old rate around.
     setUiPref("measuredCreditsPerSec", rate ?? undefined);
@@ -185,37 +188,28 @@ export function YourNumbersCard() {
             }}
           />
           <span className="font-mono text-[9.5px] text-muted-alt leading-snug">
-            in {swings} swing{swings === 1 ? "" : "s"}
-            {reading.swings === null ? "" : ` (expected ${expectedSwings})`}
+            {reading.tier === "COMMON"
+              ? "a common pile is the cleanest reading"
+              : `pays ${scrapPayoutMultiple(reading.tier)}× a common pile`}
           </span>
         </div>
 
+        {/* Swings don't affect the rate above — a pile pays once however long
+            it took. They price the TIER: payout climbs 1/2/4/8 while swings
+            climb more slowly, so high tiers are worth seeking out. */}
         <div className="flex items-baseline gap-2">
           <span className="font-mono text-[10px] uppercase tracking-wider text-muted-alt w-28 shrink-0">
-            Swings
+            Swings to break
           </span>
           <div className="flex items-baseline gap-1.5 flex-wrap">
-            <button
-              type="button"
-              onClick={() => commitReading({ swings: null })}
-              className={`font-mono text-[10px] px-2 py-0.5 rounded-md border transition ${
-                reading.swings === null
-                  ? "border-holo bg-holo/10 text-holo"
-                  : "border-line-alt text-muted hover:text-ink hover:border-holo-dim"
-              }`}
-            >
-              {expectedSwings} · expected
-            </button>
-            {/* A pile above your pickaxe level costs extra swings for the same
-                credits, which reads as a lower rate. */}
-            {[expectedSwings * 2, expectedSwings * 3].map((n) => (
+            {swingChoices.map((n) => (
               <button
                 key={n}
                 type="button"
                 onClick={() => commitReading({ swings: n })}
                 className={`font-mono text-[10px] px-2 py-0.5 rounded-md border transition ${
                   reading.swings === n
-                    ? "border-warn bg-warn/10 text-warn"
+                    ? "border-holo bg-holo/10 text-holo"
                     : "border-line-alt text-muted hover:text-ink hover:border-holo-dim"
                 }`}
               >
@@ -238,10 +232,19 @@ export function YourNumbersCard() {
               </span>
               <span className="text-muted-alt">
                 {" "}
-                — {formatCredits(parseCredits(reading.pileValue))} over {swings} swing
-                {swings === 1 ? "" : "s"}, at {scrapSwingSeconds(scrapLevel).toFixed(1)} s of
-                generation each (Scrap Value L{scrapLevel}).
+                — {formatCredits(parseCredits(reading.pileValue))} ÷{" "}
+                {scrapPayoutMultiple(reading.tier)} ÷{" "}
+                {scrapSwingSeconds(scrapLevel).toFixed(1)} s of generation (Scrap Value L
+                {scrapLevel}).
               </span>
+              {perSwing && perSwing > 1.05 ? (
+                <span className="text-sun">
+                  {" "}
+                  A {SCRAP_TIERS.find((t) => t.key === reading.tier)?.label.toLowerCase()} pile
+                  pays {perSwing.toFixed(1)}× a common one per swing — worth going out of your
+                  way for.
+                </span>
+              ) : null}
               {check && !check.agrees ? (
                 <span className="text-warn/80">
                   {" "}
