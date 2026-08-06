@@ -4,10 +4,14 @@ import { planNovaPurchases } from "../../lib/novaPlan";
 import { pickaxeLevelsKept } from "../../data/strategyTracks.seed";
 import { NOVA_UPGRADES } from "../../data/novaShop.seed";
 import { formatPerSecond } from "../../lib/production";
+import { formatCredits } from "../../lib/credits";
+import { scrapIncome } from "../../lib/scrapRate";
+import { deployedByClass, PRODUCTION_CLASSES, upgradePayoffs } from "../../lib/incomeStrategy";
 import { useActiveCycle, useNovaBalance, useProduction } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
 
 const DEFAULT_SETUP_HOURS = 2;
+const DEFAULT_UPTIME = 0.5;
 
 /**
  * "What do I do right now" — the one card that answers the question the rest
@@ -24,6 +28,8 @@ export function StrategySummary() {
   const pickaxeLevel = useAppStore((s) => s.profile.pickaxeLevel) ?? 0;
   const pickaxePeak = useAppStore((s) => s.profile.pickaxePeak) ?? 0;
   const novaUpgrades = useAppStore((s) => s.novaUpgrades);
+  const cards = useAppStore((s) => s.cards);
+  const uptime = useAppStore((s) => s.ui.swingUptime) ?? DEFAULT_UPTIME;
   const setupHours = useAppStore((s) => s.ui.srSetupHours) ?? DEFAULT_SETUP_HOURS;
   const storedMult = useAppStore((s) => s.ui.creditMultiplier);
   const storedRate = useAppStore((s) => s.ui.measuredCreditsPerSec);
@@ -70,6 +76,44 @@ export function StrategySummary() {
   }, [pickaxePeak, kept, mastery]);
 
   const atBest = best && currentLevel >= best.level;
+
+  /**
+   * Where credits actually come from, and the cheapest way to raise them.
+   *
+   * The scrap swing pays a MULTIPLE of droid generation, so raising droid
+   * income lifts both halves at once — which is why a free redeployment can
+   * beat a crystal purchase here. Deliberately not one ranked list: crystals,
+   * chips and free moves aren't a shared currency, and pretending otherwise is
+   * the units error this project keeps relearning.
+   */
+  const credits = useMemo(() => {
+    const scrapLevel = novaUpgrades.find((u) => u.id === "workshop.scrap-value")?.level ?? 0;
+    const split = scrapIncome({
+      creditsPerSec: Number(rate),
+      scrapValueLevel: scrapLevel,
+      swingUptime: uptime,
+    });
+
+    // Free: a lounge earner that belongs in a working slot.
+    const byClass = deployedByClass({ cards, cycle, currentLevel, rebirthLevel: currentLevel });
+    let free: { text: string; gain: bigint } | null = null;
+    for (const cls of PRODUCTION_CLASSES) {
+      for (const row of byClass[cls]) {
+        if (!row.moveHint || row.moveHint.gain <= (free?.gain ?? 0n)) continue;
+        free = {
+          gain: row.moveHint.gain,
+          text: row.moveHint.swapWith
+            ? `Work ${row.name} over ${row.moveHint.swapWith.name}`
+            : `Work ${row.name} — there's a free ${cls.toLowerCase()} slot`,
+        };
+      }
+    }
+
+    // Chips: the biggest tier upgrade on a droid already working.
+    const payoff = upgradePayoffs({ cards, cycle, currentLevel })[0] ?? null;
+
+    return { split, free, payoff };
+  }, [novaUpgrades, rate, uptime, cards, cycle, currentLevel]);
 
   return (
     <section className="card p-4 mb-4 border-holo-dim/50">
@@ -134,15 +178,42 @@ export function StrategySummary() {
           />
         ) : null}
 
-        {/* 4. The rate everything above rests on. */}
+        {/* 4. Raising credits — the thing that moves every row above. */}
+        {credits.free ? (
+          <Row
+            label="Credits"
+            tone="ok"
+            value={`${credits.free.text} · +${formatCredits(credits.free.gain)}/s`}
+            detail={`Free — a redeployment, not a purchase. Worth ${formatCredits(
+              BigInt(Math.round(Number(credits.free.gain) * credits.split.droidLeverage)),
+            )}/s once the scrap swing multiplies it.`}
+          />
+        ) : credits.payoff ? (
+          <Row
+            label="Credits"
+            tone="holo"
+            value={`Upgrade ${credits.payoff.name} to ${credits.payoff.nextTier} · +${formatCredits(credits.payoff.totalGain)}/s`}
+            detail={`${credits.payoff.chips === null ? "Chip cost unknown" : `${credits.payoff.chips.toLocaleString()} chips`}. Droid income is multiplied ${credits.split.droidLeverage.toFixed(2)}× by your scrap swings, so it pays twice.`}
+          />
+        ) : null}
+
+        {/* 5. The rate everything above rests on. */}
         <Row
           label="Rate"
           tone="muted"
           value={formatPerSecond(rate)}
           detail={
-            storedRate && storedRate > 0
-              ? "Measured."
-              : "Estimated from Droidex income — it can't see scrap credits."
+            credits.split.scrapShare > 0
+              ? `${Math.round((1 - credits.split.scrapShare) * 100)}% droids · ${Math.round(
+                  credits.split.scrapShare * 100,
+                )}% scrap. ${
+                  storedRate && storedRate > 0
+                    ? "Measured."
+                    : "Estimated from Droidex income — it can't see scrap credits."
+                }`
+              : storedRate && storedRate > 0
+                ? "Measured."
+                : "Estimated from Droidex income — it can't see scrap credits."
           }
         />
       </div>

@@ -8,6 +8,8 @@ import {
   type IncomeRow,
 } from "../../lib/incomeStrategy";
 import { formatPerSecond } from "../../lib/production";
+import { scrapIncome } from "../../lib/scrapRate";
+import { scrapSwingSeconds } from "../../data/strategyTracks.seed";
 import {
   useActiveCycle,
   useBaseView,
@@ -16,6 +18,8 @@ import {
 } from "../../store/selectors";
 import { useAppStore } from "../../store/useAppStore";
 import { TierPill } from "../common/TierPill";
+
+const DEFAULT_UPTIME = 0.5;
 
 /**
  * Credit strategy: ranks the droids you actually have DEPLOYED (working /
@@ -27,6 +31,8 @@ import { TierPill } from "../common/TierPill";
 export function CreditStrategySection() {
   const cards = useAppStore((s) => s.cards);
   const currentLevel = useAppStore((s) => s.profile.standardRebirth);
+  const novaUpgrades = useAppStore((s) => s.novaUpgrades);
+  const uptime = useAppStore((s) => s.ui.swingUptime) ?? DEFAULT_UPTIME;
   const showAll = useAppStore((s) => s.ui.strategyShowAll ?? false);
   const setUiPref = useAppStore((s) => s.setUiPref);
   // Merged into income via statsFromTable; a dep so edits recompute the ranking.
@@ -50,6 +56,15 @@ export function CreditStrategySection() {
   );
 
   const nextRb = rebirths.find((r) => r.level === currentLevel + 1);
+
+  // What one extra credit/s of droid income is really worth, once the scrap
+  // swing — which pays a multiple of that income — is counted.
+  const scrapLevel = novaUpgrades.find((u) => u.id === "workshop.scrap-value")?.level ?? 0;
+  const leverage = scrapIncome({
+    creditsPerSec: 1,
+    scrapValueLevel: scrapLevel,
+    swingUptime: uptime,
+  }).droidLeverage;
 
   const allRows = [...byClass.WORKER, ...byClass.ASTROMECH, ...byClass.BATTLE];
   const moveCount = allRows.filter((r) => r.moveHint).length;
@@ -95,9 +110,22 @@ export function CreditStrategySection() {
             ) : null}
           </div>
 
+          {/* The reason this section outranks buying scrap upgrades: a swing
+              pays a multiple of droid generation, so raising droid income
+              lifts the passive AND active halves together. */}
+          {leverage > 1.01 ? (
+            <p className="font-mono text-[10px] text-ok/90 leading-snug">
+              Your scrap swings pay {scrapSwingSeconds(scrapLevel).toFixed(1)} s of droid
+              generation each, so every <span className="font-bold">+1 credit/s</span> here is
+              worth <span className="font-bold">+{leverage.toFixed(2)}/s</span> in practice.
+              That's why a free redeployment can beat a crystal purchase.
+            </p>
+          ) : null}
+
           <p className="font-mono text-[10px] text-muted-alt leading-snug">
             Ranked by what you have deployed now (not the Droidex). Lounge droids earn nothing
-            until worked.
+            until worked. Rebirth-required droids can sit in the <span className="text-sun">lounge</span> —
+            they still count, and your working slots stay on earners.
           </p>
 
           {/* Show-all toggle */}

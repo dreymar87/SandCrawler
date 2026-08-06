@@ -392,6 +392,23 @@ export interface UiPrefs {
    */
   measuredCreditsPerSec?: number;
   /**
+   * The last scrap pile the player read off the screen, which the app inverts
+   * into `measuredCreditsPerSec`.
+   *
+   * The game shows no credits/s anywhere, so asking for one directly was
+   * asking for a number that doesn't exist. A pile is visible, and a swing pays
+   * a stated number of seconds of generation, so the pile is a usable meter.
+   * Kept so the reading can be edited rather than re-entered from scratch.
+   */
+  scrapReading?: {
+    /** A `ScrapTierKey` from `strategyTracks.seed`, stored loosely. */
+    tier?: string;
+    /** Credit notation, e.g. "5M" — parsed with `parseCredits`. */
+    pileValue?: string;
+    /** Swings it took to empty. Absent = the tier's expected count. */
+    swings?: number;
+  };
+  /**
    * Which Strategy-tab sections the player has open, keyed by section id.
    * Absent keys fall back to each section's own default.
    */

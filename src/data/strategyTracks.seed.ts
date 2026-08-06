@@ -64,6 +64,58 @@ export interface MeasuredEffect {
 export const SCRAP_SWINGS_PER_SEC = 0.5;
 
 /**
+ * ── The four scrap pile tiers ────────────────────────────────────────────
+ *
+ * `swingsPerPile` is CAPACITY, NOT PAYOUT. The field is named that way on
+ * purpose, because the obvious reading of this data is wrong and was very
+ * nearly acted on.
+ *
+ * A player reported piles worth 5M / 10M / 20M / 40M — doubling by tier —
+ * which looks like scrap income being up to 8x what we modelled. It isn't.
+ * Piles have a health bar, and the higher tiers take proportionally more
+ * swings to empty. Each SWING pays the same `scrapSwingSeconds(level)` of
+ * your credit rate whatever the tier; a rainbow pile just holds eight swings'
+ * worth in one place.
+ *
+ * The four readings agree exactly on the implied rate, which is what makes
+ * this a measurement rather than a story — at Scrap Value L3 (1.5 s a swing):
+ *
+ *   common  5M / 1 swing  = 5M -> 3.33M/s      diamond 20M / 4 = 5M -> 3.33M/s
+ *   gold   10M / 2 swings = 5M -> 3.33M/s      rainbow 40M / 8 = 5M -> 3.33M/s
+ *
+ * So tier changes credits per PILE, and therefore how far you walk between
+ * swings. It does not change credits per second, and it must not appear in
+ * the Scrap Value effect below. See MECHANICS.md §1 and the correction in §6.
+ */
+export const SCRAP_TIERS = [
+  { key: "COMMON", label: "Common", swingsPerPile: 1 },
+  { key: "GOLD", label: "Gold", swingsPerPile: 2 },
+  { key: "DIAMOND", label: "Diamond", swingsPerPile: 4 },
+  { key: "RAINBOW", label: "Rainbow", swingsPerPile: 8 },
+] as const;
+
+export type ScrapTierKey = (typeof SCRAP_TIERS)[number]["key"];
+
+/**
+ * Seconds of your credit generation one full-value swing pays, at a given
+ * Scrap Value level. The shop states it directly: L3 pays "credits based on
+ * 1.5 seconds of base credit generation".
+ */
+export function scrapSwingSeconds(scrapValueLevel: number): number {
+  return 0.5 * Math.max(0, scrapValueLevel);
+}
+
+/**
+ * Swings to empty a pile of this tier, assuming your pickaxe level is at or
+ * above the pile's. Below it the pile takes MORE swings for the same total
+ * payout — the penalty is real but unmeasured, which is why callers can
+ * override this.
+ */
+export function scrapPileSwings(tier: ScrapTierKey): number {
+  return SCRAP_TIERS.find((t) => t.key === tier)?.swingsPerPile ?? 1;
+}
+
+/**
  * Seconds removed from a droid build by one swing, as a function of pickaxe
  * level. Measured at L10 = 13.2s and L11 = 14.4s, a clean +1.2 per level:
  *
@@ -150,10 +202,17 @@ export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
     // shows the model was fine and the RATE ESTIMATE was wrong: 1.80M / 1.5s
     // implies 1.20M/s of real generation, which is what the app should have
     // been using all along.
+    //
+    // DELIBERATELY NOT tier-multiplied. The four pile tiers (SCRAP_TIERS) are
+    // worth 1x/2x/4x/8x PER PILE and take 1/2/4/8 swings to empty, so the
+    // per-swing payout — the only thing that sets a rate — is identical across
+    // them. Multiplying this by an expected tier value would inflate scrap
+    // income by roughly 2x and push Scrap Value several places up the ranking
+    // for no reason. `upgradeValue.test.ts` guards against exactly that.
     gainAt: (n) => 0.5 * n * SCRAP_SWINGS_PER_SEC,
     activeOnly: true,
     effect:
-      "+0.5 seconds of base credit generation per swing per level (L3 = 1.5 s), one full-value swing / 2 s while your pickaxe level ≥ the pile's",
+      "+0.5 seconds of base credit generation per swing per level (L3 = 1.5 s), one full-value swing / 2 s. Pile tier changes credits per pile, not per swing — a rainbow pile is eight swings in one place, so it saves walking, not time",
     source: "in-game shop text",
   },
   {

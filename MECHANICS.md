@@ -37,16 +37,65 @@ buffs.
 > rebirth multiplier and the Credits upgrade. This may be an artefact of
 > comparing a swing measurement against a roster recorded weeks earlier. Until
 > it's resolved, the app takes a manually entered credits/s rather than trusting
-> its own estimate.
+> its own estimate — and now shows the two side by side, so the gap is visible
+> instead of buried in this document.
 
 ### The scrap station (active)
 
 A swing pays **credits equal to N seconds of your aggregate droid generation**,
-where N comes from Scrap Value. Full-value swings are capped at **one per two
-seconds**, and only land while your **pickaxe level ≥ the pile's level**.
+where N comes from Scrap Value (`0.5 × level`, so L3 = 1.5 s). Full-value swings
+are capped at **one per two seconds**.
 
-For an actively-swinging player this dominates. One measured case: 900K/s from
-scrapping against 46.9K/s from droids — **95% of total income**.
+Because the swing pays a multiple of droid income, the two streams are not
+independent — the split is arithmetic, not something to measure:
+
+```
+scrap/s = droids/s × 0.5 × scrapValueLevel × 0.5 swings/s × uptime
+share   = L·u/4 ÷ (1 + L·u/4)
+```
+
+At Scrap L3 and constant swinging that's **43%** of income; at a maxed L19,
+**83%**. It cannot reach the "95%" an earlier pass recorded — see §6.
+
+#### Pile tiers — the trap
+
+Piles come in four tiers worth **1× / 2× / 4× / 8×**, and each has a
+**health bar**: the higher tiers take proportionally **more swings** to empty.
+So the doubling is pile *capacity*, and the **per-swing payout is identical
+across all four**.
+
+A player at Scrap Value L3 (1.5 s a swing) reported:
+
+| Tier | Pile pays | Swings | Per swing | Implied rate |
+| --- | --- | --- | --- | --- |
+| Common | 5M | 1 | 5M | 3.33M/s |
+| Gold | 10M | 2 | 5M | 3.33M/s |
+| Diamond | 20M | 4 | 5M | 3.33M/s |
+| Rainbow | 40M | 8 | 5M | 3.33M/s |
+
+All four agree, which is what makes this a measurement. **Tier does not change
+credits per second.** A rainbow pile is eight swings standing in one place — it
+saves walking, not time. Chase them for convenience, not for rate.
+
+#### The pile is a credits/s meter
+
+The game displays no rate anywhere, so this is the only practical way to get
+one:
+
+```
+credits/s = pilePayout ÷ swingsTaken ÷ (0.5 × scrapValueLevel)
+```
+
+The app takes this reading on the Strategy tab and feeds it to the Super
+Rebirth model. It also compares it against Droidex income × your multiplier;
+a large gap means the recorded roster no longer matches the base.
+
+#### Pickaxe level
+
+Not a gate — a **tax**. Below the pile's level a swing doesn't fail, it just
+doesn't finish the pile: you pay extra swings for the same credits, so your
+effective rate falls in proportion. The size of the penalty per level of
+shortfall is unmeasured.
 
 ---
 
@@ -136,7 +185,7 @@ can show a stale low value until the first collection refreshes it (observed:
 | Upgrade | Effect per level | Unit |
 | --- | --- | --- |
 | Credits | +20% of base credits/s (additive) | credits/s |
-| Scrap Value | +0.5 s of generation per swing | credits/s |
+| Scrap Value | +0.5 s of generation per swing — **not** tier-multiplied | credits/s |
 | Critical Chance | +5% crit chance on build swings | build time |
 | Critical Amount | +10% crit amount on build swings | build time |
 | Crafting Speed | +0.1/sec droid crafting | build time |
@@ -182,6 +231,18 @@ Blueprint Vendor — costs known, effects not.
 Also unknown: the base crit multiplier, the time to re-level a pickaxe, and
 drop rates for anything in the "drop quality" category.
 
+On the scrap station specifically:
+
+- **Pile spawn frequencies** by tier. Reported as "common dominates, rainbow is
+  rare". Under the pile model this doesn't affect credits/s at all — only
+  walking — so it's low priority.
+- **Pile level distribution**, and how many extra swings a pile costs per level
+  your pickaxe falls short. This one *does* move the rate.
+- **Whether a gold pile really takes two swings.** The entire pile model rests
+  on it, and it's a thirty-second check: swing a gold pile once. Two swings of
+  ~5M confirms it; one swing of 10M means tier *is* a per-swing multiplier, and
+  Scrap Value roughly doubles in value and moves up the buy order.
+
 ---
 
 ## 6. Corrections worth remembering
@@ -198,6 +259,8 @@ the failure modes recur.
 | The step differs by cycle | Differs by **level**; cycles agree | Watch for confounded variables |
 | "Do not sell" is a global freeze | Scoped to that row's droids | Read the source's own definition |
 | Daily Crystals out-earns the SR loop | 15–30% of income | Payback ≠ dominance |
+| Four pile tiers at 1/2/4/8× multiply scrap income | They multiply credits per **pile**; the pile holds that many swings. Rate unchanged | A bigger number per event isn't a bigger rate until you price the event |
+| Scrapping is 95% of income | Bounded at 83%, and 43% at Scrap L3 | The pair compared a post-multiplier figure against a pre-multiplier one |
 
 A recurring one worth stating on its own: **two readings that differ by 0.1
 are not a trend when the display rounds to 0.1.** Several conclusions here were

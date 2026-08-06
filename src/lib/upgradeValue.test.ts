@@ -4,6 +4,7 @@ import {
   measuredEffectFor,
   MEASURED_EFFECTS,
   SCRAP_SWINGS_PER_SEC,
+  SCRAP_TIERS,
 } from "../data/strategyTracks.seed";
 
 const key = (l: { id: string; level: number }) => `${l.id}@${l.level}`;
@@ -28,6 +29,25 @@ describe("measured effects", () => {
     expect(e.gainAt(1)).toBeCloseTo(0.25);
     expect(e.activeOnly).toBe(true);
     expect(e.whyNotRanked).toBeUndefined();
+  });
+
+  /**
+   * Guards a correction, not a calculation.
+   *
+   * Scrap piles come in four tiers worth 1x/2x/4x/8x, which reads as a reason
+   * to multiply this effect by an expected tier value. It isn't: the tiers take
+   * 1/2/4/8 swings to empty, so the per-swing payout is flat and the rate is
+   * unchanged. Any plausible tier mix sits between 1x and 8x, so if someone
+   * folds one in this assertion fails and points them at MECHANICS.md §6.
+   */
+  it("is NOT multiplied by scrap pile tier", () => {
+    const e = measuredEffectFor("workshop.scrap-value")!;
+    const perLevel = e.gainAt(1);
+    expect(perLevel).toBeCloseTo(0.5 * SCRAP_SWINGS_PER_SEC);
+    for (const tierMultiple of SCRAP_TIERS.map((t) => t.swingsPerPile)) {
+      if (tierMultiple === 1) continue;
+      expect(perLevel).not.toBeCloseTo(0.5 * SCRAP_SWINGS_PER_SEC * tierMultiple);
+    }
   });
 });
 

@@ -102,14 +102,44 @@ observed.
 
 ---
 
-## 4. The traps
+## 4. When credits are the bottleneck
+
+Common situation: you're pushing droids up tiers for rebirth requirements, so
+your working slots are full of droids chosen for what they *unlock* rather than
+what they *earn*, and everything is slow.
+
+The thing to understand is that **droid income is multiplied**. A scrap swing
+pays a number of seconds of your droid generation, so raising that rate lifts
+the passive and the active half together — at Scrap Value L3 and constant
+swinging, every +1 credits/s of droid income is worth +1.75/s in practice.
+That's what puts the levers in this order:
+
+1. **Park rebirth droids in the lounge.** Lounge droids satisfy requirements
+   without occupying a working slot, so your earners stay deployed. This costs
+   nothing and is the single most common fix. Lounge Slot L1 is 1 crystal.
+2. **Work your best earners.** The Strategy tab flags high-income droids
+   sitting in the lounge and names what they'd replace.
+3. **Tier upgrades on droids already working.** Chips, not crystals — a
+   different budget from everything in the shop, so it competes with nothing.
+4. **Credits — +20% of base per level.** Multiplies both halves, cheap ladder.
+5. **Scrap Value.** Only after the above: it's the same currency as Credits and
+   loses to it per crystal for most of the ladder.
+
+What does *not* help: chasing rainbow scrap piles for their value. They pay 8×
+per pile because they take 8× the swings — the rate is identical. Chase them
+only because walking between piles is dead time.
+
+---
+
+## 5. The traps
 
 **Over-grinding.** Pushing past your row in the table above costs crystals per
 hour. The instinct that further is always better is wrong here.
 
 **Trusting the app's estimated credits/s.** It sees Droidex income only — no
 rebirth multiplier, no Credits upgrade, no scrap. One player's real rate was
-orders of magnitude higher. Enter a measured figure.
+orders of magnitude higher. Read a scrap pile instead: the Strategy tab inverts
+it into a rate, which is the only credits/s figure the game will give you.
 
 **Letting Pickaxe Mastery fall behind your peak.** Every Super Rebirth you hand
 back the difference, silently. The Strategy tab flags this and prices the fix.
@@ -119,7 +149,7 @@ value until your first collection.
 
 ---
 
-## 5. What would change this advice
+## 6. What would change this advice
 
 The buy order is judgement wherever an effect is unmeasured — 10 of 23 upgrades
 still are. The highest-value gaps, in order:

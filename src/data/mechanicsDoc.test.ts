@@ -18,6 +18,8 @@ import {
   MEASURED_EFFECTS,
   pickaxeLevelsKept,
   SCRAP_SWINGS_PER_SEC,
+  SCRAP_TIERS,
+  scrapSwingSeconds,
 } from "./strategyTracks.seed";
 import { OBSERVED_REBIRTH_MULTIPLIERS, observedStepAtLevel } from "./rebirthMultipliers.seed";
 import { NOVA_UPGRADES } from "./novaShop.seed";
@@ -46,6 +48,27 @@ describe("MECHANICS.md covers everything we've measured", () => {
     expect(DOC).toContain(String(BUILD_SWINGS_PER_SEC)); // 2.5 build swings/s
     expect(DOC).toMatch(/one per two seconds|1 per 2 s/i); // the scrap cap
     expect(SCRAP_SWINGS_PER_SEC).toBe(0.5);
+  });
+
+  /**
+   * The pile tiers are the most inviting wrong turn in the data — 1/2/4/8 reads
+   * as a payout multiplier and isn't. If the write-up ever loses the "swings to
+   * empty" half, the next reader takes that turn.
+   */
+  it("documents all four scrap pile tiers as capacity, not payout", () => {
+    for (const t of SCRAP_TIERS) {
+      expect(DOC, `${t.label} pile tier undocumented`).toContain(t.label);
+      expect(DOC, `${t.label} swings-per-pile undocumented`).toContain(String(t.swingsPerPile));
+    }
+    // The finding itself, not just the numbers.
+    expect(DOC).toMatch(/health bar/i);
+    expect(DOC).toMatch(/per swing/i);
+  });
+
+  it("states how to turn a pile reading into a credits/s figure", () => {
+    // L3 = 1.5s a swing is the worked example the derivation rests on.
+    expect(DOC).toContain(scrapSwingSeconds(3).toFixed(1));
+    expect(DOC).toMatch(/scrapValueLevel|0\.5 × scrapValue/i);
   });
 
   it("records the pickaxe formulas with figures that match the code", () => {
