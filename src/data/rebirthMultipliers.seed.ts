@@ -101,6 +101,12 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // of evidence that the step is FIXED within a cycle, against last cycle
   // where no constant step fit at all.
   { rbLevel: 4, creditMultiplier: 17.3, superRebirthCount: 3, session: "c-post-srb3" },
+  // Sixth reading; range now 0.475-0.500. Five consecutive levels fit one
+  // fixed step. RB6 is the discriminating level: this cycle projects
+  // 18.25-18.40 there against last cycle's measured 18.1, so a reading near
+  // 18.1-18.4 means the two cycles converge despite the extra Super Rebirth,
+  // while 18.5+ means the step grew mid-cycle as it did last time near RB10.
+  { rbLevel: 5, creditMultiplier: 17.8, superRebirthCount: 3, session: "c-post-srb3" },
 ];
 
 /**
