@@ -356,25 +356,50 @@ describe("level-dependent step", () => {
     expect(s).toBeCloseTo(1.0); // "current" has one reading, so "old" is used
   });
 
-  it("defaults the curve's step to the current cycle's, not an older one", () => {
-    // A player at RB1 should project with this cycle's step, not last cycle's.
-    const low = srTimingTable({
+  // The default walks the observed per-level table (+0.4 at RB0 rising to
+  // +0.7 by RB10) rather than applying one figure to the whole ladder, so it
+  // cannot equal any constant-step run.
+  it("walks a level-varying step by default", () => {
+    const varying = srTimingTable({
       cycle: 1,
       creditsPerSec: 947_000n,
       setupHours: 2,
-      multiplier: { atCurrentLevel: 15.8, currentLevel: 1 },
+      multiplier: { atCurrentLevel: 18.4, currentLevel: 6 },
     });
-    const explicitLow = srTimingTable({
+    for (const constant of [0.4, 0.5, 0.6, 0.7]) {
+      const fixed = srTimingTable({
+        cycle: 1,
+        creditsPerSec: 947_000n,
+        setupHours: 2,
+        multiplier: { atCurrentLevel: 18.4, currentLevel: 6, perLevel: constant },
+      });
+      const same = varying.every(
+        (r, i) => Math.abs(r.runHours - fixed[i]!.runHours) < 1e-9,
+      );
+      expect(same, `constant ${constant}`).toBe(false);
+    }
+  });
+
+  it("reproduces the anchor reading exactly at the player's own level", () => {
+    // Walking up from RB6 and back down must return the reading given.
+    const rows = srTimingTable({
       cycle: 1,
       creditsPerSec: 947_000n,
       setupHours: 2,
-      multiplier: {
-        atCurrentLevel: 15.8,
-        currentLevel: 1,
-        perLevel: observedMultiplierStep(undefined, 4, 1)!,
-      },
+      multiplier: { atCurrentLevel: 18.4, currentLevel: 6 },
     });
-    low.forEach((r, i) => expect(r.runHours).toBeCloseTo(explicitLow[i]!.runHours, 10));
+    // RB12 is 6 levels up: 18.4 + 0.6*4 (RB6-10) + 0.7*2 (RB10-12) = 22.2.
+    const expected = 18.4 + 0.6 * 4 + 0.7 * 2;
+    const flat = srTimingTable({
+      cycle: 1,
+      creditsPerSec: 947_000n,
+      setupHours: 2,
+      multiplier: { atCurrentLevel: 18.4, currentLevel: 6, perLevel: (expected - 18.4) / 6 },
+    });
+    // Same average climb over the span => same total grind to RB12.
+    const a = rows.find((r) => r.level === 12)!.runHours;
+    const b = flat.find((r) => r.level === 12)!.runHours;
+    expect(Math.abs(a - b)).toBeLessThan(0.05);
   });
 
   it("still honours an explicitly supplied step", () => {

@@ -107,6 +107,16 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // 18.1-18.4 means the two cycles converge despite the extra Super Rebirth,
   // while 18.5+ means the step grew mid-cycle as it did last time near RB10.
   { rbLevel: 5, creditMultiplier: 17.8, superRebirthCount: 3, session: "c-post-srb3" },
+  // RESOLVES THE CONFOUND. The RB5->6 step is +0.6, which is exactly what the
+  // PREVIOUS cycle showed at RB6->10. Two different cycles, same step at the
+  // same level: the step is a function of REBIRTH LEVEL, not of super-rebirth
+  // count. Pooling across cycles is therefore legitimate, provided you index
+  // by level.
+  //
+  // It also breaks the constant-step fit — nothing reproduces all seven
+  // readings — so the step does vary within a cycle. Six points simply
+  // couldn't see a change that slow through one-decimal rounding.
+  { rbLevel: 6, creditMultiplier: 18.4, superRebirthCount: 3, session: "c-post-srb3" },
 ];
 
 /**
@@ -195,6 +205,53 @@ export function observedMultiplierStep(
     levels += span;
   }
   return levels > 0 ? weighted / levels : null;
+}
+
+/**
+ * The step observed AT a given rebirth level, pooled across cycles.
+ *
+ * Both sampled cycles show the same step at the same level (+0.6 at RB5→6 in
+ * one and RB6→10 in the other), so the step is level-driven and cross-cycle
+ * pooling is sound as long as it's indexed by level. Observed so far:
+ *
+ *   RB0→1   +0.4          RB6→10  +0.6
+ *   RB1→5   +0.5          RB10→13 +0.7
+ *   RB5→6   +0.6
+ *
+ * Only consecutive WITHIN-session pairs are used, so a between-session drift
+ * in the absolute reading can't be mistaken for a step. Falls back to the
+ * nearest sampled level, which means levels above the top sample inherit the
+ * highest observed step — conservative, since the step has only ever risen.
+ */
+export function observedStepAtLevel(
+  level: number,
+  samples: readonly RebirthMultiplierSample[] = OBSERVED_REBIRTH_MULTIPLIERS,
+): number | null {
+  const bySession = new Map<string, RebirthMultiplierSample[]>();
+  for (const s of samples) {
+    const list = bySession.get(s.session) ?? [];
+    list.push(s);
+    bySession.set(s.session, list);
+  }
+  // (fromLevel, step) for every adjacent pair inside a session.
+  const steps: { from: number; step: number }[] = [];
+  for (const list of bySession.values()) {
+    const sorted = [...list].sort((a, b) => a.rbLevel - b.rbLevel);
+    for (let i = 1; i < sorted.length; i++) {
+      const lo = sorted[i - 1]!;
+      const hi = sorted[i]!;
+      const span = hi.rbLevel - lo.rbLevel;
+      if (span <= 0) continue;
+      const per = (hi.creditMultiplier - lo.creditMultiplier) / span;
+      for (let k = lo.rbLevel; k < hi.rbLevel; k++) steps.push({ from: k, step: per });
+    }
+  }
+  if (!steps.length) return null;
+  let best = steps[0]!;
+  for (const s of steps) {
+    if (Math.abs(s.from - level) < Math.abs(best.from - level)) best = s;
+  }
+  return best.step;
 }
 
 /** Highest rebirth level anyone has actually sampled — beyond this is guesswork. */

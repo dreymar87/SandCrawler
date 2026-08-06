@@ -2,7 +2,7 @@ import { SUPER_REBIRTH_BONUSES } from "../data/superRebirthBonuses.seed";
 import {
   highestSampledLevel,
   observedMultiplierStep,
-  STEP_WINDOW_LEVELS,
+  observedStepAtLevel,
 } from "../data/rebirthMultipliers.seed";
 import { parseCredits } from "./credits";
 import { rebirthsForCycle } from "./sellGuidance";
@@ -70,10 +70,10 @@ export interface MultiplierCurve {
   /** The rebirth level they're on right now. */
   currentLevel: number;
   /**
-   * How much the multiplier gains per rebirth level. Defaults to the step
-   * observed NEAR `currentLevel`, because the step is level-dependent: about
-   * +0.4 at RB0 rising to +0.7 by RB10. A single figure for the whole ladder
-   * would be wrong at both ends.
+   * Force a single step for every level. Normally omitted: the step is
+   * level-dependent (+0.4 at RB0 rising to +0.7 by RB10) and the default walks
+   * the observed per-level table instead, so no one figure has to serve the
+   * whole ladder.
    */
   perLevel?: number;
 }
@@ -176,14 +176,19 @@ export function srTimingTable({
 
   // With a curve, `creditsPerSec` is the rate at `currentLevel`; back out the
   // pre-multiplier base so each level can be earned at its own multiplier.
-  const step =
-    multiplier?.perLevel ??
-    (multiplier
-      ? (observedMultiplierStep(undefined, STEP_WINDOW_LEVELS, multiplier.currentLevel) ??
-        OBSERVED_MULTIPLIER_STEP)
-      : OBSERVED_MULTIPLIER_STEP);
-  const multAt = (lvl: number): number =>
-    multiplier ? multiplier.atCurrentLevel + step * (lvl - multiplier.currentLevel) : 1;
+  //
+  // The step is level-dependent, so walk it level by level from the player's
+  // anchor rather than multiplying by one figure. Both sampled cycles agree on
+  // the step at a given level, which is what makes the pooled table usable.
+  const stepAt = (lvl: number): number =>
+    multiplier?.perLevel ?? observedStepAtLevel(lvl) ?? OBSERVED_MULTIPLIER_STEP;
+  const multAt = (lvl: number): number => {
+    if (!multiplier) return 1;
+    let m = multiplier.atCurrentLevel;
+    for (let k = multiplier.currentLevel; k < lvl; k++) m += stepAt(k);
+    for (let k = lvl; k < multiplier.currentLevel; k++) m -= stepAt(k);
+    return m;
+  };
   const baseRate =
     multiplier && multAt(multiplier.currentLevel) > 0 ? rate / multAt(multiplier.currentLevel) : rate;
 
