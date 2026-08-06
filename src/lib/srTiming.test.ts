@@ -7,7 +7,10 @@ import {
   PROJECTION_WARN_LEVELS,
   srTimingTable,
 } from "./srTiming";
-import { observedMultiplierStep } from "../data/rebirthMultipliers.seed";
+import {
+  observedMultiplierStep,
+  OBSERVED_REBIRTH_MULTIPLIERS,
+} from "../data/rebirthMultipliers.seed";
 import { parseCredits } from "./credits";
 
 const M = 1_000_000n;
@@ -218,12 +221,12 @@ describe("derived multiplier step", () => {
     expect(HIGHEST_SAMPLED_LEVEL).toBe(13);
   });
 
-  // The step rose 0.6 -> 0.7 around RB10 and then held for three consecutive
-  // levels. Settling, not accelerating — which bounds the error from
-  // projecting it flat over the levels just ahead.
-  it("shows the step settling rather than accelerating near the top", () => {
-    const recent = observedMultiplierStep(undefined, 3, 13)!; // RB10 -> RB13
-    expect(recent).toBeCloseTo(0.7, 2);
+  // Within the previous cycle the step rose 0.6 -> 0.7 around RB10 and then
+  // held for three consecutive levels — settling, not accelerating. Passed
+  // explicitly because the default now prefers the CURRENT cycle.
+  it("shows last cycle's step settling rather than accelerating", () => {
+    const cycle2 = OBSERVED_REBIRTH_MULTIPLIERS.filter((s) => s.session === "a");
+    expect(observedMultiplierStep(cycle2, 3)).toBeCloseTo(0.7, 2);
   });
 
   // The step is NOT constant: +0.6 through RB10, +0.7 after. A full-history
@@ -300,15 +303,48 @@ describe("derived multiplier step", () => {
 });
 
 describe("level-dependent step", () => {
-  // ~0.4 at RB0-1 (this cycle) against ~0.7 at RB10-13 (last cycle). Pooling
-  // them gives 0.62, which describes neither end of the ladder.
-  it("picks the step from samples nearest the level asked about", () => {
-    expect(observedMultiplierStep(undefined, 4, 1)).toBeCloseTo(0.4, 2);
-    expect(observedMultiplierStep(undefined, 4, 12)).toBeCloseTo(0.675, 3);
+  // The current cycle reads ~0.45 at RB0-2; the previous one 0.6-0.7 at
+  // RB6-13. Those differ in rebirth level AND super-rebirth count at once, so
+  // rather than guess which drives it, the current session wins outright —
+  // correct under either explanation.
+  it("prefers the current session over older ones at any level", () => {
+    for (const level of [0, 2, 5, 8, 13]) {
+      expect(observedMultiplierStep(undefined, 4, level), `RB${level}`).toBeCloseTo(0.45, 2);
+    }
   });
 
-  it("defaults the curve's step to whatever fits the player's current level", () => {
-    // A player at RB1 should project with the low-RB step, not the high one.
+  it("does not stall on a session with a single unusable reading", () => {
+    // The stale-login artefact sits between the two cycles with one reading;
+    // scanning for the literal last session would find it and fall through.
+    const s = observedMultiplierStep(
+      [
+        { rbLevel: 1, creditMultiplier: 10, superRebirthCount: 0, session: "old" },
+        { rbLevel: 3, creditMultiplier: 12, superRebirthCount: 0, session: "old" },
+        { rbLevel: 9, creditMultiplier: 50, superRebirthCount: 0, session: "artefact" },
+        { rbLevel: 1, creditMultiplier: 20, superRebirthCount: 1, session: "current" },
+        { rbLevel: 5, creditMultiplier: 24, superRebirthCount: 1, session: "current" },
+      ],
+      4,
+      1,
+    );
+    expect(s).toBeCloseTo(1.0); // (24-20)/(5-1) from "current", not 1.0 from "old"
+  });
+
+  it("falls back to level proximity when no session can yield a step", () => {
+    const s = observedMultiplierStep(
+      [
+        { rbLevel: 2, creditMultiplier: 10, superRebirthCount: 0, session: "old" },
+        { rbLevel: 6, creditMultiplier: 14, superRebirthCount: 0, session: "old" },
+        { rbLevel: 1, creditMultiplier: 99, superRebirthCount: 1, session: "current" },
+      ],
+      4,
+      1,
+    );
+    expect(s).toBeCloseTo(1.0); // "current" has one reading, so "old" is used
+  });
+
+  it("defaults the curve's step to the current cycle's, not an older one", () => {
+    // A player at RB1 should project with this cycle's step, not last cycle's.
     const low = srTimingTable({
       cycle: 1,
       creditsPerSec: 947_000n,
@@ -319,7 +355,7 @@ describe("level-dependent step", () => {
       cycle: 1,
       creditsPerSec: 947_000n,
       setupHours: 2,
-      multiplier: { atCurrentLevel: 15.8, currentLevel: 1, perLevel: 0.4 },
+      multiplier: { atCurrentLevel: 15.8, currentLevel: 1, perLevel: 0.45 },
     });
     low.forEach((r, i) => expect(r.runHours).toBeCloseTo(explicitLow[i]!.runHours, 10));
   });

@@ -59,6 +59,17 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // held there — settling rather than accelerating, which bounds the error on
   // projecting it flat.
   { rbLevel: 13, creditMultiplier: 22.6, superRebirthCount: 2, session: "a" },
+  // Read immediately after login, same rebirth level, 1.2 lower — then back to
+  // 21.2x after collecting credits with no rebirth in between. Almost certainly
+  // a stale HUD rather than a real change, so it sits in its own session and
+  // contributes nothing to the derived step.
+  {
+    rbLevel: 11,
+    creditMultiplier: 20.0,
+    superRebirthCount: 2,
+    session: "b-login-stale",
+    note: "taken at login; recovered to 21.2x after collecting credits, no rebirth — treat as a display artefact, not a data point",
+  },
   // First DIRECT reading at RB0, taken right after Super Rebirthing from RB13.
   // Every prior intercept was extrapolated backwards; this one is measured.
   //
@@ -73,22 +84,15 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
     session: "c-post-srb3",
     note: "measured at RB0 immediately after SR from RB13 (+32% credits, +160% XP, 16 crystals)",
   },
-  // +0.4 from RB0, against +0.6 around RB6 and +0.7 from RB10 last cycle. The
-  // step is a function of WHERE you are on the ladder — small low down,
-  // growing, flattening near 0.7 — so a single scalar can't serve the whole
-  // range. Hence `nearLevel` below.
+  // RB0->1 reads +0.4 and RB1->2 reads +0.5, but do NOT conclude the step is
+  // growing: a constant step anywhere in 0.401-0.499 reproduces all three
+  // readings once you account for one-decimal rounding. Last cycle admits no
+  // constant step at all, so the two cycles genuinely differ — but they differ
+  // in rebirth level AND super-rebirth count at once, so which one drives it
+  // is unresolved. Hence "prefer the current session" rather than a rule about
+  // levels.
   { rbLevel: 1, creditMultiplier: 15.8, superRebirthCount: 3, session: "c-post-srb3" },
-  // Read immediately after login, same rebirth level, 1.2 lower — then back to
-  // 21.2x after collecting credits with no rebirth in between. Almost certainly
-  // a stale HUD rather than a real change, so it sits in its own session and
-  // contributes nothing to the derived step.
-  {
-    rbLevel: 11,
-    creditMultiplier: 20.0,
-    superRebirthCount: 2,
-    session: "b-login-stale",
-    note: "taken at login; recovered to 21.2x after collecting credits, no rebirth — treat as a display artefact, not a data point",
-  },
+  { rbLevel: 2, creditMultiplier: 16.3, superRebirthCount: 3, session: "c-post-srb3" },
 ];
 
 /**
@@ -131,17 +135,32 @@ export function observedMultiplierStep(
     bySession.set(s.session, list);
   }
 
-  // The step depends on rebirth level (~0.4 at RB0, ~0.7 by RB10), so when a
-  // level is given, use only the session whose readings sit closest to it.
-  // Averaging a low-RB session with a high-RB one produces a figure that
-  // describes neither.
+  // Sessions disagree: ~0.4-0.5 in the current cycle at RB0-2, 0.6-0.7 in the
+  // previous one at RB6-13. Whether that's driven by rebirth level or by
+  // super-rebirth count is confounded — the two moved together — so don't
+  // encode a rule about either. Prefer the player's CURRENT session, which is
+  // the right answer under both explanations, and fall back to level
+  // proximity only when the current session can't yield a step yet.
   if (nearLevel !== undefined) {
-    let best: { list: RebirthMultiplierSample[]; distance: number } | null = null;
-    for (const list of bySession.values()) {
-      if (list.length < 2) continue;
+    const usable = (list: RebirthMultiplierSample[]) => {
+      if (list.length < 2) return false;
       const levels = list.map((s) => s.rbLevel);
-      if (Math.max(...levels) === Math.min(...levels)) continue;
-      const distance = Math.min(...levels.map((l) => Math.abs(l - nearLevel)));
+      return Math.max(...levels) !== Math.min(...levels);
+    };
+    // Samples are appended chronologically, so scan back for the most recent
+    // session that can actually yield a step. Scanning for the LAST session
+    // outright would stall on a single-reading one (e.g. the stale-login
+    // artefact) and silently fall through to another cycle's data.
+    const ordered = [...bySession.values()];
+    for (let i = ordered.length - 1; i >= 0; i--) {
+      const list = ordered[i]!;
+      if (usable(list)) return observedMultiplierStep(list, windowLevels);
+    }
+
+    let best: { list: RebirthMultiplierSample[]; distance: number } | null = null;
+    for (const list of ordered) {
+      if (!usable(list)) continue;
+      const distance = Math.min(...list.map((s) => Math.abs(s.rbLevel - nearLevel)));
       if (!best || distance < best.distance) best = { list, distance };
     }
     if (best) return observedMultiplierStep(best.list, windowLevels);
