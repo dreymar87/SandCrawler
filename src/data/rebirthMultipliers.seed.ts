@@ -97,6 +97,10 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // to 0.451-0.500 — still no evidence the step varies WITHIN this cycle, only
   // that it differs from the previous one.
   { rbLevel: 3, creditMultiplier: 16.8, superRebirthCount: 3, session: "c-post-srb3" },
+  // Fifth reading; surviving constant-step range now 0.467-0.500. Four points
+  // of evidence that the step is FIXED within a cycle, against last cycle
+  // where no constant step fit at all.
+  { rbLevel: 4, creditMultiplier: 17.3, superRebirthCount: 3, session: "c-post-srb3" },
 ];
 
 /**
