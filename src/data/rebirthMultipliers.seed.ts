@@ -134,6 +134,13 @@ export const OBSERVED_REBIRTH_MULTIPLIERS: readonly RebirthMultiplierSample[] = 
   // model is now confirmed rather than inferred.
   { rbLevel: 8, creditMultiplier: 19.6, superRebirthCount: 3, session: "c-post-srb3" },
   { rbLevel: 9, creditMultiplier: 20.2, superRebirthCount: 3, session: "c-post-srb3" },
+  // Offset against cycle 2 reads +0.4 here for the first time, after four
+  // straight +0.3s. Not a contradiction — it is exactly what a TRUE offset of
+  // 0.32 predicts, since round(a+0.32) - round(a) lands on 0.4 for 20% of
+  // fractional positions and 0.3 for the other 80%. One in five observed.
+  // The carry-over is now confirmed by the rounding PATTERN, not just by the
+  // single back-solved value.
+  { rbLevel: 10, creditMultiplier: 20.9, superRebirthCount: 3, session: "c-post-srb3" },
 ];
 
 /**

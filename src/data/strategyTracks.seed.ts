@@ -64,10 +64,40 @@ export interface MeasuredEffect {
 export const SCRAP_SWINGS_PER_SEC = 0.5;
 
 /**
- * Seconds removed from a droid build by one swing, at pickaxe level 10.
- * Measured in-game.
+ * Seconds removed from a droid build by one swing, as a function of pickaxe
+ * level. Measured at L10 = 13.2s and L11 = 14.4s, a clean +1.2 per level:
+ *
+ *     swingSeconds(n) = 1.2 * (n + 1)
+ *
+ * Predicts L12 = 15.6s and L20 = 25.2s, neither yet checked.
  */
-export const BUILD_SWING_SECONDS_AT_PICKAXE_10 = 13.2;
+export function buildSwingSeconds(pickaxeLevel: number): number {
+  return 1.2 * (Math.max(0, pickaxeLevel) + 1);
+}
+
+/**
+ * ── Pickaxe level RESETS on Super Rebirth ────────────────────────────────
+ * and this is probably where the two-hour setup actually goes.
+ *
+ * Swings drive both income streams and the build rate, and all three collapse
+ * at the start of a run:
+ *
+ *   pickaxe L0  ->  1.2s a swing,  ~4x build rate   (11% of an L11 player)
+ *   pickaxe L6  ->  8.4s a swing, ~23x build rate   (59%)
+ *   pickaxe L11 -> 14.4s a swing, ~39x build rate   (100%)
+ *
+ * Scrap income is gated on pickaxe level ≥ the pile's, so it is suppressed
+ * over the same stretch. Re-levelling the pickaxe at the merchant is therefore
+ * a plausible dominant term in setup time — more so than crafting, which
+ * swinging already makes near-instant.
+ *
+ * PICKAXE MASTERY preserves some number of levels through a Super Rebirth,
+ * scaling with its own level. That reframes it: not a power upgrade but a
+ * setup-time upgrade, and potentially the most valuable one in the shop, since
+ * it starts every future run with both income streams already running. How
+ * many levels each mastery level keeps is the missing number.
+ */
+export const PICKAXE_RESETS_ON_SUPER_REBIRTH = true;
 
 /**
  * Build swings per second. Unlike the scrap station there is NO 2-second gate
@@ -139,7 +169,7 @@ export const MEASURED_EFFECTS: readonly MeasuredEffect[] = [
     activeOnly: true,
     effect: "+5% critical chance per level when swinging at a droid under construction",
     whyNotRanked:
-      "Buys BUILD TIME, not credits/s. Priceable now: at 13.2s a swing and 2-3 swings/s the build rate is ~36x, and one crit-chance level adds ~4.6% for 90 crystals — about 3x better per crystal than Crafting Speed. Still low priority, because at 36x a six-hour craft already takes ten minutes, so build time is no longer what makes setup long.",
+      "Buys BUILD TIME, not credits/s. Priceable: at 2-3 swings/s the build rate is ~36x and one crit-chance level adds ~4.6% for 90 crystals, about 3x better per crystal than Crafting Speed. Still low priority — at 36x a six-hour craft takes ten minutes, so build time is not what makes setup long. Pickaxe level is the lever that matters here, and Pickaxe Mastery is the upgrade that protects it.",
     source: "in-game shop text",
   },
   {
@@ -278,6 +308,11 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
       id: "core.double-daily-quests",
       throughLevel: 1,
       why: "6 crystals a day instead of 3. Converted to crystals/hour it returns ~20 per 1000 spent at 2h play/day against a Credits level's 6.4 — it only loses past ~6.3h/day. Quests also reset on Super Rebirth, so an SR day can pay 12.",
+    },
+    {
+      id: "core.pickaxe-mastery",
+      throughLevel: 3,
+      why: "PROMOTED on measurement. Pickaxe level resets every Super Rebirth, and swings drive both income streams and the ~36x build rate — at L0 you swing for 1.2s against 14.4s at L11, so a fresh run starts at roughly a tenth of your power. Mastery preserves levels through the reset, which attacks the actual setup bottleneck rather than crafting. Levels kept per mastery level is still unmeasured, so this sits on mechanism, not arithmetic.",
     },
     {
       id: "workshop.lounge-slot",
