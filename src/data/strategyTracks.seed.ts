@@ -76,6 +76,14 @@ export function buildSwingSeconds(pickaxeLevel: number): number {
 }
 
 /**
+ * Pickaxe levels retained through a Super Rebirth, by Pickaxe Mastery level.
+ * The shop states it: L1 keeps 5, L2 keeps 7 — +2 a level, to 25 at L11.
+ */
+export function pickaxeLevelsKept(masteryLevel: number): number {
+  return masteryLevel <= 0 ? 0 : 5 + 2 * (masteryLevel - 1);
+}
+
+/**
  * ── Pickaxe level RESETS on Super Rebirth ────────────────────────────────
  * and this is probably where the two-hour setup actually goes.
  *
@@ -91,11 +99,13 @@ export function buildSwingSeconds(pickaxeLevel: number): number {
  * a plausible dominant term in setup time — more so than crafting, which
  * swinging already makes near-instant.
  *
- * PICKAXE MASTERY preserves some number of levels through a Super Rebirth,
- * scaling with its own level. That reframes it: not a power upgrade but a
- * setup-time upgrade, and potentially the most valuable one in the shop, since
- * it starts every future run with both income streams already running. How
- * many levels each mastery level keeps is the missing number.
+ * PICKAXE MASTERY preserves levels through the reset — see
+ * `pickaxeLevelsKept`. It is a setup-time upgrade, not a power one, and the
+ * cheapest meaningful one in the shop: the right target is whatever mastery
+ * level matches your PEAK pickaxe, since anything beyond that preserves levels
+ * you never reach. For a player at pickaxe 11 that is Mastery L4, at 45
+ * crystals all-in — against restarting at 5, which is half the build rate and
+ * a suppressed scrap station until you re-level.
  */
 export const PICKAXE_RESETS_ON_SUPER_REBIRTH = true;
 
@@ -311,8 +321,8 @@ const CRYSTALS_PER_HOUR: StrategyTrack = {
     },
     {
       id: "core.pickaxe-mastery",
-      throughLevel: 3,
-      why: "PROMOTED on measurement. Pickaxe level resets every Super Rebirth, and swings drive both income streams and the ~36x build rate — at L0 you swing for 1.2s against 14.4s at L11, so a fresh run starts at roughly a tenth of your power. Mastery preserves levels through the reset, which attacks the actual setup bottleneck rather than crafting. Levels kept per mastery level is still unmeasured, so this sits on mechanism, not arithmetic.",
+      throughLevel: 4,
+      why: "Keeps 5 pickaxe levels at L1, +2 per level after. Pickaxe resets on Super Rebirth and drives both the scrap station and the ~36x build rate, so without this you restart at half power and grind it back. Buy up to the level that matches your PEAK pickaxe — L4 keeps 11 for 45 crystals all-in — and no further, since beyond that it preserves levels you never reach.",
     },
     {
       id: "workshop.lounge-slot",
